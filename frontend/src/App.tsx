@@ -1,32 +1,21 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Home from './pages/Home';
-// import Login from './pages/Login';
-import ProtectedRoute from './components/ProtectedRoute';
-
-const Logout = (): React.ReactElement => {
-  localStorage.removeItem('token');
-  return <Navigate to="/login" />;
-};
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Sidebar, { SidebarItem } from "./components/Sidebar";
+import { MessageSquarePlus, Settings } from "lucide-react";
+import Dashboard from "./components/Dashboard";
 
 const App = (): React.ReactElement => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
+    <main className="flex gap-4 h-screen">
+      <Sidebar>
+        <SidebarItem
+          icon={<MessageSquarePlus size={20} />}
+          text="New Message"
         />
-        <Route
-          path="/login"
-          element={<Home />}
-        />
-      </Routes>
-    </BrowserRouter>
+        <SidebarItem icon={<Settings size={20} />} text="Settings" />
+      </Sidebar>
+      <Dashboard />
+    </main>
   );
 };
 
