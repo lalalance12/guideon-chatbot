@@ -15,14 +15,10 @@ interface SidebarProps {
 
 export default function Sidebar({ children }: SidebarProps) {
   return (
-    <aside className="h-screen w-56">
-      <nav className="h-full flex flex-col bg-white shadow-sm">
-        <div className="p-4 pb-2 flex justify-between items-center">
-          <img
-            src="https://img.logoipsum.com/243.svg"
-            className="w-40 overflow-hidden transition-all mb-8"
-            alt="Logo"
-          />
+    <aside className="h-screen w-56 absolute left-0">
+      <nav className="h-full flex flex-col bg-surface-a0 text-light-a0 shadow-sm">
+        <div className="p-4 pb-2 flex justify-center items-center">
+          <h1 className="text-5xl text-primary-a0 "> LOGO </h1>
         </div>
 
         <SidebarContext.Provider value={{ expanded: true }}>
@@ -69,8 +65,8 @@ export function SidebarItem({
         transition-colors group
         ${
           active
-            ? "bg-gradient-to-tr from-indigo-200 to-indigo-100 text-indigo-800"
-            : "hover:bg-indigo-50 text-gray-600"
+            ? "bg-gradient-to-tr from-primary-a30 to-primary-a40 text-surface-tonal-a0"
+            : "hover:bg-surface-tonal-a10 text-light-a0"
         }
       `}
     >
