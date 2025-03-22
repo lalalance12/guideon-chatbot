@@ -1,22 +1,34 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Sidebar, { SidebarItem } from "./components/Sidebar";
-import { MessageSquarePlus, Settings } from "lucide-react";
-import Dashboard from "./components/Dashboard";
+import Home from "./pages/Home";
+import Chat from "./pages/Chat";
+import Sidebar from "./components/Sidebar";
 import "typeface-muli";
+
+// Layout component with sidebar for authenticated pages
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex h-screen font-muli">
+    <Sidebar />
+    <div className="flex-1 pl-64">{children}</div>
+  </div>
+);
 
 const App = (): React.ReactElement => {
   return (
-    <main className="flex gap-4 h-screen font-muli bg-surface-a0">
-      <Sidebar>
-        <SidebarItem
-          icon={<MessageSquarePlus size={20} />}
-          text="New Message"
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route
+          path="/chat"
+          element={
+            <DashboardLayout>
+              <Chat />
+            </DashboardLayout>
+          }
         />
-        <SidebarItem icon={<Settings size={20} />} text="Settings" active />
-      </Sidebar>
-      <Dashboard />
-    </main>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
