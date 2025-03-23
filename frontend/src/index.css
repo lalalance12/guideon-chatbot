@@ -1,33 +1,143 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-@theme {
-  /** Base colors */
-  --color-dark-a0: #000000;
-  --color-light-a0: #ffffff;
+:root {
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --bg-gradient-from: #eef2ff;
+  --bg-gradient-to: #ffffff;
+  --text-main: #1e293b;
+  --text-secondary: #64748b;
+}
 
-  /** Dark theme primary colors */
-  --color-primary-a0: #73bb92;
-  --color-primary-a10: #83c39e;
-  --color-primary-a20: #93caa9;
-  --color-primary-a30: #a3d2b5;
-  --color-primary-a40: #b2d9c1;
-  --color-primary-a50: #c2e1cd;
+body {
+  margin: 0;
+  font-family: 'Muli', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--text-main);
+}
 
-  /** Dark theme surface colors */
-  --color-surface-a0: #121212;
-  --color-surface-a10: #282828;
-  --color-surface-a20: #3f3f3f;
-  --color-surface-a30: #575757;
-  --color-surface-a40: #717171;
-  --color-surface-a50: #8b8b8b;
+/* Custom animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
 
-  /** Dark theme tonal surface colors */
-  --color-surface-tonal-a0: #1c211d;
-  --color-surface-tonal-a10: #313632;
-  --color-surface-tonal-a20: #474c48;
-  --color-surface-tonal-a30: #5f635f;
-  --color-surface-tonal-a40: #777b78;
-  --color-surface-tonal-a50: #919491;
+.animate-pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
 
-  --font-muli: "Muli", "sans-serif";
+.delay-75 {
+  animation-delay: 0.2s;
+}
+
+.delay-150 {
+  animation-delay: 0.4s;
+}
+
+/* Chat bubble styling */
+.chat-bubble {
+  position: relative;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  max-width: 80%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  white-space: pre-wrap;
+}
+
+.chat-bubble-user {
+  background-color: var(--primary-color);
+  color: white;
+  border-top-right-radius: 0;
+}
+
+.chat-bubble-bot {
+  background-color: white;
+  color: var(--text-main);
+  border-top-left-radius: 0;
+  border: 1px solid #e2e8f0;
+}
+
+/* Transitions */
+.transition-smooth {
+  transition: all 0.3s ease;
+}
+
+/* Focus styles */
+.focus-ring {
+  outline: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.focus-ring:focus {
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+}
+
+/* Button styles */
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Gradient backgrounds */
+.bg-gradient-main {
+  background: linear-gradient(to bottom, var(--bg-gradient-from), var(--bg-gradient-to));
+}
+
+/* Textarea and input styles */
+.input-area {
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  transition: border-color 0.2s ease;
+}
+
+.input-area:focus-within {
+  border-color: var(--primary-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .chat-bubble {
+    max-width: 85%;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
 }
