@@ -10,3 +10,12 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
+    
+
+class PathwayQuerySerializer(serializers.Serializer):
+    query = serializers.CharField(required=True, help_text="The career or skill query")
+
+class PathwayResponseSerializer(serializers.Serializer):
+    query = serializers.CharField()
+    pathway = serializers.CharField()
+    context = serializers.ListField(child=serializers.DictField())
