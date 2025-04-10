@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'password', 'fullName']
         extra_kwargs = {
-            'username': {'required': False}  # We'll set this in create()
+            'username': {'required': False}  
         }
 
     def create(self, validated_data):
@@ -28,3 +28,9 @@ class UserSerializer(serializers.ModelSerializer):
             password=password
         )
         return user
+
+class ChatRequestSerializer(serializers.Serializer):
+    prompt = serializers.CharField(required=True)
+
+class ChatResponseSerializer(serializers.Serializer):
+    response = serializers.CharField()
