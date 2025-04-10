@@ -1,27 +1,32 @@
 import axios from "axios";
 import { useState } from "react";
-import { OllamaResponse } from "../types/models";
-
-const OLLAMA_API_URL = "http://localhost:11434/api/generate";
+import api from "../api";
 
 /**
- * Sends a query to the locally running Ollama model
+ * Sends a query to the backend which communicates with Ollama
  * @param userPrompt - The user's input prompt
- * @returns The response from the Ollama API
+ * @returns The response from the backend API
  */
 export const queryOllama = async (userPrompt: string): Promise<string> => {
   try {
-    const headers = { "Content-Type": "application/json" };
-    const data = {
-      model: "llama3.2", // Using the specified model
-      prompt: buildPrompt(userPrompt),
-      stream: false, // Not streaming responses
-    };
-
-    const response = await axios.post<OllamaResponse>(OLLAMA_API_URL, data, { headers });
+    console.log("Frontend: Sending request to backend API");
+    console.log("Request data:", { prompt: userPrompt });
+    
+    const response = await api.post('/api/chat/', {
+      prompt: userPrompt,
+    });
+    
+    console.log("Frontend: Received response from backend");
+    console.log("Response data:", response.data);
+    
     return response.data.response;
   } catch (error) {
-    console.error("Error querying Ollama:", error);
+    console.error("Error querying backend:", error);
+    if (axios.isAxiosError(error)) {
+      console.error("Status:", error.response?.status);
+      console.error("Response data:", error.response?.data);
+      console.error("Request config:", error.config);
+    }
     return "I'm having trouble connecting to my knowledge base right now. Please try again later.";
   }
 };
@@ -41,7 +46,7 @@ export const useOllamaQuery = () => {
       const response = await queryOllama(prompt);
       return response;
     } catch (err) {
-      const errorMessage = "Failed to get a response from Ollama.";
+      const errorMessage = "Failed to get a response.";
       setError(errorMessage);
       return errorMessage;
     } finally {
@@ -50,18 +55,4 @@ export const useOllamaQuery = () => {
   };
 
   return { sendQuery, isLoading, error };
-};
-
-/**
- * Builds a prompt with context for the Ollama model
- * @param userPrompt - The user's input prompt
- * @returns A formatted prompt with system context
- */
-const buildPrompt = (userPrompt: string): string => {
-  return `You are Guideon, a helpful AI assistant focused on education and learning.
-You provide guidance on courses, learning paths, and educational resources.
-You're friendly, supportive, and knowledgeable about various academic subjects.
-You help students, scholars, and lifelong learners achieve their educational goals.
-
-${userPrompt}`;
 }; 
