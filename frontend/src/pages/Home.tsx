@@ -12,7 +12,7 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
 
   const handleStartChat = () => {
-    navigate("/chat");
+    navigate("/auth");
   };
 
   return (
