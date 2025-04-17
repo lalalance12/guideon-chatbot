@@ -2,8 +2,18 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
+import Auth from "./pages/Auth";
 import Sidebar from "./components/Sidebar";
+import { authService } from "./services/auth";
 import "typeface-muli";
+
+// Protected Route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  if (!authService.isAuthenticated()) {
+    return <Navigate to="/auth" replace />;
+  }
+  return <>{children}</>;
+};
 
 // Layout component with sidebar for authenticated pages
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => (
@@ -18,12 +28,15 @@ const App = (): React.ReactElement => {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/auth" element={<Auth />} />
         <Route
           path="/chat"
           element={
-            <DashboardLayout>
-              <Chat />
-            </DashboardLayout>
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Chat />
+              </DashboardLayout>
+            </ProtectedRoute>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
