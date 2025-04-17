@@ -1,18 +1,99 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, RotateCcw, AlertTriangle } from "lucide-react";
 import { Message as MessageType } from "../types/models";
-import { useOllamaQuery } from "../services/ollamaService";
+import { useOllamaQuery, checkApiConnection } from "../services/ollamaService";
 import Message from "../components/Message";
+
+const STORAGE_KEY = "guideon_chat_history";
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [apiConnected, setApiConnected] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { sendQuery, isLoading } = useOllamaQuery();
+  const { sendQuery, isLoading, error, currentChatId } = useOllamaQuery();
 
+  // Check API connection on component mount
   useEffect(() => {
-    // Add welcome message when the chat loads
+    const verifyConnection = async () => {
+      try {
+        const isConnected = await checkApiConnection();
+        setApiConnected(isConnected);
+        console.log(
+          `API connection status: ${isConnected ? "Connected" : "Disconnected"}`
+        );
+
+        if (!isConnected) {
+          setMessages([
+            {
+              id: Date.now(),
+              text: "Unable to connect to the backend server. Please make sure the server is running and try again.",
+              isUser: false,
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error("Error checking API connection:", error);
+        setApiConnected(false);
+      }
+    };
+
+    verifyConnection();
+  }, []);
+
+  // Load messages from localStorage
+  useEffect(() => {
+    try {
+      const savedChat = localStorage.getItem(STORAGE_KEY);
+      if (savedChat) {
+        try {
+          const parsedData = JSON.parse(savedChat);
+          if (
+            parsedData &&
+            parsedData.messages &&
+            Array.isArray(parsedData.messages)
+          ) {
+            console.log("Loaded saved messages:", parsedData.messages.length);
+            setMessages(parsedData.messages);
+          } else {
+            console.warn("Invalid saved chat format, using welcome message");
+            addWelcomeMessage();
+          }
+        } catch (e) {
+          console.error("Error parsing saved chat:", e);
+          addWelcomeMessage();
+        }
+      } else {
+        console.log("No saved chat found, showing welcome message");
+        addWelcomeMessage();
+      }
+    } catch (error) {
+      console.error("Error accessing localStorage:", error);
+      addWelcomeMessage();
+    }
+  }, [apiConnected]); // Only load from localStorage after API connection check
+
+  // Save messages to localStorage when they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            messages,
+            chatId: currentChatId,
+          })
+        );
+      } catch (error) {
+        console.error("Error saving to localStorage:", error);
+      }
+    }
+  }, [messages, currentChatId]);
+
+  const addWelcomeMessage = () => {
+    if (apiConnected === false) return; // Don't show welcome if API is disconnected
+
     setMessages([
       {
         id: 1,
@@ -20,7 +101,7 @@ const Chat: React.FC = () => {
         isUser: false,
       },
     ]);
-  }, []);
+  };
 
   // Scroll to the bottom of the chat when new messages are added
   useEffect(() => {
@@ -89,6 +170,17 @@ const Chat: React.FC = () => {
     }
   };
 
+  // Clear current conversation and start a new one
+  const startNewChat = () => {
+    if (window.confirm("Are you sure you want to start a new conversation?")) {
+      localStorage.removeItem(STORAGE_KEY);
+      setMessages([]);
+      addWelcomeMessage();
+      // Refresh page to reset hook state
+      window.location.reload();
+    }
+  };
+
   // Group messages by sender to show avatars only for the first message in a group
   const renderMessages = () => {
     return messages.map((message, index) => {
@@ -113,18 +205,40 @@ const Chat: React.FC = () => {
       {/* Header */}
       <header className="px-6 py-4 bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center">
-            <div className="bg-indigo-100 p-2 rounded-lg">
-              <Sparkles className="text-indigo-600" size={20} />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="bg-indigo-100 p-2 rounded-lg">
+                <Sparkles className="text-indigo-600" size={20} />
+              </div>
+              <div className="ml-3">
+                <h1 className="text-xl font-bold text-gray-800">
+                  Chat with Guideon
+                </h1>
+                <p className="text-sm text-gray-500">
+                  Ask me anything about learning paths and courses
+                  {currentChatId && (
+                    <span className="ml-2 text-xs text-indigo-600">
+                      Chat #{currentChatId}
+                    </span>
+                  )}
+                  {apiConnected === false && (
+                    <span className="ml-2 text-xs text-red-600 flex items-center">
+                      <AlertTriangle size={12} className="mr-1" />
+                      Backend connection error
+                    </span>
+                  )}
+                </p>
+              </div>
             </div>
-            <div className="ml-3">
-              <h1 className="text-xl font-bold text-gray-800">
-                Chat with Guideon
-              </h1>
-              <p className="text-sm text-gray-500">
-                Ask me anything about learning paths and courses
-              </p>
-            </div>
+            <button
+              onClick={startNewChat}
+              className="btn-outline flex items-center gap-1 text-sm"
+              title="Start a new conversation"
+              disabled={apiConnected === false}
+            >
+              <RotateCcw size={14} />
+              <span>New Chat</span>
+            </button>
           </div>
         </div>
       </header>
@@ -132,7 +246,11 @@ const Chat: React.FC = () => {
       {/* Chat Messages Container */}
       <div className="flex-1 overflow-y-auto py-6 px-4">
         <div className="max-w-4xl mx-auto space-y-6">
-          {renderMessages()}
+          {messages.length > 0 ? (
+            renderMessages()
+          ) : (
+            <div className="text-center text-gray-500">Loading...</div>
+          )}
 
           {isLoading && (
             <div className="flex items-start gap-3">
@@ -161,7 +279,11 @@ const Chat: React.FC = () => {
           <div className="flex items-end space-x-2 input-area p-3 shadow-sm">
             <textarea
               ref={textareaRef}
-              placeholder="Ask Guideon about learning paths, courses, or any educational topic..."
+              placeholder={
+                apiConnected === false
+                  ? "Cannot connect to server"
+                  : "Ask Guideon about learning paths, courses, or any educational topic..."
+              }
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => {
@@ -171,13 +293,15 @@ const Chat: React.FC = () => {
                 }
               }}
               className="flex-1 px-3 py-2 bg-transparent outline-none resize-none min-h-[40px] max-h-[120px] focus-ring"
-              disabled={isLoading}
+              disabled={isLoading || apiConnected === false}
             />
             <button
               onClick={handleSendMessage}
-              disabled={isLoading || inputValue.trim() === ""}
+              disabled={
+                isLoading || inputValue.trim() === "" || apiConnected === false
+              }
               className={`btn flex items-center gap-1 ${
-                isLoading || inputValue.trim() === ""
+                isLoading || inputValue.trim() === "" || apiConnected === false
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "btn-primary"
               }`}
@@ -187,7 +311,22 @@ const Chat: React.FC = () => {
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-2 text-center">
-            Powered by Ollama's llama3.2 model running locally on your machine
+            {apiConnected === false ? (
+              <span className="text-red-500">
+                Backend server not connected. Please start the server and
+                refresh the page.
+              </span>
+            ) : (
+              <>
+                Powered by Ollama's llama3.2 model running locally on your
+                machine
+                {currentChatId && (
+                  <span className="ml-1">
+                    • Conversation history is being saved
+                  </span>
+                )}
+              </>
+            )}
           </p>
         </div>
       </div>
