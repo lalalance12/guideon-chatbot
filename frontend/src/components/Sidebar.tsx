@@ -6,7 +6,9 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, ReactNode, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { authService, User } from "../services/auth";
 
 interface SidebarContextProps {
   expanded: boolean;
@@ -21,6 +23,27 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ children }: SidebarProps) {
+  const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/auth');
+  };
+
   return (
     <aside className="h-screen w-64 fixed left-0">
       <nav className="h-full flex flex-col bg-white border-r border-gray-200 shadow-sm">
@@ -55,20 +78,24 @@ export default function Sidebar({ children }: SidebarProps) {
           </h2>
           <ul className="space-y-2">
             <SidebarItem icon={<Settings size={18} />} text="Settings" />
-            <SidebarItem icon={<LogOut size={18} />} text="Logout" />
+            <SidebarItem 
+              icon={<LogOut size={18} />} 
+              text="Logout" 
+              onClick={handleLogout}
+            />
           </ul>
         </div>
 
         <div className="flex p-4 border-t border-gray-100">
           <img
-            src="https://ui-avatars.com/api/?background=eef2ff&color=4f46e5&bold=true"
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.fullName || '')}&background=eef2ff&color=4f46e5&bold=true`}
             alt="User Avatar"
             className="w-10 h-10 rounded-full"
           />
           <div className="flex justify-between items-center w-full ml-3">
             <div className="leading-4">
-              <h4 className="font-semibold text-gray-800">John Doe</h4>
-              <span className="text-xs text-gray-500">johndoe@gmail.com</span>
+              <h4 className="font-semibold text-gray-800">{currentUser?.fullName || 'Loading...'}</h4>
+              <span className="text-xs text-gray-500">{currentUser?.email || ''}</span>
             </div>
             <button
               className="p-1 rounded-full hover:bg-gray-100 transition-smooth"
@@ -88,6 +115,7 @@ interface SidebarItemProps {
   text: string;
   active?: boolean;
   alert?: boolean;
+  onClick?: () => void;
 }
 
 export function SidebarItem({
@@ -95,9 +123,11 @@ export function SidebarItem({
   text,
   active = false,
   alert = false,
+  onClick,
 }: SidebarItemProps) {
   return (
     <li
+      onClick={onClick}
       className={`
         relative flex items-center py-2 px-3 my-1
         font-medium rounded-md cursor-pointer
