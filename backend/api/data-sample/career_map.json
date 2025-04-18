@@ -1,0 +1,357 @@
+{
+    "jobGrades": [
+      {
+        "grade": "Associate",
+        "positions": [
+          {
+            "name": "Associate Data Analyst",
+            "domain": "All Domains",
+            "nextRoles": ["Data Analyst (BI/Stewardship)", "Associate Data Engineer (Engineering/AI/Research)"]
+          }
+        ]
+      },
+      {
+        "grade": "Senior Associate",
+        "positions": [
+          {
+            "name": "Data Analyst",
+            "domain": "Business Intelligence & Strategy, Data Stewardship",
+            "nextRoles": ["Business Intelligence Analyst (BI/Stewardship)"]
+          },
+          {
+            "name": "Associate Data Engineer",
+            "domain": "Data Engineering, AI Engineering, Applied Data/AI Research, Data Science",
+            "nextRoles": ["Data Engineer (Engineering)", "Machine Learning Engineer (AI/Science)", "Applied Data/AI Researcher (Research)"]
+          }
+        ]
+      },
+      {
+        "grade": "Professional",
+        "positions": [
+          {
+            "name": "Business Intelligence Analyst",
+            "domain": "Business Intelligence & Strategy, Data Stewardship",
+            "nextRoles": ["Senior Business Intelligence Analyst (BI)", " Data Quality Specialist (Stewardship)"]
+          },
+          {
+            "name": "Data Engineer",
+            "domain": "Data Engineering",
+            "nextRoles": ["Senior Data Engineer"]
+          },
+          {
+            "name": "Machine Learning Engineer",
+            "domain": "AI Engineering, Data Science",
+            "nextRoles": ["Data Scientist (Science)", "AI Engineer (AI)"]
+          },
+          {
+            "name": "Applied Data/AI Researcher",
+            "domain": "Applied Data/AI Research",
+            "nextRoles": ["Senior Applied Data/AI Researcher"]
+          }
+        ]
+      },
+      {
+        "grade": "Senior Professional / Supervisor",
+        "positions": [
+          {
+            "name": "Senior Business Intelligence Analyst",
+            "domain": "Business Intelligence & Strategy",
+            "nextRoles": ["Business Analytics Manager"]
+          },
+          {
+            "name": "Data Quality Specialist",
+            "domain": "Data Stewardship",
+            "nextRoles": ["Data Governance Manager"]
+          },
+          {
+            "name": "Senior Data Engineer",
+            "domain": "Data Engineering",
+            "nextRoles": ["Data Architect"]
+          },
+          {
+            "name": "Data Scientist",
+            "domain": "Data Science",
+            "nextRoles": ["Senior Data Scientist"]
+          },
+          {
+            "name": "AI Engineer",
+            "domain": "AI Engineering",
+            "nextRoles": ["Senior AI Engineer"]
+          },
+          {
+            "name": "Senior Applied Data/AI Researcher",
+            "domain": "Applied Data/AI Research",
+            "nextRoles": ["Research Manager"]
+          }
+        ]
+      },
+      {
+        "grade": "Manager",
+        "positions": [
+          {
+            "name": "Business Analytics Manager",
+            "domain": "Business Intelligence & Strategy",
+            "nextRoles": ["Business Analytics Director"]
+          },
+          {
+            "name": "Data Governance Manager",
+            "domain": "Data Stewardship",
+            "nextRoles": ["Data Governance Officer"]
+          },
+          {
+            "name": "Data Architect",
+            "domain": "Data Engineering",
+            "nextRoles": ["Chief Data Architect"]
+          },
+          {
+            "name": "Senior Data Scientist",
+            "domain": "Data Science",
+            "nextRoles": ["Chief Data Scientist"]
+          },
+          {
+            "name": "Senior AI Engineer",
+            "domain": "AI Engineering",
+            "nextRoles": ["Chief AI Engineer"]
+          },
+          {
+            "name": "Research Manager",
+            "domain": "Applied Data/AI Research",
+            "nextRoles": ["Director of Research"]
+          }
+        ]
+      },
+      {
+        "grade": "Senior Manager",
+        "positions": [
+          {
+            "name": "Business Analytics Manager",
+            "domain": "Business Intelligence & Strategy",
+            "nextRoles": ["Business Analytics Director"]
+          },
+          {
+            "name": "Data Governance Manager",
+            "domain": "Data Stewardship",
+            "nextRoles": ["Data Governance Officer"]
+          },
+          {
+            "name": "Data Architect",
+            "domain": "Data Engineering",
+            "nextRoles": ["Chief Data Architect"]
+          },
+          {
+            "name": "Senior Data Scientist",
+            "domain": "Data Science",
+            "nextRoles": ["Chief Data Scientist"]
+          },
+          {
+            "name": "Senior AI Engineer",
+            "domain": "AI Engineering",
+            "nextRoles": ["Chief AI Engineer"]
+          },
+          {
+            "name": "Research Manager",
+            "domain": "Applied Data/AI Research",
+            "nextRoles": ["Director of Research"]
+          }
+        ]
+      },
+      {
+        "grade": "Senior Director",
+        "positions": [
+          {
+            "name": "Business Analytics Director",
+            "domain": "Business Intelligence & Strategy",
+            "nextRoles": ["Chief Business Function Officer"]
+          },
+          {
+            "name": "Data Governance Officer",
+            "domain": "Data Stewardship",
+            "nextRoles": ["Chief Data Officer"]
+          },
+          {
+            "name": "Chief Data Architect",
+            "domain": "Data Engineering",
+            "nextRoles": ["Chief Technology Officer"]
+          },
+          {
+            "name": "Chief Data Scientist",
+            "domain": "Data Science",
+            "nextRoles": ["Chief Analytics Officer"]
+          },
+          {
+            "name": "Chief AI Engineer",
+            "domain": "AI Engineering",
+            "nextRoles": ["Chief Technology Officer"]
+          },
+          {
+            "name": "Director of Research",
+            "domain": "Applied Data/AI Research",
+            "nextRoles": ["Chief Scientific Officer"]
+          }
+        ]
+      },
+      {
+        "grade": "C Level",
+        "positions": [
+          {
+            "name": "Chief Business Function Officer",
+            "domain": "Business Intelligence & Strategy"
+          },
+          {
+            "name": "Chief Data Officer",
+            "domain": "Data Stewardship"
+          },
+          {
+            "name": "Chief Information Officer",
+            "domain": "Data Engineering"
+          },
+          {
+            "name": "Chief Analytics Officer",
+            "domain": "Data Science"
+          },
+          {
+            "name": "Chief Technology Officer",
+            "domain": "AI Engineering"
+          },
+          {
+            "name": "Chief Scientific Officer",
+            "domain": "Applied Data/AI Research"
+          }
+        ]
+      }
+    ],
+    "domains": [
+      {
+        "name": "Business Intelligence & Strategy",
+        "roles": [
+          { "grade": "Associate", "role": "Associate Data Analyst" },
+          { "grade": "Senior Associate", "role": "Data Analyst" },
+          { "grade": "Professional", "role": "Business Intelligence Analyst" },
+          { "grade": "Senior Professional / Supervisor", "role": "Senior Business Intelligence Analyst" },
+          { 
+            "grade": "Manager", 
+            "role": "Business Analytics Manager",
+            "nextGrade": "Senior Manager"
+          },
+          { "grade": "Senior Manager", "role": "Business Analytics Manager" },
+          { 
+            "grade": "Director", 
+            "role": "Business Analytics Director",
+            "nextGrade": "Senior Director"
+          },
+          { "grade": "Senior Director", "role": "Business Analytics Director" },
+          { "grade": "C Level", "role": "Chief Business Function Officer" }
+        ]
+      },
+      {
+        "name": "Data Stewardship",
+        "roles": [
+          { "grade": "Associate", "role": "Associate Data Analyst" },
+          { "grade": "Senior Associate", "role": "Data Analyst" },
+          { "grade": "Professional", "role": "Business Intelligence Analyst" },
+          { "grade": "Senior Professional / Supervisor", "role": "Data Quality Specialist" },
+          { 
+            "grade": "Manager", 
+            "role": "Data Governance Manager",
+            "nextGrade": "Senior Manager"
+          },
+          { "grade": "Senior Manager", "role": "Data Governance Manager" },
+          { 
+            "grade": "Director", 
+            "role": "Data Governance Officer",
+            "nextGrade": "Senior Director"
+          },
+          { "grade": "Senior Director", "role": "Data Governance Officer" },
+          { "grade": "C Level", "role": "Chief Data Officer" }
+        ]
+      },
+      {
+        "name": "Data Engineering",
+        "roles": [
+          { "grade": "Associate", "role": "Associate Data Analyst" },
+          { "grade": "Senior Associate", "role": "Associate Data Engineer" },
+          { "grade": "Professional", "role": "Data Engineer" },
+          { "grade": "Senior Professional / Supervisor", "role": "Senior Data Engineer" },
+          { 
+            "grade": "Manager", 
+            "role": "Data Architect",
+            "nextGrade": "Senior Manager"
+          },
+          { "grade": "Senior Manager", "role": "Data Architect" },
+          { 
+            "grade": "Director", 
+            "role": "Chief Data Architect",
+            "nextGrade": "Senior Director"
+          },
+          { "grade": "Senior Director", "role": "Chief Data Architect" },
+          { "grade": "C Level", "role": " Chief Information Officer" }
+        ]
+      },
+      {
+        "name": "Data Science",
+        "roles": [
+          { "grade": "Associate", "role": "Associate Data Analyst" },
+          { "grade": "Senior Associate", "role": "Associate Data Engineer" },
+          { "grade": "Professional", "role": "Machine Learning Engineer" },
+          { "grade": "Senior Professional / Supervisor", "role": "Data Scientist" },
+          { 
+            "grade": "Manager", 
+            "role": "Senior Data Scientist",
+            "nextGrade": "Senior Manager"
+          },
+          { "grade": "Senior Manager", "role": "Senior Data Scientist" },
+          { 
+            "grade": "Director", 
+            "role": " Chief Data Scientist",
+            "nextGrade": "Senior Director"
+          },
+          { "grade": "Senior Director", "role": "Chief Data Scientist " },
+          { "grade": "C Level", "role": "Chief Analytics Officer" }
+        ]
+      },
+      {
+        "name": "AI Engineering",
+        "roles": [
+          { "grade": "Associate", "role": "Associate Data Analyst" },
+          { "grade": "Senior Associate", "role": "Associate Data Engineer" },
+          { "grade": "Professional", "role": "Machine Learning Engineer" },
+          { "grade": "Senior Professional / Supervisor", "role": "AI Engineer" },
+          { 
+            "grade": "Manager", 
+            "role": " Senior AI Engineer",
+            "nextGrade": "Senior Manager"
+          },
+          { "grade": "Senior Manager", "role": "Senior AI Engineer" },
+          { 
+            "grade": "Director", 
+            "role": "Chief AI Engineer",
+            "nextGrade": "Senior Director"
+          },
+          { "grade": "Senior Director", "role": "Chief AI Engineer" },
+          { "grade": "C Level", "role": "Chief Technology Officer" }
+        ]
+      },
+      {
+        "name": "Applied Data/AI Research",
+        "roles": [
+          { "grade": "Associate", "role": "Associate Data Analyst" },
+          { "grade": "Senior Associate", "role": "Associate Data Engineer" },
+          { "grade": "Professional", "role": "Applied Data/AI Researcher" },
+          { "grade": "Senior Professional / Supervisor", "role": "Senior Applied Data/AI Researcher" },
+          { 
+            "grade": "Manager", 
+            "role": " Senior AI Engineer",
+            "nextGrade": "Research Manager"
+          },
+          { "grade": "Senior Manager", "role": "Research Manager" },
+          { 
+            "grade": "Director", 
+            "role": "Director of Research",
+            "nextGrade": "Senior Director"
+          },
+          { "grade": "Senior Director", "role": "Director of Research" },
+          { "grade": "C Level", "role": "Chief Scientific Officer" }
+        ]
+      }
+    ]
+  }
