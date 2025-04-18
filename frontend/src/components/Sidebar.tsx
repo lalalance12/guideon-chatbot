@@ -6,9 +6,9 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/auth";
+import { authService, User } from "../services/auth";
 
 interface SidebarContextProps {
   expanded: boolean;
@@ -24,6 +24,20 @@ interface SidebarProps {
 
 export default function Sidebar({ children }: SidebarProps) {
   const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   const handleLogout = () => {
     authService.logout();
@@ -74,14 +88,14 @@ export default function Sidebar({ children }: SidebarProps) {
 
         <div className="flex p-4 border-t border-gray-100">
           <img
-            src="https://ui-avatars.com/api/?background=eef2ff&color=4f46e5&bold=true"
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.fullName || '')}&background=eef2ff&color=4f46e5&bold=true`}
             alt="User Avatar"
             className="w-10 h-10 rounded-full"
           />
           <div className="flex justify-between items-center w-full ml-3">
             <div className="leading-4">
-              <h4 className="font-semibold text-gray-800">John Doe</h4>
-              <span className="text-xs text-gray-500">johndoe@gmail.com</span>
+              <h4 className="font-semibold text-gray-800">{currentUser?.fullName || 'Loading...'}</h4>
+              <span className="text-xs text-gray-500">{currentUser?.email || ''}</span>
             </div>
             <button
               className="p-1 rounded-full hover:bg-gray-100 transition-smooth"
