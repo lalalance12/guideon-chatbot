@@ -1,7 +1,10 @@
+# filepath: c:\Users\Asus\Desktop\guideon-chatbot\backend\api\urls.py
 from django.urls import path
-from .views import CreateUserView, PathwayGeneratorView
+# Updated view import
+from .views import CreateUserView, ContextRetrieverView
 
 urlpatterns = [
     path('users/', CreateUserView.as_view(), name='create_user'),
-    path('generate-pathway/', PathwayGeneratorView.as_view(), name='generate-pathway'),
+    # Updated path and name
+    path('retrieve-context/', ContextRetrieverView.as_view(), name='retrieve-context'),
 ]
