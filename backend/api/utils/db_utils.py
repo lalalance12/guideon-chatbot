@@ -13,7 +13,7 @@ if backend_dir not in sys.path:
     sys.path.append(backend_dir)
 
 # Set up Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.backend.settings')
 
 # Initialize Django
 django.setup()
