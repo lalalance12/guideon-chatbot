@@ -1,49 +1,90 @@
+# filepath: c:\Users\Asus\Desktop\guideon-chatbot\backend\api\utils\main.py
 import os
 import sys
 
-# Add current directory to Python path
+# Add project root and backend directory to Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.append(current_dir)
+project_root = os.path.abspath(os.path.join(current_dir, '../../..'))
+backend_dir = os.path.abspath(os.path.join(current_dir, '../..'))
 
-from extract_pathways import extract_pathways_from_pdf
-from generate_embeddings import process_pathways
-from setup_db import setup_database
-from store_embeddings import store_embeddings
-from generate_pathways import generate_learning_pathway
+if project_root not in sys.path:
+    sys.path.append(project_root)
+if backend_dir not in sys.path:
+    sys.path.append(backend_dir)
 
-def run_pipeline():
+# Import necessary functions AFTER path setup
+# Note: Adjusted import paths assuming 'utils' is a package within 'api'
+try:
+    from backend.api.utils.generate_embeddings import process_all_data
+    from backend.api.utils.setup_db import setup_database
+    from backend.api.utils.store_embeddings import store_embeddings_from_json
+    # from backend.api.utils.query_vectors import search_similar_content # Keep commented for now
+    # from backend.api.utils.generate_pathways import generate_learning_pathway # Keep commented for now
+except ImportError as e:
+     print(f"Error importing modules: {e}")
+     print("Ensure the script is run from the correct directory or PYTHONPATH is set.")
+     sys.exit(1)
+
+
+def run_embedding_pipeline():
+    """Runs the pipeline to generate and store embeddings from JSON data."""
     print("=" * 50)
-    print("Starting Philippine Skills Framework Processing Pipeline")
+    print("Starting Skills Framework Embedding Pipeline (JSON Data)")
+    print("Using bge-m3 model")
     print("=" * 50)
-    
+
+    # Ensure data directories exist (optional, but good practice)
+    os.makedirs("backend/api/data/esc", exist_ok=True)
+    os.makedirs("backend/api/data/fsc", exist_ok=True)
+    os.makedirs("backend/api/data/roles", exist_ok=True)
+    # Ensure the directory for the output embeddings file exists
+    output_embeddings_file = "backend/api/data/all_embeddings_data.json"
+    os.makedirs(os.path.dirname(output_embeddings_file), exist_ok=True)
+
+
     print("\nStep 1: Setting up PostgreSQL database with pgvector...")
-    setup_database()
-    
-    print("\nStep 2: Extracting pathways from the Philippine Skills Framework PDF...")
-    extract_pathways_from_pdf()
-    
-    print("\nStep 3: Generating embeddings with Llama 3.1...")
-    process_pathways()
-    
-    print("\nStep 4: Storing embeddings in the database...")
-    store_embeddings()
-    
-    print("\nStep 5: Testing pathway generation with Llama 3.1...")
-    test_query = "What skills do I need for AI engineering?"
-    result = generate_learning_pathway(test_query)
-    
-    if "error" in result:
-        print(f"Error testing pathway generation: {result['error']}")
-    else:
-        print(f"Successfully generated pathway for: '{test_query}'")
-        # print(f"Saved sample pathway to: backend/api/data/sample_pathway.json")
-    
+    try:
+        setup_database()
+        print("Database setup checked/completed.")
+    except Exception as e:
+        print(f"Error during database setup: {e}")
+        # Decide whether to stop or continue
+        # return # Stop if DB setup fails
+
+    print("\nStep 2: Processing JSON files and generating embeddings with bge-m3...")
+    try:
+        process_all_data() # This function now handles processing and saving to JSON
+        print("Embedding generation completed.")
+    except Exception as e:
+        print(f"Error during embedding generation: {e}")
+        # return # Stop if embedding generation fails
+
+    print("\nStep 3: Storing embeddings in the database...")
+    try:
+        store_embeddings_from_json() # This function loads from the JSON and stores
+        print("Embeddings stored in database.")
+    except Exception as e:
+        print(f"Error during embedding storage: {e}")
+
+    # Step 4: Querying (Keep commented out as requested)
+    # print("\nStep 4: Testing vector search (Example)...")
+    # try:
+    #     test_query = "What skills are needed for a Data Analyst?"
+    #     results = search_similar_content(test_query)
+    #     if isinstance(results, dict) and "error" in results:
+    #          print(f"Error testing search: {results['error']}")
+    #     elif not results:
+    #          print(f"No results found for query: '{test_query}'")
+    #     else:
+    #          print(f"Found {len(results)} results for query: '{test_query}'")
+    #          # print(results[0]) # Optionally print the top result
+    # except Exception as e:
+    #     print(f"Error during search test: {e}")
+
+
     print("\n" + "=" * 50)
-    print("Pipeline completed successfully!")
+    print("Embedding Pipeline completed!")
     print("=" * 50)
 
 if __name__ == "__main__":
-    # Create data directory if it doesn't exist
-    os.makedirs("backend/api/data", exist_ok=True)
-    run_pipeline()
+    run_embedding_pipeline()
