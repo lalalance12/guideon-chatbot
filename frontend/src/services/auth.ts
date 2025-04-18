@@ -23,19 +23,19 @@ export interface AuthResponse {
 
 export const authService = {
     async login(credentials: LoginCredentials): Promise<AuthResponse> {
-        const { data } = await api.post<AuthResponse>('/api/auth/login', credentials);
+        const { data } = await api.post<AuthResponse>('/api/auth/login/', credentials);
         localStorage.setItem(ACCESS_TOKEN, data.token);
         return data;
     },
 
     async register(userData: RegisterData): Promise<AuthResponse> {
-        const { data } = await api.post<AuthResponse>('/api/auth/register', userData);
+        const { data } = await api.post<AuthResponse>('/api/auth/register/', userData);
         localStorage.setItem(ACCESS_TOKEN, data.token);
         return data;
     },
 
     async getCurrentUser(): Promise<User> {
-        const { data } = await api.get<User>('/api/auth/me');
+        const { data } = await api.get<User>('/api/auth/me/');
         return data;
     },
 
