@@ -7,6 +7,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { createContext, useContext, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
+import { authService } from "../services/auth";
 
 interface SidebarContextProps {
   expanded: boolean;
@@ -21,6 +23,13 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ children }: SidebarProps) {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/auth');
+  };
+
   return (
     <aside className="h-screen w-64 fixed left-0">
       <nav className="h-full flex flex-col bg-white border-r border-gray-200 shadow-sm">
@@ -55,7 +64,11 @@ export default function Sidebar({ children }: SidebarProps) {
           </h2>
           <ul className="space-y-2">
             <SidebarItem icon={<Settings size={18} />} text="Settings" />
-            <SidebarItem icon={<LogOut size={18} />} text="Logout" />
+            <SidebarItem 
+              icon={<LogOut size={18} />} 
+              text="Logout" 
+              onClick={handleLogout}
+            />
           </ul>
         </div>
 
@@ -88,6 +101,7 @@ interface SidebarItemProps {
   text: string;
   active?: boolean;
   alert?: boolean;
+  onClick?: () => void;
 }
 
 export function SidebarItem({
@@ -95,9 +109,11 @@ export function SidebarItem({
   text,
   active = false,
   alert = false,
+  onClick,
 }: SidebarItemProps) {
   return (
     <li
+      onClick={onClick}
       className={`
         relative flex items-center py-2 px-3 my-1
         font-medium rounded-md cursor-pointer
