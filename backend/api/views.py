@@ -6,6 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import UserSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
+from rest_framework.views import APIView
+from .course_scraper import get_courses
 import logging
 
 logger = logging.getLogger(__name__)
@@ -76,64 +78,64 @@ class CreateUserView(generics.CreateAPIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class CurrentUserView(generics.RetrieveAPIView):
-    serializer_class = UserSerializer
+class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_object(self):
-        return self.request.user
-
-    def get(self, request, *args, **kwargs):
-        user = self.get_object()
+    def get(self, request):
+        user = request.user
         return Response({
             'id': user.id,
             'email': user.email,
             'fullName': user.first_name
         })
 
-class LoginView(generics.GenericAPIView):
+class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        try:
-            email = request.data.get('email')
-            password = request.data.get('password')
+        email = request.data.get('email')
+        password = request.data.get('password')
 
-            logger.info(f"Login attempt for email: {email}")
-
-            if not email or not password:
-                logger.warning("Missing email or password in login request")
-                return Response(
-                    {"error": "Email and password are required"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Authenticate using email as username
-            user = authenticate(username=email, password=password)
-            
-            if not user:
-                logger.warning(f"Failed login attempt for email: {email}")
-                return Response(
-                    {"error": "Invalid email or password"},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-
-            logger.info(f"Successful login for user: {user.email}")
-            
-            # Generate tokens
-            refresh = RefreshToken.for_user(user)
-            
-            return Response({
-                'user': {
-                    'id': user.id,
-                    'email': user.email,
-                    'fullName': user.first_name
-                },
-                'token': str(refresh.access_token)
-            })
-        except Exception as e:
-            logger.error(f"Error during login: {str(e)}", exc_info=True)
+        if not email or not password:
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": "Please provide both email and password"},
+                status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Try to find user by email
+        try:
+            user = User.objects.get(email=email)
+            if user.check_password(password):
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'user': {
+                        'id': user.id,
+                        'email': user.email,
+                        'fullName': user.first_name
+                    },
+                    'token': str(refresh.access_token)
+                })
+        except User.DoesNotExist:
+            pass
+
+        return Response(
+            {"error": "Invalid credentials"},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+class CourseSearchView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        query = request.query_params.get('q', '')
+        if not query:
+            return Response(
+                {"error": "Please provide a search query using the 'q' parameter"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        result = get_courses(query)
+        if "error" in result:
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response(result, status=status.HTTP_200_OK)
