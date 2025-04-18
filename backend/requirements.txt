@@ -11,4 +11,7 @@ python-dotenv
 requests
 pgvector
 markitdown[pdf]
+docling
 numpy
+tqdm
+markdown
