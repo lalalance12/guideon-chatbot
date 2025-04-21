@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, BookOpen } from "lucide-react";
 import { Message as MessageType } from "../types/models";
 import { useOllamaQuery } from "../services/ollamaService";
+import { searchCourses, Course } from "../services/courseService";
 import Message from "../components/Message";
+import CourseCard from "../components/CourseCard";
+import { ACCESS_TOKEN } from "../constants";
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [isSearchingCourses, setIsSearchingCourses] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { sendQuery, isLoading } = useOllamaQuery();
@@ -49,8 +53,47 @@ const Chat: React.FC = () => {
     }
   }, [inputValue]);
 
+  const handleCourseSearch = async (query: string) => {
+    setIsSearchingCourses(true);
+    try {
+      const token = localStorage.getItem(ACCESS_TOKEN);
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
+      const courses = await searchCourses(query, token);
+      
+      if (courses.length > 0) {
+        const botMessage: MessageType = {
+          id: Date.now() + 1,
+          text: `Here are some courses I found for "${query}":`,
+          isUser: false,
+          courses: courses
+        };
+        setMessages((prevMessages) => [...prevMessages, botMessage]);
+      } else {
+        const botMessage: MessageType = {
+          id: Date.now() + 1,
+          text: `I couldn't find any courses for "${query}". Try a different search term.`,
+          isUser: false,
+        };
+        setMessages((prevMessages) => [...prevMessages, botMessage]);
+      }
+    } catch (error) {
+      console.error("Error searching courses:", error);
+      const errorMessage: MessageType = {
+        id: Date.now() + 1,
+        text: "Sorry, I encountered an error while searching for courses. Please try again later.",
+        isUser: false,
+      };
+      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+    } finally {
+      setIsSearchingCourses(false);
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (inputValue.trim() === "" || isLoading) return;
+    if (inputValue.trim() === "" || isLoading || isSearchingCourses) return;
 
     // Add user message
     const userMessage: MessageType = {
@@ -62,6 +105,14 @@ const Chat: React.FC = () => {
 
     const userPrompt = inputValue;
     setInputValue("");
+
+    // Check if the message is a course search request
+    if (userPrompt.toLowerCase().includes("find courses") || 
+        userPrompt.toLowerCase().includes("search courses") ||
+        userPrompt.toLowerCase().includes("look for courses")) {
+      await handleCourseSearch(userPrompt);
+      return;
+    }
 
     try {
       // Get response from Ollama using our hook
@@ -103,6 +154,13 @@ const Chat: React.FC = () => {
             type={message.isUser ? "user" : "guideon"}
             showAvatar={isFirstInGroup}
           />
+          {message.courses && (
+            <div className="mt-4 space-y-4">
+              {message.courses.map((course, idx) => (
+                <CourseCard key={idx} course={course} />
+              ))}
+            </div>
+          )}
         </div>
       );
     });
@@ -134,10 +192,14 @@ const Chat: React.FC = () => {
         <div className="max-w-4xl mx-auto space-y-6">
           {renderMessages()}
 
-          {isLoading && (
+          {(isLoading || isSearchingCourses) && (
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-indigo-100">
-                <Sparkles size={14} className="text-indigo-600" />
+                {isSearchingCourses ? (
+                  <BookOpen size={14} className="text-indigo-600" />
+                ) : (
+                  <Sparkles size={14} className="text-indigo-600" />
+                )}
               </div>
               <div className="chat-bubble chat-bubble-bot">
                 <div className="flex items-center space-x-2">
@@ -145,7 +207,9 @@ const Chat: React.FC = () => {
                   <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse delay-75"></div>
                   <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse delay-150"></div>
                   <span className="text-gray-500 text-sm">
-                    Guideon is thinking...
+                    {isSearchingCourses
+                      ? "Searching for courses..."
+                      : "Guideon is thinking..."}
                   </span>
                 </div>
               </div>
@@ -156,40 +220,38 @@ const Chat: React.FC = () => {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-white border-t border-gray-200">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-end space-x-2 input-area p-3 shadow-sm">
-            <textarea
-              ref={textareaRef}
-              placeholder="Ask Guideon about learning paths, courses, or any educational topic..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              className="flex-1 px-3 py-2 bg-transparent outline-none resize-none min-h-[40px] max-h-[120px] focus-ring"
-              disabled={isLoading}
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={isLoading || inputValue.trim() === ""}
-              className={`btn flex items-center gap-1 ${
-                isLoading || inputValue.trim() === ""
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "btn-primary"
-              }`}
-            >
-              <Send size={16} />
-              <span>Send</span>
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            Powered by Ollama's llama3.2 model running locally on your machine
-          </p>
+      <div className="w-full px-32 mx-auto">
+        <div className="flex items-end space-x-2 input-area p-3 shadow-sm">
+          <textarea
+            ref={textareaRef}
+            placeholder="Ask Guideon about learning paths, courses, or any educational topic..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            className="flex-1 px-3 py-2 bg-transparent outline-none resize-none min-h-[40px] max-h-[120px] focus-ring-0"
+            disabled={isLoading || isSearchingCourses}
+          />
+          <button
+            onClick={handleSendMessage}
+            disabled={isLoading || isSearchingCourses || inputValue.trim() === ""}
+            className={`btn flex items-center gap-1 ${
+              isLoading || isSearchingCourses || inputValue.trim() === ""
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "btn-primary"
+            }`}
+          >
+            <Send size={16} />
+            <span>Send</span>
+          </button>
         </div>
+        <p className="text-xs text-gray-500 mt-2 text-center">
+          Powered by Ollama's llama3.2 model running locally on your machine
+        </p>
       </div>
     </div>
   );
