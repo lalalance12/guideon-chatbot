@@ -1,70 +1,111 @@
-# Django React Full Stack App – Setup Guide
+# Guideon Chatbot
 
----
+A web application built with React+Vite frontend and Django backend.
 
-## **Backend (Django) Setup:**
+## Getting Started
 
-1. **Clone the Repository:**
-   - Run the command:  
-     `git clone https://github.com/lalalance12/guideon-chatbot.git`  
-     Then navigate into the project folder.
+### Clone the Repository
+```bash
+git clone https://github.com/yourusername/guideon-chatbot.git
+cd guideon-chatbot
+```
 
-2. **Create and Activate a Virtual Environment:**
-   - **To create a virtual environment:**  
-     `python -m venv venv`
-   - **To activate it:**
-     - On **Windows:** `venv\Scripts\activate`
-     - On **macOS/Linux:** `source venv/bin/activate`
+## Setup
 
-3. **Install the Required Python Packages:**
-   - Run:  
-     `pip install -r requirements.txt`
+### Backend Setup
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
 
-4. **Configure Environment Variables:**
-   - Create a file named **.env** in the backend directory with the following lines:
-     ```
-     DB_NAME=""
-     DB_USER=""
-     DB_PASSWORD=""
-     DB_HOST=""
-     DB_PORT=""
-     ```
-     *(Fill in the actual database credentials as needed.)*
+2. Create and activate a virtual environment (recommended):
+   ```bash
+   # Windows
+   python -m venv venv
+   venv\Scripts\activate
+   
+   # macOS/Linux
+   python -m venv venv
+   source venv/bin/activate
+   ```
 
-5. **Run Database Migrations:**
-   - Execute:  
-     `python manage.py migrate`
+3. Install the required Python packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-6. **Start the Django Development Server:**
-   - Execute:  
-     `python manage.py runserver`  
-     The backend should now be running at **http://localhost:8000**
+4. Apply migrations:
+   ```bash
+   python manage.py migrate
+   ```
 
----
+### Frontend Setup
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
 
-## **Frontend (React) Setup:**
+2. Install the required Node packages:
+   ```bash
+   npm install
+   ```
 
-1. **Navigate to the Frontend Directory:**
-   - Run:  
-     `cd frontend`
+## Quick Start
 
-2. **Install the Node.js Dependencies:**
-   - Run:  
-     `npm install`  
-     *(Alternatively, use `yarn install` if preferred.)*
+To start both frontend and backend servers with a single command:
 
-3. **Configure Environment Variables:**
-   - Create a file named **.env** in the frontend directory with the following line:
-     ```
-     VITE_API_URL=http://localhost:8000
-     ```
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
 
-4. **Start the React Development Server:**
-   - Execute:  
-     `npm run dev` 
-     The React application should now be running at **http://localhost:3000**
+2. Run the start command:
+   ```bash
+   npm run start
+   ```
 
----
+This will automatically start both the Django backend server and the Vite development server for the frontend.
 
-> **Note:** Ensure that the Django server (backend) is running while you develop and test the React app.
+## Technology Stack
 
+- **Frontend**: React, Vite, TailwindCSS
+- **Backend**: Django REST Framework
+- **Database**: PostgreSQL
+
+## Development
+
+For individual development:
+
+- **Frontend only**: `npm run start-frontend` or `npm run dev`
+- **Backend only**: `npm run start-backend` or `cd ../backend && python manage.py runserver`
+
+## Project Structure
+```
+guideon-chatbot/
+├── backend/          # Django backend
+│   ├── api/          # REST API endpoints
+│   └── ...
+└── frontend/         # React+Vite frontend
+    ├── src/          # Application source code
+    │   ├── components/  # Reusable UI components
+    │   ├── pages/    # Application views/routes
+    │   ├── services/ # API service integrations
+    │   └── types/    # TypeScript type definitions
+    └── ...
+```
+
+## Environment Setup
+
+For production deployment, you might want to configure environment variables:
+
+1. Create a `.env` file in the backend directory for Django settings
+2. Create a `.env` file in the frontend directory for React/Vite settings
+
+# React + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
