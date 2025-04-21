@@ -91,6 +91,7 @@ class CurrentUserView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []  # Disable authentication for login
 
     def post(self, request):
         email = request.data.get('email')
@@ -115,13 +116,16 @@ class LoginView(APIView):
                     },
                     'token': str(refresh.access_token)
                 })
+            else:
+                return Response(
+                    {"error": "Invalid password"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
         except User.DoesNotExist:
-            pass
-
-        return Response(
-            {"error": "Invalid credentials"},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
 class CourseSearchView(APIView):
     permission_classes = [AllowAny]
