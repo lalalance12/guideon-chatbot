@@ -4,6 +4,7 @@ import { Message as MessageType } from "../types/models";
 import { useOllamaQuery } from "../services/ollamaService";
 import { searchCourses, Course } from "../services/courseService";
 import Message from "../components/Message";
+import CourseCard from "../components/CourseCard";
 import { ACCESS_TOKEN } from "../constants";
 
 const Chat: React.FC = () => {
@@ -63,14 +64,11 @@ const Chat: React.FC = () => {
       const courses = await searchCourses(query, token);
       
       if (courses.length > 0) {
-        const courseList = courses.map((course, index) => 
-          `${index + 1}. <a href="${course.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline font-medium">${course.title}</a>\n   Provider: ${course.provider}\n   Rating: ${course.rating}/5\n   ${course.description}`
-        ).join('\n\n');
-
         const botMessage: MessageType = {
           id: Date.now() + 1,
-          text: `Here are some courses I found for "${query}":\n\n${courseList}`,
+          text: `Here are some courses I found for "${query}":`,
           isUser: false,
+          courses: courses
         };
         setMessages((prevMessages) => [...prevMessages, botMessage]);
       } else {
@@ -156,6 +154,13 @@ const Chat: React.FC = () => {
             type={message.isUser ? "user" : "guideon"}
             showAvatar={isFirstInGroup}
           />
+          {message.courses && (
+            <div className="mt-4 space-y-4">
+              {message.courses.map((course, idx) => (
+                <CourseCard key={idx} course={course} />
+              ))}
+            </div>
+          )}
         </div>
       );
     });
