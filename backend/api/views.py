@@ -3,13 +3,11 @@ from django.contrib.auth.models import User
 import logging
 from rest_framework import generics, status
 from rest_framework.views import APIView
-from rest_framework.response import Response, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import UserSerializer, ChatRequestSerializer, ChatResponseSerializer, ChatSerializer, MessageSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
-from rest_framework.views import APIView
 from .course_scraper import get_courses
 import logging
 
