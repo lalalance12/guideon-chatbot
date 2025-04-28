@@ -1,47 +1,113 @@
 import axios from "axios";
-import { useState } from "react";
-import { OllamaResponse } from "../types/models";
+import { useState, useEffect } from "react";
+import api from "../api";
 
-const OLLAMA_API_URL = "http://localhost:11434/api/generate";
+const STORAGE_KEY = "guideon_chat_history";
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 /**
- * Sends a query to the locally running Ollama model
- * @param userPrompt - The user's input prompt
- * @returns The response from the Ollama API
+ * Check if the backend API is available
  */
-export const queryOllama = async (userPrompt: string): Promise<string> => {
+export const checkApiConnection = async (): Promise<boolean> => {
   try {
-    const headers = { "Content-Type": "application/json" };
-    const data = {
-      model: "llama3.2", // Using the specified model
-      prompt: buildPrompt(userPrompt),
-      stream: false, // Not streaming responses
-    };
-
-    const response = await axios.post<OllamaResponse>(OLLAMA_API_URL, data, { headers });
-    return response.data.response;
+    console.log(`Checking API connection to: ${API_URL}`);
+    // Try a simple request to verify the backend is reachable
+    await axios.get(`${API_URL}/api/chats/`);
+    console.log('API connection successful');
+    return true;
   } catch (error) {
-    console.error("Error querying Ollama:", error);
-    return "I'm having trouble connecting to my knowledge base right now. Please try again later.";
+    console.error('API connection failed:', error);
+    return false;
   }
 };
 
 /**
- * Custom hook for using Ollama API with loading state
+ * Sends a query to the backend which communicates with Ollama
+ * @param userPrompt - The user's input prompt
+ * @param chatId - Optional chat ID for continuing a conversation
+ * @returns The response from the backend API including chat_id
+ */
+export const queryOllama = async (userPrompt: string, chatId?: number): Promise<{response: string, chat_id: number}> => {
+  try {
+    console.log("Frontend: Sending request to backend API");
+    const requestData = chatId 
+      ? { prompt: userPrompt, chat_id: chatId }
+      : { prompt: userPrompt };
+      
+    console.log("Request data:", requestData);
+    
+    const response = await api.post('/api/chat/', requestData);
+    
+    console.log("Frontend: Received response from backend");
+    console.log("Response data:", response.data);
+    
+    return {
+      response: response.data.response,
+      chat_id: response.data.chat_id
+    };
+  } catch (error) {
+    console.error("Error querying backend:", error);
+    if (axios.isAxiosError(error)) {
+      console.error("Status:", error.response?.status);
+      console.error("Response data:", error.response?.data);
+      console.error("Request config:", error.config);
+    }
+    // Return a default error response
+    return {
+      response: "I'm having trouble connecting to my knowledge base right now. Please try again later.",
+      chat_id: -1 // Invalid chat ID to indicate error
+    };
+  }
+};
+
+/**
+ * Custom hook for using Ollama API with loading state and chat history
  */
 export const useOllamaQuery = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentChatId, setCurrentChatId] = useState<number | null>(null);
+  
+  // Initialize chat ID from local storage if available
+  useEffect(() => {
+    try {
+      const savedChat = localStorage.getItem(STORAGE_KEY);
+      if (savedChat) {
+        try {
+          const parsedData = JSON.parse(savedChat);
+          if (parsedData && parsedData.chatId && typeof parsedData.chatId === 'number' && parsedData.chatId > 0) {
+            console.log(`Restored chat ID ${parsedData.chatId} from local storage`);
+            setCurrentChatId(parsedData.chatId);
+          } else {
+            console.warn("No valid chatId found in local storage");
+          }
+        } catch (err) {
+          console.error("Error parsing saved chat:", err);
+        }
+      }
+    } catch (error) {
+      console.error("Error accessing localStorage:", error);
+    }
+  }, []);
 
   const sendQuery = async (prompt: string): Promise<string> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await queryOllama(prompt);
-      return response;
+      console.log(`Sending query with prompt: "${prompt.substring(0, 30)}..." and chatId: ${currentChatId || 'none'}`);
+      const result = await queryOllama(prompt, currentChatId || undefined);
+      
+      // Store the chat ID for future requests
+      if (result.chat_id > 0) {
+        console.log(`Received and saved chat ID: ${result.chat_id}`);
+        setCurrentChatId(result.chat_id);
+      }
+      
+      return result.response;
     } catch (err) {
-      const errorMessage = "Failed to get a response from Ollama.";
+      console.error("Error in sendQuery:", err);
+      const errorMessage = "Failed to get a response.";
       setError(errorMessage);
       return errorMessage;
     } finally {
@@ -49,19 +115,5 @@ export const useOllamaQuery = () => {
     }
   };
 
-  return { sendQuery, isLoading, error };
-};
-
-/**
- * Builds a prompt with context for the Ollama model
- * @param userPrompt - The user's input prompt
- * @returns A formatted prompt with system context
- */
-const buildPrompt = (userPrompt: string): string => {
-  return `You are Guideon, a helpful AI assistant focused on education and learning.
-You provide guidance on courses, learning paths, and educational resources.
-You're friendly, supportive, and knowledgeable about various academic subjects.
-You help students, scholars, and lifelong learners achieve their educational goals.
-
-${userPrompt}`;
+  return { sendQuery, isLoading, error, currentChatId };
 }; 
