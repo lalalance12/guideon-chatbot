@@ -15,3 +15,5 @@ docling
 numpy
 tqdm
 markdown
+beautifulsoup4
+fake-useragent
