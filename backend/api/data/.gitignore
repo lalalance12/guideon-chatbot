@@ -1,2 +1,11 @@
+# Ignore all JSON and Markdown files
 *.json
 *.md
+
+# But do not ignore folders starting with esc, fsc, or roles (and their contents)
+!esc*/
+!esc*/**
+!fsc*/
+!fsc*/**
+!roles*/
+!roles*/**

@@ -1,0 +1,567 @@
+{
+    "roles": [
+      {
+        "job_title": "Associate Data Analyst",
+        "description": "The Associate Data Analyst plays a supportive role in a data analytics team. They assist in the collection and organization of data, perform basic data analysis under supervision, learn to use data visualization tools and techniques, help maintain databases and data systems, assist in preparing reports and presenting findings in a clear manner, nd collaborate with team members a on data-related projects.",
+        "key_tasks": [
+          {
+            "function": "Identify business needs",
+            "tasks": [
+              "Assist in identifying potential business intelligence service offerings by supporting the analysis of business requirements",
+              "Aid in understanding the information needs of stakeholders for decision-making",
+              "Contribute to translating business needs into basic analytics and reporting requirements"
+            ]
+          },
+          {
+            "function": "Prepare and analyze data",
+            "tasks": [
+              "Perform elementary extract, transform, and load (ETL) tasks to prepare data for analysis",
+              "Assist in gathering data from internal systems and external sources",
+              "Conduct initial data validation and quality control checks",
+              "Participate in proposing basic solutions and recommendations to meet information needs",
+              "Execute data entry tasks in data collection systems"
+            ]
+          },
+          {
+            "function": "Present insights",
+            "tasks": [
+              "Support the development of simple data models and data output methods",
+              "Help in designing basic data reports and visualization tools for initial data interpretation",
+              "Assist in translating simple data analyses into understandable business language"
+            ]
+          }
+        ],
+        "performance_expectations": [
+          "In accordance with:",
+          "Relevant Philippine Analytics & AI Governance Framework",
+          "Philippine National Standards on AI",
+          "Republic Act 10173: Data Privacy Act of 2012"
+        ],
+        "functional_skills": [
+          {
+            "skill": "Applications Development",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Artificial Intelligence Ethics and Governance",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Business Needs Analysis",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Configuration Tracking",
+            "level": "Level 1"
+          },
+          {
+            "skill": "Cyber and Data Breach Incident Management",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Data Analytics",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Data Engineering",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Data Ethics",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Data Visualization",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Software Testing",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Stakeholder Management",
+            "level": "Level 2"
+          }
+        ],
+        "enabling_skills": [
+          {
+            "skill": "Collaboration",
+            "level": "Basic"
+          },
+          {
+            "skill": "Communication",
+            "level": "Basic"
+          },
+          {
+            "skill": "Digital Fluency",
+            "level": "Basic"
+          },
+          {
+            "skill": "Learning Agility",
+            "level": "Basic"
+          }
+        ]
+      },
+      {
+        "job_title": "Data Analyst",
+        "description": "The Data Analyst is a dynamic role focused on the independent handling of data-related tasks in a business environment. The Data Analyst has a solid foundation in data analysis, capable of working effectively without the need for constant supervision. The primary responsibilities include collecting, processing, and analyzing data to uncover trends and insights that inform and support business decisions. Key to this role is the ability to create detailed reports and visualizations, conveying complex data in a clear and comprehensible manner to team members and stakeholders. The Data Analyst is committed to continuous learning and adaptation to emerging technologies and methodologies in data analytics. Effective collaboration and communication skills are important, as this role involves working alongside various team members and departments to achieve shared objectives and drive data-driven strategies in the organization.",
+        "key_tasks": [
+          {
+            "function": "Identify business needs • Independently identify and evaluate potential business intelligence service offerings based on business needs. • Determine the critical information needs of stakeholders for strategic decision-making. • Translate intermediate business needs into detailed analytics and advanced reporting requirements.",
+            "tasks": [
+              "Identify business needs",
+              "Independently identify and evaluate potential business intelligence service offerings based on business needs",
+              "Determine the critical information needs of stakeholders for strategic decision-making",
+              "Translate intermediate business needs into detailed analytics and advanced reporting requirements"
+            ]
+          },
+          {
+            "function": "Prepare and analyze data",
+            "tasks": [
+              "Conduct basic ETL activities to prepare and refine data for in-depth analysis",
+              "Collect and integrate data from diverse internal and external sources",
+              "Perform thorough data validation and implement quality control measures",
+              "Develop and propose innovative solutions and recommendations to fulfill simple information needs",
+              "Analyze data comprehensively to uncover in-depth trends, patterns, and correlations that will help inform strategic decisions"
+            ]
+          },
+          {
+            "function": "Present insights",
+            "tasks": [
+              "Design and implement automated and simple data models and data output methods",
+              "Create detailed data reports and advanced visualization tools to enhance data understanding and storytelling",
+              "Effectively translate data analyses into business language to help influence strategic decisions and actions"
+            ]
+          }
+        ],
+        "performance_expectations": [
+          "In accordance with:",
+          "Relevant Philippine Analytics & AI Governance Framework",
+          "Philippine National Standards on AI",
+          "Republic Act 10173: Data Privacy Act of"
+        ],
+        "functional_skills": [
+          {
+            "skill": "Applications Development",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Applications Integration",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Artificial Intelligence Ethics and Governance",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Business Needs Analysis",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Configuration Tracking",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Cyber and Data Breach Incident Management",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Data Analytics",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Data Engineering",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Data Ethics",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Data Visualization",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Design Thinking Practice",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Software Testing",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Stakeholder Management",
+            "level": "Level 2"
+          }
+        ],
+        "enabling_skills": [
+          {
+            "skill": "Collaboration",
+            "level": "Basic"
+          },
+          {
+            "skill": "Communication",
+            "level": "Basic"
+          },
+          {
+            "skill": "Digital Fluency",
+            "level": "Basic"
+          },
+          {
+            "skill": "Learning Agility",
+            "level": "Basic"
+          }
+        ]
+      },
+      {
+        "job_title": "Business Intelligence Analyst",
+        "description": "The Business Intelligence Analyst is pivotal in analyzing business data and translating it into actionable insights. This role involves understanding business needs, performing data analysis, and developing BI solutions aligned with organizational goals. They work closely with both IT and business units to transform business requirements into tec hnical specifications for BI tools and systems. The analyst must be proficient in data analysis, data c ollection, and data visualization techniques. Strong analytical skills are essential. This role requires excellent communication skills to effectively liaise with management, providing data-driven insights for decision-making. The Business Intelligence Analyst must be adept at navigating complex data sets and be capable of making informed decisions in ambiguous situations, using sound judgment. Overall, the analyst is a strategic thinker who identifies how data-driven solution s can address business challenges, ensuring data is at the forefront of strategic decision-making.",
+        "key_tasks": [
+          {
+            "function": "Manage the implementation of new solutions and/or enhancements",
+            "tasks": [
+              "Assist in developing procedures to address operational issues",
+              "Help in creating dashboards and compiling status reports for project managers",
+              "Support the translation of requirements documentation to systems requirement specifications",
+              "Contribute to resolving escalated issues as a secondary point of contact",
+              "Assist in User Acceptance Testing (UAT) and integration testing",
+              "Participate in reviews with team leaders or sponsors to secure their support",
+              "Support change management initiatives to promote the adoption of new technologies"
+            ]
+          },
+          {
+            "function": "Develop technical specifications",
+            "tasks": [
+              "Assist in mapping out roadmaps for transitioning from current to future-state system requirements",
+              "Serve as a junior liaison between users and the technical team during the implementation cycle",
+              "Help identify risks in new solutions or enhancements and suggest mitigation strategies",
+              "Support incorporating business requirements into solution designs",
+              "Translate basic business requirements and user needs into functional specifications under supervision",
+              "Assist design and development teams in integrating solutions"
+            ]
+          },
+          {
+            "function": "Identify business needs, systems, and requirements",
+            "tasks": [
+              "Support the analysis of business technology requirements and compare them against the value and risk of potential solutions",
+              "Assist in balancing stakeholder requests and priorities to optimize value delivery",
+              "Participate in conducting cost-benefit and risk assessments for proposed solutions",
+              "Help in presenting business cases that outline benefits, efficient solutions, and associated risks",
+              "Contribute to scoping proof-of-concepts for AI and analytics projects",
+              "Translate business needs into potential AI and/or analytics problems under guidance"
+            ]
+          },
+          {
+            "function": "Analyze systems and propose solutions",
+            "tasks": [
+              "Identify areas where AI and analytics can meet business and user needs",
+              "Support the development of components within solutions or enhancements",
+              "Assist in evaluating the impact of proposed solutions or enhancements on business environments",
+              "Contribute to the assessment of proposed solutions for feasibility and efficiency",
+              "Help in designing solution blueprints, considering integration implications",
+              "Analyze system dependencies and connections under supervision",
+              "Recommend improvements to optimize processes, workflows, and systems based on analysis",
+              "Examine system interactions and performance issues at a basic level"
+            ]
+          }
+        ],
+        "performance_expectations": [
+          "In accordance with:",
+          "Relevant Philippine Analytics & AI Governance Framework",
+          "Philippine National Standards on AI",
+          "Republic Act 10173: Data Privacy Act of 2012"
+        ],
+        "functional_skills": [
+          {
+            "skill": "Application Development",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Artificial Intelligence Ethics and Governance",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Business Environment Analysis",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Business Needs Analysis",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Data Ethics",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Data Visualization",
+            "level": "Level 4"
+          },
+          {
+            "skill": "Design Thinking Practice",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Software Testing",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Stakeholder Management",
+            "level": "Level 2"
+          },
+          {
+            "skill": "Test Planning",
+            "level": "Level 3"
+          }
+        ],
+        "enabling_skills": [
+          {
+            "skill": "Collaboration",
+            "level": "Intermediate"
+          },
+          {
+            "skill": "Communication",
+            "level": "Intermediate"
+          },
+          {
+            "skill": "Creative Thinking",
+            "level": "Basic"
+          },
+          {
+            "skill": "Decision Making",
+            "level": "Basic"
+          },
+          {
+            "skill": "Digital Fluency",
+            "level": "Intermediate"
+          },
+          {
+            "skill": "Learning Agility",
+            "level": "Intermediate"
+          },
+          {
+            "skill": "Sense Making",
+            "level": "Basic"
+          },
+          {
+            "skill": "Transdisciplinary Thinking",
+            "level": "Basic"
+          }
+        ]
+      },
+      {
+        "job_title": "Senior Business Intelligence Analyst",
+        "description": "The Senior Business Intelligence Analyst plays a crucial role in analyzing and interpreting complex data to inform strategic business decisions. This position involves understanding data-driven roadmaps and implementation strategies, ensuring they align with the organization's goals. The Senior Business Intelligence Analyst collaborates closely with IT and business teams to guide the development and maintenance of BI standards and practices. They focus on understanding and addressing immediate data needs, aligning these with the broader business strategy and IT landscape. They are responsible for consulting on BI solutions, offering recommendations based on emerging trends and technologies in data analytics. They operate within a dynamic business environment, requiring agility and adaptability. Proficiency in BI methodo logies, frameworks, and modeling tools is essential. The role also demands an understanding of how o rganizational design influences data strategies. Key responsibilities include problem-solving, decision-making, and synthesizing various business unit needs into cohesive BI strategies. Effective communication is paramount, as they must be capable of articulating the value of data insights to st keholders and influencingdecisiona making processes.",
+        "key_tasks": [
+          {
+            "function": "Manage the implementation of new solutions and/or enhancements",
+            "tasks": [
+              "Devise procedures to solve complex operational issues",
+              "Develop dashboards and provide regular status reports to stakeholders",
+              "Oversee the translation of requirements documentation to systems requirement specifications",
+              "Act as the main point of contact for escalated issues",
+              "Oversee the conduct of User Acceptance Testing (UAT) and integration testing",
+              "Review work at critical milestones with team leader or sponsor to maintain their commitment and support",
+              "Manage the conduct of change management programs and initiatives to drive the adoption of new and/or enhanced technologies including data- and AI-related solutions"
+            ]
+          },
+          {
+            "function": "Develop technical specifications",
+            "tasks": [
+              "Develop a roadmap to translate existing system specifications into future-state systems requirements",
+              "Function as the liaison between users and technical team throughout the implementation cycle",
+              "Manage risks associated with new solutions and/or proposed enhancements",
+              "Ensure that business requirements are incorporated into the solution design",
+              "Translate business requirements and user needs into functional and technical specifications",
+              "Guide the design and development teams towards smooth solutions integration"
+            ]
+          },
+          {
+            "function": "Analyze systems and propose solutions",
+            "tasks": [
+              "Identify opportunities where AI and analytics can address business and user needs and create value",
+              "Oversee the development of different components within the proposed solutions and/ or enhancements",
+              "Evaluate the feasibility, viability, and implications of proposed solutions and/or enhancements to systems on the current and future business environment",
+              "Oversee the evaluation of proposed solutions and/or enhancements to ensure its feasibility, viability, and efficiency",
+              "Design the solution blueprints for the specific areas of expertise with the consideration of implications for integration across the entire solution",
+              "Analyze inter-dependencies and inter-linkages of systems and processes across the organization",
+              "Recommend proposed solutions and/or enhancements to improve and optimize processes, workflows, performance, and systems",
+              "Examine interactions between systems elements, performance, and issues"
+            ]
+          },
+          {
+            "function": "Identify business needs, systems, and requirements",
+            "tasks": [
+              "Analyze business technology requirements and specifications against value and risk of potential solutions",
+              "Balance requests and competing priorities from key stakeholders to maximize the value delivered to the organization",
+              "Conduct cost-benefit and risk assessment analyses for proposed solutions to determine suitability of solutions",
+              "Present business cases defining potential benefits, solutions to increase efficiencies of business processes and associated risks",
+              "Scope proof-of-concepts for AI and analytics related use cases and projects",
+              "Translate business needs and requirements into potential Artificial Intelligence (AI) and/"
+            ]
+          }
+        ],
+        "performance_expectations": [
+          "In accordance with:",
+          "Relevant Philippine Analytics & AI Governance Framework",
+          "Philippine National Standards on AI",
+          "Republic Act 10173: Data Privacy Act of 2012"
+        ],
+        "functional_skills": [
+          {
+            "skill": "Artificial Intelligence Ethics and Governance",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Business Environment Analysis",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Business Needs Analysis",
+            "level": "Level 4"
+          },
+          {
+            "skill": "Business Negotiation",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Business Performance Management",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Business Requirements Mapping",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Business Risk Management",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Change Management",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Data Ethics",
+            "level": "Level 4"
+          },
+          {
+            "skill": "Data Visualization",
+            "level": "Level 4"
+          },
+          {
+            "skill": "Design Thinking Practice",
+            "level": "Level 4"
+          },
+          {
+            "skill": "Emerging Technology Synthesis",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Learning and Development",
+            "level": "Level 4"
+          },
+          {
+            "skill": "Manpower Planning",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Networking",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Partnership Management",
+            "level": "Level 3"
+          },
+          {
+            "skill": "People and Performance Management",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Problem Management",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Process Improvement and Optimization",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Project Management",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Software Testing",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Stakeholder Management",
+            "level": "Level 3"
+          },
+          {
+            "skill": "Systems Thinking",
+            "level": "Level 3"
+          }
+        ],
+        "enabling_skills": [
+          {
+            "skill": "Adaptability",
+            "level": "Basic"
+          },
+          {
+            "skill": "Building Inclusivity",
+            "level": "Basic"
+          },
+          {
+            "skill": "Collaboration",
+            "level": "Intermediate"
+          },
+          {
+            "skill": "Communication",
+            "level": "Intermediate"
+          },
+          {
+            "skill": "Creative Thinking",
+            "level": "Intermediate"
+          },
+          {
+            "skill": "Customer Orientation",
+            "level": "Basic"
+          },
+          {
+            "skill": "Decision Making",
+            "level": "Intermediate"
+          },
+          {
+            "skill": "Developing People",
+            "level": "Basic"
+          },
+          {
+            "skill": "Digital Fluency",
+            "level": "Intermediate"
+          },
+          {
+            "skill": "Influence",
+            "level": "Basic"
+          },
+          {
+            "skill": "Learning Agility",
+            "level": "Intermediate"
+          },
+          {
+            "skill": "Problem Solving",
+            "level": "Basic"
+          },
+          {
+            "skill": "Self Management",
+            "level": "Basic"
+          },
+          {
+            "skill": "Sense Making",
+            "level": "Basic"
+          },
+          {
+            "skill": "Transdisciplinary Thinking",
+            "level": "Basic"
+          }
+        ]
+      }
+    ]
+  }
