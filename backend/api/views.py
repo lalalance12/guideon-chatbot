@@ -25,7 +25,7 @@ from .utils.query_vectors import search_similar_content
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     authentication_classes = []  # Disable authentication for registration
 
     def create(self, request, *args, **kwargs):
@@ -156,7 +156,7 @@ class ChatView(APIView):
     """
     API endpoint for chat interactions with Ollama model
     """
-    permission_classes = [AllowAny]  # Can be changed to IsAuthenticated if needed
+    permission_classes = [IsAuthenticated]  # Can be changed to IsAuthenticated if needed
 
     def post(self, request):
         logger.info(f"Received chat request: {request.data}")
@@ -165,7 +165,7 @@ class ChatView(APIView):
             prompt = serializer.validated_data['prompt']
             chat_id = serializer.validated_data.get('chat_id')
             
-            logger.info(f"Processing chat request - Prompt: '{prompt}', Chat ID: {chat_id}")
+            # logger.info(f"Processing chat request - Prompt: '{prompt}', Chat ID: {chat_id}")
             
             # Get or create chat session
             chat = None
@@ -200,13 +200,13 @@ class ChatView(APIView):
                 role='assistant',
                 content=response_text
             )
-            logger.info(f"Saved assistant message with ID: {assistant_message.id}")
+            # logger.info(f"Saved assistant message with ID: {assistant_message.id}")
             
             # Get all messages in this chat for debugging
             all_messages = Message.objects.filter(chat=chat).order_by('timestamp')
-            logger.info(f"All messages in chat {chat.id}:")
-            for idx, msg in enumerate(all_messages):
-                logger.info(f"  {idx+1}. {msg.role}: {msg.content[:50]}{'...' if len(msg.content) > 50 else ''}")
+            # logger.info(f"All messages in chat {chat.id}:")
+            # for idx, msg in enumerate(all_messages):
+            #     logger.info(f"  {idx+1}. {msg.role}: {msg.content[:50]}{'...' if len(msg.content) > 50 else ''}")
             
             # Return the response
             response_data = {
