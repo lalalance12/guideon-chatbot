@@ -9,5 +9,13 @@ sqlparse
 psycopg2-binary
 python-dotenv
 requests
-beautifulsoup4
+pgvector
+markitdown[pdf]
+docling
+numpy
+tqdm
+markdown
+beautifulsoup4W
 fake-useragent
+agno
+ollama

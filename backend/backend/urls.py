@@ -26,4 +26,5 @@ urlpatterns = [
     path('api/chats/', ChatHistoryView.as_view(), name='chat_list'),
     path('api/chats/<int:chat_id>/', ChatHistoryView.as_view(), name='chat_detail'),
     path('api-auth/', include('rest_framework.urls')),
+    # path('api/', include('api.urls')),  # Make sure this line exists
 ]

@@ -1,0 +1,254 @@
+[
+    {
+      "enablingSkill": {
+        "title": "Adaptability",
+        "description": "Exercise flexibility in behaviors or approaches to respond to changes and evolving contexts",
+        "codePrefix": "ESC-SRE",
+        "proficiencyLevels": [
+          {
+            "level": "Basic",
+            "escCode": "ESC-SRE-B001-1",
+            "description": "Modify behaviors and approaches to",
+            "underpinningKnowledge": [
+              "Ideation techniques",
+              "Experimentation techniques",
+              "Problem solving techniques",
+              "Emotional regulation techniques",
+              "Questioning techniques",
+              "Information processing techniques",
+              "Self-awareness concepts",
+              "Impact measurement techniques"
+            ],
+            "skillsApplication": [
+              "Demonstrate an openness to seek and  interpret opinions and practices different  from own",
+              "Seek out information about changes or  evolving contexts which may impact work  activities or priorities",
+              "Set short-term goals in order to perform  work activities effectively during periods  of change",
+              "Adjust existing work activities in  response to new instructions, guidelines  or operating procedures",
+              "Assess own reactions to changes and  evolving contexts to improve future  responses and behaviors",
+              "Monitor own work performance to  identify potential development areas  to enhance responses to changes and  evolving contexts",
+              "Identify appropriate skills and training  which could improve one's response"
+            ]
+          },
+          {
+            "level": "Intermediate",
+            "escCode": "ESC-SRE-I001-1",
+            "description": "Manage change in evolving contexts",
+            "underpinningKnowledge": [
+              "Stakeholder analysis techniques",
+              "Group dynamic concepts",
+              "Collaboration styles",
+              "Coaching and mentoring techniques",
+              "Risk analysis techniques",
+              "Self-reflection techniques",
+              "Strategies to evaluate impact of new  ideas, improvements or solutions"
+            ],
+            "skillsApplication": [
+              "Assess the impact of changes and  evolving contexts to identify ways to  adapt skills or processes",
+              "Analyze the rationale for change or  underlying factors driving evolving  contexts",
+              "Develop creative solutions to address  challenges and leverage on opportunities  arising from changes and evolving  contexts",
+              "Evaluate inputs from various  stakeholders and different courses of  actions to determine how to navigate  through change and evolving contexts",
+              "Prioritize work activities in order of  criticality to navigate through change  and evolving contexts",
+              "Coach team members in responding to  changes and evolving contexts",
+              "Reflect on responses to change and  evolving contexts to recommend future"
+            ]
+          },
+          {
+            "level": "Advanced",
+            "escCode": "ESC-SRE-A001-1",
+            "description": "Foster a culture of flexibility that caters to",
+            "underpinningKnowledge": [
+              "Organization's vision, objectives and  operating climate",
+              "Strategies to build resilient teams",
+              "Strategies to drive the continuous  development of new approaches",
+              "Risk mitigation strategies",
+              "Strategies to identify emerging industry  disruptors and trends",
+              "Change management strategies",
+              "Stakeholder dynamics",
+              "Stakeholder management strategies Conflict management strategies"
+            ],
+            "skillsApplication": [
+              "Articulate strategic goals to navigate  through periods of change and evolving  contexts",
+              "Evaluate the impact on the operating  climate, emerging trends and industry  disruptors",
+              "Determine potential opportunities and/or  risks of change or evolving contexts",
+              "Direct the development of new and  alternative approaches to respond to  changes and evolving contexts",
+              "Guide stakeholders to successfully  navigate through change and disruptions",
+              "Lead the resolution of any issues which  impact the organization's ability to adapt  to changes and evolving contexts",
+              "Review existing strategies and  approaches to changes and evolving  contexts"
+            ]
+          }
+        ],
+        "rangeOfApplication": {
+          "title": "Range of Application",
+          "items": []
+        }
+      }
+    },
+    {
+      "enablingSkill": {
+        "title": "Building Inclusivity",
+        "description": "Collaborate with stakeholders from different backgrounds or with different abilities, including diversity dimensions such as race, ethnicity, religion, gender orientation, age, physical and learning ability, education, socio-economic status and political belief, to understand the interests of diverse groups and build an inclusive work environment",
+        "codePrefix": "ESC-IWO",
+        "proficiencyLevels": [
+          {
+            "level": "Basic",
+            "escCode": "ESC-IWO-B001-1",
+            "description": "Demonstrate sensitivity to the differences  in diversity dimensions and perspectives",
+            "underpinningKnowledge": [
+              "Self-awareness concepts",
+              "Diversity dimensions and preferences",
+              "Types of unconscious bias",
+              "Fair employment practices"
+            ],
+            "skillsApplication": [
+              "Demonstrate understanding of  different types of personal values,  beliefs, perceptions and attitudes when  interacting with diverse groups",
+              "Conduct oneself in accordance with the  organization's inclusion policies and  practices",
+              "Participate in interactions with diverse  groups within the organization",
+              "Adopt active listening and demonstrate  respect for and acknowledge diverse  perspectives or differences",
+              "Assess own behaviour to identify  unconscious biases when operating in a  diverse environment",
+              "Support the development of inclusivity- related communication materials"
+            ]
+          },
+          {
+            "level": "Intermediate",
+            "escCode": "ESC-IWO-I001-1",
+            "description": "Manage relationships across diverse groups  within the organization",
+            "underpinningKnowledge": [
+              "Barriers to workplace diversity and  inclusion",
+              "Communication styles",
+              "Interpersonal communication techniques",
+              "Social psychology concepts",
+              "Group dynamics concepts",
+              "Strategies to manage unconscious bias"
+            ],
+            "skillsApplication": [
+              "Convey cultural intelligence and  sensitivity towards differing values,  beliefs and behaviors across diverse  groups",
+              "Promote behaviors and practices that  support diversity and inclusion in the  organization",
+              "Ensure diversity in the composition of  work teams",
+              "Adapt communication styles to  accommodate diversity in stakeholder  dynamics and establish common ground",
+              "Facilitate conversations to encourage  mutual respect and understanding",
+              "Review own behaviour and work  processes for improvements to reduce  unconscious bias",
+              "Communicate the organization's  inclusivity related values and the  rationale for inclusive practices"
+            ]
+          },
+          {
+            "level": "Advanced",
+            "escCode": "ESC-IWO-A001-1",
+            "description": "Oversee the develop and implement  processes and practices which build an  inclusive work environment and enable  diverse groups to work effectively together",
+            "underpinningKnowledge": [
+              "Inclusion strategies and best practices",
+              "Dimensions and behaviors of non- inclusion",
+              "Types of social, political, economic and  cultural factors which impact stakeholder  interactions",
+              "Conflict management strategies"
+            ],
+            "skillsApplication": [
+              "Guide the develop policies and practices  to build inclusion and eliminate biases",
+              "Endorse inclusive outcomes and  initiatives across the organization",
+              "Champion support for the needs of  diverse groups within the organization",
+              "Design open and psychologically safe  environment for the expression of  diverse views",
+              "Manage conflicts and address non- inclusive behaviors",
+              "Champion the organization's inclusion- related communication efforts across  internal and external platforms"
+            ]
+          }
+        ],
+        "rangeOfApplication": {
+          "title": "Range of Application",
+          "items": []
+        }
+      }
+    },
+    {
+      "enablingSkill": {
+        "title": "Collaboration",
+        "description": "Manage relationships and work collaboratively and effectively with others to achieve goals",
+        "codePrefix": "ESC-IWO",
+        "proficiencyLevels": [
+          {
+            "level": "Basic",
+            "escCode": "ESC-IWO-B002-1",
+            "description": "Contribute to a positive and cooperative  working environment by fulfilling own  responsibilities, managing interpersonal  relationships and providing support to  others to achieve goals",
+            "underpinningKnowledge": [
+              "Types of collaboration tools and  platforms",
+              "Team roles and responsibilities",
+              "Team communication techniques",
+              "Diversity dimensions and preferences",
+              "Behavioral styles",
+              "Knowledge sharing methods and tools",
+              "Listening techniques",
+              "Emotional intelligence dimensions",
+              "Techniques to develop empathy",
+              "Workplace and social etiquette"
+            ],
+            "skillsApplication": [
+              "Perform work activities collaboratively  with others to foster team spirit and  contribute to identified goals",
+              "Demonstrate a positive attitude in  various situations and interactions with  stakeholders",
+              "Share information, knowledge and  experiences with co-workers",
+              "Implement collaboration tools and  platforms to enable different types of  collaboration and information sharing",
+              "Seek to understand others' situations,  perspectives and emotions",
+              "Build rapport with co-workers to  maintain relationships",
+              "Escalate information pertaining  to conflicts in teams to relevant  stakeholders",
+              "Seek feedback from co-workers on own  role and performance in the team"
+            ]
+          },
+          {
+            "level": "Intermediate",
+            "escCode": "ESC-IWO-I002-1",
+            "description": "Build relationships and work effectively  with internal and external stakeholders to  create synergies in working towards shared  goals",
+            "underpinningKnowledge": [
+              "Types of team structures",
+              "Types of team development methods",
+              "Team goal-setting concepts",
+              "Group facilitation and problem-solving  methods",
+              "Stakeholder analysis techniques",
+              "Persuasion methods",
+              "Communication styles",
+              "Interpersonal communication techniques",
+              "Personality types and interpersonal  needs",
+              "Emerging virtual collaboration tools and  platforms"
+            ],
+            "skillsApplication": [
+              "Identify shared goals which require  collaboration to facilitate the  achievement of team and organizational  objectives",
+              "Organize teams in a manner that  capitalizes on team members' strengths",
+              "Adapt methods of interaction to cater to  the needs and motivations of others",
+              "Align values, beliefs and perceptions  amongst team members to establish  harmonious working relationships",
+              "Guide team members to manage work  challenges and tasks in a positive manner",
+              "Develop partnerships with key internal  and external stakeholders to achieve  win-win outcomes",
+              "Resolve issues arising from working in  teams",
+              "Provide feedback to team members  on their roles, working styles and  performance in the team",
+              "Suggest tools and platforms which  could be integrated to facilitate virtual  collaboration and enhance productivity"
+            ]
+          },
+          {
+            "level": "Advanced",
+            "escCode": "ESC-IWO-A002-1",
+            "description": "Establish team effectiveness and manage  partnerships to create a cooperative  working environment which enables the  achievement of goals",
+            "underpinningKnowledge": [
+              "Organization's vision, objectives and  operating climate",
+              "Team organization theories",
+              "Motivation theories",
+              "Measures of team effectiveness",
+              "Behavioral science concepts",
+              "Stakeholder dynamics",
+              "Stakeholder management strategies",
+              "Best practices in virtual collaboration",
+              "Conflict management strategies",
+              "Types of social, political, economic and  cultural factors which impact stakeholder  relationships"
+            ],
+            "skillsApplication": [
+              "Champion the development of an open  and collaborative organizational culture",
+              "Establish organizational policies and  procedures that promote a cooperative  working environment",
+              "Drive mutual understanding between  teams across the organization to  encourage the achievement of shared  goals",
+              "Navigate diverse views and opinions  within and beyond the organization to  achieve beneficial outcomes",
+              "Build strategic alliances and partnerships  to achieve desired organizational  objectives",
+              "Oversee the resolution of conflicts or  removal of barriers to collaboration  across the organization",
+              "Devise feedback processes to ensure  the organization strives to work  cooperatively and continuously improve",
+              "Evaluate the effectiveness of virtual  collaboration across the organization to  recommend improvements"
+            ]
+          }
+        ],
+        "rangeOfApplication": {
+          "title": "Range of Application",
+          "items": []
+        }
+      }
+    }
+]

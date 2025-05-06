@@ -1,0 +1,372 @@
+[
+    {
+      "functionalSkill": {
+        "title": "Agile Software Development",
+        "description": "Plan and implement Agile methodology and the use of adaptive and iterative methods and techniques in the software development lifecycle to account for continuous evolution, development, and deployment to enable seamless delivery of the application to the end user",
+        "codePrefix": "AAI-DIM1",
+        "proficiencyLevels": [
+          {
+            "level": 1,
+            "underpinningKnowledge": [],
+            "skillsApplication": []
+          },
+          {
+            "level": 2,
+            "underpinningKnowledge": [],
+            "skillsApplication": []
+          },
+          {
+            "level": 3,
+            "fscCode": "AAI-DIM1-3001-1.1",
+            "description": "Adopt Agile  software  development  methodologies to  develop, improve  and deploy software  applications",
+            "underpinningKnowledge": [
+              "Types of software  development  tools and  methodologies in  Agile setting",
+              "Standards  and protocols  in software  development",
+              "Agile practices  and processes  for software  development",
+              "Values and  principles of Agile  methodologies",
+              "Syntax and  structures of  commonly-used  programming  languages and  their respective  Application  Programming  Interfaces (API)",
+              "Type of tools  and techniques  required for  programming",
+              "Software tests  and processes for  executing unit  testing",
+              "Debugging tools  and techniques"
+            ],
+            "skillsApplication": [
+              "Schedule Agile  meetings  with relevant  stakeholders  for software  development and  deployment",
+              "Organize daily  briefings for the  Agile software  development  team to provide  clarity of  immediate tasks  and goals",
+              "Re-use developed  components  to streamline  the software  development  process",
+              "Suggest new  software  components  or features to  improve the  software as  per change  requirements",
+              "Merge code  change or branch  to code repository",
+              "Suggest specific  development  areas and  actionable  feedback for the  Agile software  development  team",
+              "Facilitate  feedback sessions  to improve  Agile team  performance  in software  development",
+              "Identify repetitive  and routine tasks  in the software  development  process that can  be automated"
+            ]
+          },
+          {
+            "level": 4,
+            "fscCode": "AAI-DIM1-4001-1.1",
+            "description": "Plan Agile software  development  processes  for software  applications  development",
+            "underpinningKnowledge": [
+              "Types of Agile  methodologies,  practices and  processes  for software  development",
+              "Change  management  practices and  processes",
+              "Software  development life  cycle models for  applications",
+              "Types  programming  languages and  effectiveness in  different contexts",
+              "Types of software  or application  testing  techniques, and  pros and cons of  various tests",
+              "Continuous  integration and  continuous  deployment (CI/ CD) processes"
+            ],
+            "skillsApplication": [
+              "Develop Agile  software  development  plans to guide the  development of  software",
+              "Determine  software testing  techniques  and tools for  implementation",
+              "Evaluate  test results  against desired  performance  and usability  outcomes",
+              "Manage iterations  and changes to  software in the  development  process to  enhance software  functionality and  usability",
+              "Analyze software  issues, errors  or problems  encountered,  and determine  suitable  debugging tools  and techniques",
+              "Develop plans for  reconfiguration,  integration,  removal or  addition of  software  components",
+              "Address  impediments and  issues regarding  the development  of software in an  Agile team setting",
+              "Manage the  integration of  code changes  or branches to  master code  repository",
+              "Assess the  conduct of Agile  practices against  established Agile  processes and  standards",
+              "Rectify repetitive  and routine tasks  to streamline  the software"
+            ]
+          },
+          {
+            "level": 5,
+            "fscCode": "AAI-DIM1-5001-1.1",
+            "description": "Lead Agile software  development  processes and  ensure end-to- end management  of processes  for seamless  development,  deployment and  delivery of software  applications",
+            "underpinningKnowledge": [
+              "Resistance  management  strategies",
+              "Long-term and  immediate  objectives of  software in the  organization",
+              "Process of  developing  effective  Agile software  development  approaches and  policies",
+              "Continuous  integration and  continuous  deployment (CI/ CD) strategies and  protocols",
+              "Intervention  strategies and  protocols for  process change",
+              "Collaboration  management  processes and  strategies  between  development  team and end  users"
+            ],
+            "skillsApplication": [
+              "Establish  implementation  plans to transition  teams to Agile  software  development  practices",
+              "Develop  processes,  standards and  requirements for  Agile software  development",
+              "Establish  roles and  responsibilities  for team  members in an  Agile software  development  setting",
+              "Evaluate Agile  tools and  software for  adoption in  developing  software",
+              "Evaluate  implications  of new and  emerging trends  on software  development in  an Agile setting",
+              "Lead the end-to- end development  of software in an  Agile setting",
+              "Evaluate  feasibility  of software  development at  each stage of the  software lifecycle",
+              "Plan integration  and deployment  strategies",
+              "Evaluate  performance  of automated  activities in  the software  development  process for  improvement"
+            ]
+          },
+          {
+            "level": 6,
+            "fscCode": "AAI-DIM1-6001-1.1",
+            "description": "Establish the  organization's  policies, standards  and guidelines  for Agile software  development to  drive adoption  of the Agile  methodologies and  its practices",
+            "underpinningKnowledge": [
+              "Objectives of",
+              "Agile software",
+              "development in the",
+              "organization's and",
+              "customer's context Industry best",
+              "practices in",
+              "Agile software",
+              "development Models of team",
+              "development Types of team",
+              "management",
+              "strategies"
+            ],
+            "skillsApplication": [
+              "Establish the  organization's  Agile software  development  frameworks,  processes and  standards",
+              "Establish  organizational  assessment tools  to determine  readiness  and maturity  of software  development  teams to  transition into an  Agile setting",
+              "Establish the  purpose, mindset  and functions of  individuals in an  Agile software  development  team",
+              "Ensure training  in Agile  methodologies  and practices  is planned for  and conducted  to implement  Agile software  development",
+              "Endorse  recommendations  to improve  the overall  functionality and  usability of the  software, against  cost, efficiency  and viability  considerations"
+            ]
+          }
+        ],
+        "rangeOfApplication": {
+          "title": "Range of Application",
+          "items": [
+            "Agile methodologies and frameworks may include but not limited to:",
+            "Agile Scrum Methodology",
+            "Lean or Agile Software Development",
+            "Kanban",
+            "Extreme Programming (XP)",
+            "Crystal",
+            "Dynamic Systems Development Method (DSDM)",
+            "Native / Mobile application development",
+            "Web application development",
+            "Desktop application development",
+            "Augmented reality application development",
+            "Virtual reality / context-aware application development",
+            "Game development"
+          ]
+        }
+      }
+    },
+    {
+      "functionalSkill": {
+        "title": "Applications Development",
+        "description": "Develop applications based on the design specifications; encompassing coding, testing, debugging, documenting and reviewing and/or refining it across the application development stages in accordance with defined standards for development and security. The complexity of the application may range from a basic application to a context-aware and/or augmented reality application that incorporates predictive behavior analytics, geo-spatial capabilities and other appropriate algorithms. The technical skill includes the analysis and possibly the reuse, improvement, reconfiguration, addition or integration of existing and/or new application components.",
+        "codePrefix": "AAI-DIM1",
+        "proficiencyLevels": [
+          {
+            "level": 1,
+            "underpinningKnowledge": [],
+            "skillsApplication": []
+          },
+          {
+            "level": 2,
+            "underpinningKnowledge": [],
+            "skillsApplication": []
+          },
+          {
+            "level": 3,
+            "fscCode": "AAI-DIM1-3002-1.1",
+            "description": "Develop basic applications  with secure features, run  routine application tests, and  conduct debugging to resolve  errors",
+            "underpinningKnowledge": [
+              "Application development  tools and methodologies",
+              "Syntax and structures  of commonly-used  programming languages  and their respective  Application Programming  Interfaces (API)",
+              "Clean coding methods and  best practices",
+              "Tools and techniques  required for performing  coding and/or programming",
+              "Organizational standards  in application development  and documentation",
+              "Process of embedding user  interface templates",
+              "Software tests and process  for executing unit testing",
+              "Application development  standards",
+              "Commonly-encountered  application errors",
+              "Basic debugging tools and  techniques",
+              "Security threats and  vulnerabilities facing  software and applications",
+              "Functional requirements of  security features",
+              "Virtual machines and  containerization of  application code set-up for  consistent deployment and  utilization"
+            ],
+            "skillsApplication": [
+              "Develop and/or program  simple applications or  components according to  agreed specifications",
+              "Write codes that are clean,  testable and maintainable",
+              "Re-use externally  developed components in  creation of applications",
+              "Identify possible security  features required to address  potential security risks and  vulnerabilities",
+              "Embed user interface  templates into  applications according  to design guidelines and  specifications",
+              "Run routine software  tests to identify defects,  errors and/or security  vulnerabilities",
+              "Perform unit testing of  each unit of the codes to  ensure that the code works  according to application  requirements",
+              "Apply basic debugging  tools and techniques to  reproduce, simplify and  resolve application errors or  problems",
+              "Make simple revisions and  modifications to existing  application",
+              "Add new application  components or features,  according to endorsed  recommendations",
+              "Document the internal  design of the application  for future maintenance and  enhancement",
+              "Write application  programming interfaces  (APIs)",
+              "Perform bundling of  application code and  relevant files to enhance the  deployment and utilization  of the application code"
+            ]
+          },
+          {
+            "level": 4,
+            "fscCode": "AAI-DIM1-4002-1.1",
+            "description": "Plan the application  development process,  program applications and  secure features, applying  suitable debugging  techniques to resolve complex  errors",
+            "underpinningKnowledge": [
+              "Software development  life cycle models for  applications",
+              "Broad range of application  development frameworks,  tools and methodologies,  and their various uses",
+              "A range of programming  languages and  effectiveness in different  contexts",
+              "Code refactoring techniques  and best practices",
+              "Types of software or  application testing  techniques, and pros and  cons of various tests",
+              "Internal and external  quality, safety and security  standards or benchmarks in  application development",
+              "Quality assurance  practices for application  development review",
+              "Range of tests and testing  techniques for applications",
+              "Multiple debugging  techniques and tools and  suitability for different  contexts",
+              "Feasibility analysis  for reconfiguration,  integration or portability of  applications",
+              "Emerging security threats  and impact on software and  applications",
+              "Evaluation guidelines for  software and applications  security",
+              "Types of security and  secure features for software  and applications"
+            ],
+            "skillsApplication": [
+              "Create a project plan to  guide the application  development process",
+              "Determine the server,  scripting and mark-up  languages required to  develop applications",
+              "Determine key security  requirements, standards  and features for the  application",
+              "Develop applications in line  with design specifications,  utilizing a range of  tools, methodologies,  programming, and  externally developed codes",
+              "Guide team to adopt clean  coding practices to ensure  that codes are clean,  testable and maintainable",
+              "Design templates for  reusable user interface  patterns for applications",
+              "Assess suitability of various  software security and  software testing techniques  and select appropriate  tests, according to the  application properties of  interest",
+              "Evaluate test results against  desired performance,  standards, and usability  outcomes",
+              "Analyze application  and/or security issues  encountered, and determine  actions required to resolve  identified issues",
+              "Resolve functional,  performance, and security  issues in applications",
+              "Plan a series of steps  which potentially includes  reconfiguration, integration,  removal or addition of  application components to  enhance the application's  functionality, usability and  security",
+              "Plan bundling of application  code and relevant files to  enhance the deployment  and utilization of the  application code",
+              "Set up virtual machine  instances and  containerization for the  deployment and utilization  of the application  code across multiple  infrastructures"
+            ]
+          },
+          {
+            "level": 5,
+            "fscCode": "AAI-DIM1-5002-1.1",
+            "description": "Lead large-scale or  business-critical application  development projects and  explore the incorporation  of analytics and advanced  capabilities to enhance the  application",
+            "underpinningKnowledge": [
+              "Long term vision and  immediate objectives of the  application",
+              "Key characteristics, pros  and cons of different  application development  methodologies",
+              "New and emerging trends in  application development",
+              "Advanced programming  languages and tools, and  their uses in different  contexts for different  application features",
+              "Applicability and  reusability of externally  developed codes and  components",
+              "Relative criticality or  importance of different  application components or  properties",
+              "Various debugging  processes and suitability  for different contexts",
+              "Feasibility analysis for  incorporating new, complex  or advanced features or  capabilities",
+              "Measures of software  complexity",
+              "Industry best practices  in secure software and  applications development",
+              "New and emerging secure  software and applications  development techniques,  tools and approaches",
+              "New and emerging  techniques for seamless  software deployment"
+            ],
+            "skillsApplication": [
+              "Evaluate implications of  new and emerging trends  on application development",
+              "Plan large-scale or  business-critical  application development  projects",
+              "Determine application  development  methodologies, tools, and  programming languages",
+              "Manage interdependencies  of multiple work streams  and complexity in  applications development",
+              "Establish best practices in  clean coding",
+              "Establish an efficient and  effective application  testing process that  includes vulnerability  assessments and secure  testing",
+              "Oversee application  development approaches  and plans to ensure  achievement of quality,  safety and security  standards",
+              "Establish debugging  process for application  issues encountered",
+              "Review recommendations  to improve the overall  functionality, usability and  security of applications,  against cost, efficiency and  viability considerations",
+              "Evaluate new technologies,  secure coding and practices  that will enhance security  capabilities in applications  development",
+              "Evaluate feasibility and  incorporate predictive  behavior or data analytics,  geo-spatial capabilities and  other advanced features in   application development"
+            ]
+          },
+          {
+            "level": 6,
+            "underpinningKnowledge": [],
+            "skillsApplication": []
+          }
+        ],
+        "rangeOfApplication": {
+          "title": "",
+          "items": []
+        }
+      }
+    },
+    {
+      "functionalSkill": {
+        "title": "Applications Integration",
+        "description": "Integrate data or functions from one application program with that of another application program -  involves  development of an integration plan, prog amming and the identification and utilization of r appropriate middleware to optimize the connectivity and performance of disparate applications across target environments",
+        "codePrefix": "AAI-DIM1",
+        "proficiencyLevels": [
+          {
+            "level": 1,
+            "underpinningKnowledge": [],
+            "skillsApplication": []
+          },
+          {
+            "level": 2,
+            "underpinningKnowledge": [],
+            "skillsApplication": []
+          },
+          {
+            "level": 3,
+            "fscCode": "AAI-DIM1-3003-1.1",
+            "description": "Integrate data  and functions  across application  programs, and  perform follow  up tests to verify  proper functioning",
+            "underpinningKnowledge": [
+              "Types of  middleware and  their features",
+              "Proper usage of  middleware",
+              "Different types  of platforms  on which  applications run",
+              "Potential  technical,  compatibility  or performance  issues in  application  integration",
+              "Functions of  Application  Programming  Interfaces (APIs)"
+            ],
+            "skillsApplication": [
+              "Identify  opportunities  for creating  connections  among various  devices,  databases,  software and  applications",
+              "Perform  feasibility scan  and assessment  to identify  potential  middleware to be  used",
+              "Utilize middleware to  integrate data  and functions  across application  programs within  an enterprise",
+              "Support API-level  integration",
+              "Perform tests  and checks on  the connections  between  disparate  application  programs",
+              "Verify proper  functioning of  modules and  applications  across multiple  or integrated  platforms",
+              "Highlight  technical,  compatibility  or performance  issues following  integration of  applications or  platforms on  which they are  used",
+              "Implement  modifications to  middleware or  the programming  process to  enhance the  integration and  connections  of application  programs"
+            ]
+          },
+          {
+            "level": 4,
+            "fscCode": "AAI-DIM1-4003-1.1",
+            "description": "Oversee end- to-end process  of application  integration,  determining  suitable middleware  and testing  procedures and  resolving issues that  arise",
+            "underpinningKnowledge": [
+              "Key elements of  an application  integration plan",
+              "Pros, cons and  applications  of various  middleware",
+              "Programming  languages used  for middleware",
+              "Features of target  environment  or platforms  on which  applications  operate",
+              "Testing  procedures  to  verify success  of application  integration",
+              "Diagnosis and  troubleshooting  of application  integration issues",
+              "Principles and  protocols for API- level integration"
+            ],
+            "skillsApplication": [
+              "Evaluate  opportunities  for creating  connections  among various  hardware and  applications",
+              "Develop an  application  integration plan  to bring data and  functionalities  of different  applications  together",
+              "Evaluate suitable  middleware  to be used for  integrating  existing  applications",
+              "Program  middleware or  other tools to  enable effective  integration of  applications  within",
+              "Perform API-level  integration",
+              "Oversee the end- to-end process  of application  integration  to the target  environment",
+              "Enable optimal  functioning  of modules or  applications in  newly-integrated  environments and  platforms",
+              "Develop testing  procedures to  ensure proper  application  integration and  performance  thereafter",
+              "Investigate  issues or failures  of application  integration",
+              "Facilitate  modifications  to improve  the success  of integration  between  application  programs"
+            ]
+          },
+          {
+            "level": 5,
+            "fscCode": "AAI-DIM1-5003-1.1",
+            "description": "Establish a business  case for application  integration and  introduce new  middleware tools  and methodologies  to enable both  intra- and  inter-enterprise  application  integration",
+            "underpinningKnowledge": [
+              "Business value  and strategic  considerations  of enterprise  application  integration",
+              "New and  emerging  middleware  products,  tools and  methodologies in  the industry",
+              "Programming  languages and  tools that enable  cross-enterprise  application  integration",
+              "Feasibility of  performing API- level integration",
+              "Implications of  performing API- level integration"
+            ],
+            "skillsApplication": [
+              "Establish  organizational  strategy for  the integration  of different  applications  across target  environments and  platforms",
+              "Make decisions  to spearhead  innovative  and inventive  opportunities and  ways to connect  and integrate  various types  of hardware and  software",
+              "Build a business  case for the  integration  of multiple  applications",
+              "Develop an  application  integration  strategy",
+              "Introduce new  and emerging  middleware  products,  tools and  methodologies  for application  integration",
+              "Develop new  middleware  products to  enable cross- enterprise  application  integration",
+              "Assess feasibility  of API-level  integration",
+              "Approve  modifications and  enhancements to  the application  integration plan  and approach"
+            ]
+          },
+          {
+            "level": 6,
+            "underpinningKnowledge": [],
+            "skillsApplication": []
+          }
+        ],
+        "rangeOfApplication": {
+          "title": "Range of Application",
+          "items": [
+            "Types of applications may include, but are not limited to:",
+            "Mobile/Native Applications",
+            "PC Applications",
+            "Web Applications",
+            "Hybrid Applications"
+          ]
+        }
+      }
+    }
+]

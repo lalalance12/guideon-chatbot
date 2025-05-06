@@ -3,7 +3,8 @@
 import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
-
+import pgvector.django.vector
+from pgvector.django import VectorExtension
 
 class Migration(migrations.Migration):
 
@@ -14,6 +15,19 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        
+        VectorExtension(),
+        
+        # Then create the model that uses the vector type
+        migrations.CreateModel(
+            name='Pathway',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('text', models.TextField()),
+                ('metadata', models.JSONField()),
+                ('embedding', pgvector.django.vector.VectorField(dimensions=4096)),
+            ],
+        ),
         migrations.CreateModel(
             name='Chat',
             fields=[
