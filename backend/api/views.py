@@ -10,7 +10,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import UserSerializer, ChatRequestSerializer, ChatResponseSerializer, ChatSerializer, MessageSerializer, PathwayQuerySerializer, ContextResponseSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
-from .course_scraper import get_courses
+import asyncio
+from .agents.course_search_agent import CourseSearchAgent
 logger = logging.getLogger(__name__)
 from .services import query_ollama
 from .models import Chat, Message
@@ -25,7 +26,7 @@ from .utils.query_vectors import search_similar_content
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     authentication_classes = []  # Disable authentication for registration
 
     def create(self, request, *args, **kwargs):
@@ -136,6 +137,9 @@ class LoginView(APIView):
             )
 
 class CourseSearchView(APIView):
+    """
+    API endpoint for searching courses using the new CourseSearchAgent
+    """
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -146,11 +150,35 @@ class CourseSearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        result = get_courses(query)
-        if "error" in result:
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
-        
-        return Response(result, status=status.HTTP_200_OK)
+        try:
+            # Create a context dict with education_advice intent
+            context = {
+                'intent': 'education_advice',
+                'confidence': 0.8
+            }
+            
+            # Use our new CourseSearchAgent
+            agent = CourseSearchAgent()
+            result = asyncio.run(agent.process(query, context))
+            
+            if not result.get('found', False):
+                return Response(
+                    {"error": result.get('message', 'No courses found')},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Return the courses found
+            return Response(
+                {"courses": result.get('courses', [])},
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f"Error in course search: {str(e)}")
+            return Response(
+                {"error": f"Failed to search for courses: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class ChatView(APIView):
     """
