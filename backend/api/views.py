@@ -7,14 +7,16 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 # Updated serializer imports
-from .serializers import UserSerializer, ChatRequestSerializer, ChatResponseSerializer, ChatSerializer, MessageSerializer, PathwayQuerySerializer, ContextResponseSerializer
+from .serializers import (UserSerializer, ChatRequestSerializer, ChatResponseSerializer, ChatSerializer, MessageSerializer, PathwayQuerySerializer, ContextResponseSerializer, 
+    CourseSerializer, CourseSearchSerializer, LearningPathwaySerializer,
+    KnowledgeSourceSerializer, KnowledgeChunkSerializer)
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
 import asyncio
 from .agents.course_search_agent import CourseSearchAgent
 logger = logging.getLogger(__name__)
 from .services import query_ollama
-from .models import Chat, Message
+from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -207,6 +209,7 @@ class ChatView(APIView):
             else:
                 logger.info("No chat_id provided, creating new chat")
                 chat = Chat.objects.create(user=request.user if request.user.is_authenticated else None)
+                
             
             logger.info(f"Using chat with ID: {chat.id}")
             
@@ -322,3 +325,29 @@ class ContextRetrieverView(APIView):
 
         # Return validation errors if the query serializer is invalid
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CourseView(generics.ListCreateAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    permission_classes = [AllowAny]
+
+class CourseSearchView(generics.ListCreateAPIView):
+    queryset = CourseSearch.objects.all()
+    serializer_class = CourseSearchSerializer
+    permission_classes = [AllowAny]
+
+class LearningPathwayView(generics.ListCreateAPIView):
+    queryset = LearningPathway.objects.all()
+    serializer_class = LearningPathwaySerializer
+    permission_classes = [AllowAny]
+
+class KnowledgeSourceView(generics.ListCreateAPIView):
+    queryset = KnowledgeSource.objects.all()
+    serializer_class = KnowledgeSourceSerializer
+    permission_classes = [AllowAny]
+
+class KnowledgeChunkView(generics.ListCreateAPIView):
+    queryset = KnowledgeChunk.objects.all()
+    serializer_class = KnowledgeChunkSerializer
+    permission_classes = [AllowAny]
