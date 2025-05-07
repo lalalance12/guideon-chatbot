@@ -12,18 +12,18 @@ class PSFKnowledgeAgent(BaseAgent):
     """Retrieves PSF-AAI knowledge-base information."""
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        intent           = context.get("intent")
-        extracted_level  = context.get("extracted_level")
-        limit            = 5
+        intent = context.get("intent")
+        extracted_level = context.get("extracted_level")
+        limit = 5
 
         logger.debug("KB search: %s | intent=%s level=%s",
                      query, getattr(intent, "value", intent), extracted_level)
 
-        # --- build intent-specific search string -------------
+        # Build intent-specific search string
         search_query, search_limit = self._build_search_query(intent, query, extracted_level, limit)
 
         try:
-            # run blocking vector search in a worker thread
+            # Run blocking vector search in a worker thread
             results = await asyncio.to_thread(search_similar_content, search_query, int(search_limit))
         except Exception as exc:
             logger.error("Search error: %s", exc)
@@ -50,9 +50,6 @@ class PSFKnowledgeAgent(BaseAgent):
             "count": len(formatted[:limit]),
         }
 
-    # --------------------------------------------------------------------- #
-    # Helper sub-routines
-    # --------------------------------------------------------------------- #
     def _build_search_query(self, intent, query, lvl, limit):
         search_query = query
         if intent == QueryIntent.SKILL_LEVEL_INFO and lvl is not None:
@@ -71,12 +68,12 @@ class PSFKnowledgeAgent(BaseAgent):
 
     def _filter_results(self, intent, lvl, raw):
         filtered: List[Dict[str, str]] = []
-        types:    Set[str] = set()
+        types: Set[str] = set()
 
         for item in raw:
-            meta      = item.get("metadata", {})
+            meta = item.get("metadata", {})
             item_type = meta.get("type", "")
-            distance  = item.get("distance", 1.0)
+            distance = item.get("distance", 1.0)
             lvl_match = meta.get("level")
 
             if item_type:
@@ -86,12 +83,12 @@ class PSFKnowledgeAgent(BaseAgent):
 
             result = {
                 "title": meta.get("title", "Information"),
-                "type":  item_type,
+                "type": item_type,
                 "content": item.get("text", ""),
                 "relevance": f"{(1 - distance) * 100:.1f}%",
             }
 
-            # prioritise exact level hits first
+            # Prioritize exact level hits first
             if intent == QueryIntent.SKILL_LEVEL_INFO and lvl is not None and str(lvl_match) == str(lvl):
                 filtered.insert(0, result)
             else:
