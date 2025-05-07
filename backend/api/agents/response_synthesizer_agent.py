@@ -1,121 +1,91 @@
+from __future__ import annotations
+import asyncio, inspect, json, logging
+from typing import Dict, Any
 from .base_agent import BaseAgent
 from ..utils.intent_classifier import QueryIntent
 from agno.agent import Agent
 from agno.models.ollama import Ollama
-import logging
-import json
-from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
 class ResponseSynthesizerAgent(BaseAgent):
-    """Synthesizes responses from multiple information sources"""
-    
-    def __init__(self):
-        # Initialize LLM for response generation
+    """Combines the various agent outputs into a final reply."""
+
+    def __init__(self) -> None:
         try:
-            self.llm = Ollama(
-                id="llama3.1:8b-instruct-q4_1",
-                provider="Ollama",
-                host="http://localhost:11434"
-            )
-        except Exception as e:
-            logger.error(f"Error initializing Ollama LLM: {e}")
-            self.llm = None
-    
+            # `model` is the expected kwarg in the latest Ollama SDK
+            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
+                              provider="Ollama", host="http://localhost:11434")
+            self.agent = Agent(name="Synthesizer", model=self.llm)
+        except Exception as exc:
+            logger.error("Could not initialise Ollama: %s", exc)
+            self.llm = None  # will fall back to template responses
+            self.agent = None
+
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Synthesizes a coherent response from the outputs of other agents
-        
-        Args:
-            query: The user's query text
-            context: Contains results from knowledge agent, course agent, etc.
-            
-        Returns:
-            Dict with synthesized response
-        """
-        intent = context.get('intent')
-        confidence = context.get('confidence', 0.0)
-        
-        # Get results from the knowledge base
-        kb_results = context.get('knowledge_base', {})
-        kb_found = kb_results.get('found', False)
-        
-        # Optional components based on intent
-        course_results = context.get('course_search', {})
-        path_results = context.get('learning_path', {})
-        
-        # Determine if we have a valid response
-        if not kb_found and confidence < 0.6:
-            # Low confidence and no knowledge base results
-            return {
-                "response": self._create_general_response(query),
-                "source": "fallback"
-            }
-        
-        # For LLM-based response generation
+        intent      = context.get("intent")
+        confidence  = context.get("confidence", 0.0)
+        kb_results  = context.get("knowledge_base", {})
+        course_res  = context.get("course_search", {})
+        path_res    = context.get("learning_path", {})
+
+        if not kb_results.get("found") and confidence < 0.6:
+            return {"response": self._create_general_response(query), "source": "fallback"}
+
         if self.llm:
-            return await self._generate_llm_response(query, intent, kb_results, course_results, path_results)
-        
-        # Fallback to template-based response if LLM not available
-        return {
-            "response": self._create_template_response(query, intent, kb_results, course_results, path_results),
-            "source": "template"
+            return await self._generate_llm_response(query, intent, kb_results, course_res, path_res)
+
+        # LLM unavailable
+        return {"response": self._create_template_response(query, intent, kb_results,
+                                                           course_res, path_res),
+                "source": "template"}
+
+    # ------------------------------------------------------------------ #
+    # internals
+    # ------------------------------------------------------------------ #
+    async def _generate_llm_response(self, query, intent, kb, courses, path):
+        ctx = {
+            "query": query,
+            "intent": getattr(intent, "value", str(intent)),
+            "psf_knowledge": self._format_kb_results(kb),
+            "courses": self._format_course_results(courses),
+            "learning_path": self._format_path_results(path),
         }
-    
-    async def _generate_llm_response(self, query, intent, kb_results, course_results, path_results):
-        """Use the LLM to generate a coherent response from all components"""
+        prompt = (
+            "You are Guideon, an AI assistant specialising in the Philippine Skills Framework "
+            "for Analytics & AI (PSF-AAI).\n\n"
+            f"USER QUERY:\n{query}\n\n"
+            "INFORMATION SOURCES:\n"
+            f"{json.dumps(ctx, indent=2)}\n\n"
+            "Guidelines:\n"
+            "1. Answer directly and concisely.\n"
+            "2. Use PSF knowledge first if present.\n"
+            "3. Include course/path advice when relevant.\n"
+            "4. Friendly, structured markdown.\n"
+            "5. Omit irrelevant sections.\n\n"
+            "Your response:"
+        )
+
+        user_msg = [{"role": "user", "content": prompt}]
+
         try:
-            # Prepare the context for the LLM
-            llm_context = {
-                "query": query,
-                "intent": intent.value if hasattr(intent, 'value') else str(intent),
-                "psf_knowledge": self._format_kb_results(kb_results),
-                "courses": self._format_course_results(course_results),
-                "learning_path": self._format_path_results(path_results)
-            }
-            
-            # Convert to JSON string for the prompt
-            context_json = json.dumps(llm_context, indent=2)
-            
-            # Create the prompt
-            prompt = {
-                "content": f"""You are Guideon, an AI assistant specializing in the Philippine Skills Framework for Analytics & AI (PSF-AAI).
-                
-                Generate a helpful response to the user query based on these information sources. Focus on being clear, accurate, and helpful.
-                
-                USER QUERY: {query}
-                
-                INFORMATION SOURCES:
-                {context_json}
-                
-                Guidelines for your response:
-                1. Address the user's question directly and concisely
-                2. If PSF knowledge was found, this should be your primary source
-                3. For education intents, include course recommendations if available
-                4. For career path intents, include learning path information if available
-                5. Use a conversational, helpful tone
-                6. Format your response with appropriate headings and structure
-                7. Only include relevant information; don't mention sources that don't apply
-                
-                Your response:"""
-            }
-            
-            # Generate the response
-            response = await self.llm.invoke([prompt])
-            
-            return {
-                "response": response.content,
-                "source": "llm"
-            }
-            
-        except Exception as e:
-            logger.error(f"Error generating LLM response: {e}")
-            return {
-                "response": self._create_template_response(query, intent, kb_results, course_results, path_results),
-                "source": "template_fallback"
-            }
-    
+            if self.agent is None:                       # model failed to init
+                raise RuntimeError("LLM not available")
+
+            # Agent.run is blocking; Agent.arun is async (Agno ≥ 1.4.0)
+            if hasattr(self.agent, "arun"):
+                run_resp = await self.agent.arun(prompt)
+            else:
+                run_resp = await asyncio.to_thread(self.agent.run, prompt)
+
+            text = getattr(run_resp, "content", str(run_resp))
+            return {"response": text, "source": "llm"}
+
+        except Exception as exc:
+            logger.error("LLM failure: %s", exc)
+            return {"response": self._create_template_response(query, intent, kb, courses, path),
+                    "source": "template_fallback"}
+        
     def _format_kb_results(self, kb_results):
         """Format knowledge base results for the LLM"""
         if not kb_results or not kb_results.get('found', False):
@@ -177,7 +147,7 @@ class ResponseSynthesizerAgent(BaseAgent):
                     content = item.get('content', '')
                     if title and content:
                         response_parts.append(f"\n### {title}")
-                        response_parts.append(content[:300] + "..." if len(content) > 300 else content)
+                        response_parts.append(content)
         elif kb_results and not kb_results.get('found', False):
             response_parts.append("\nI don't have specific information about that in the PSF-AAI framework.")
             if kb_results.get('psf_aai_info'):
