@@ -7,6 +7,7 @@ from urllib.parse import quote_plus
 import time
 import random
 from typing import List, Dict, Optional, Any
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -14,53 +15,25 @@ class CourseSearchAgent(BaseAgent):
     """Agent responsible for finding relevant courses based on user query"""
     
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Searches for relevant courses based on the user's query and intent
-        
-        Args:
-            query: The user's query text
-            context: Contains intent, etc.
-            
-        Returns:
-            Dict with course recommendations
-        """
-        intent = context.get('intent')
-        
-        # Only proceed for education-related intents
-        if intent not in [QueryIntent.EDUCATION_ADVICE, QueryIntent.SKILL_PROGRESSION]:
-            return {
-                "found": False,
-                "reason": "not_education_intent",
-                "message": "No course search performed for this query type."
-            }
-        
+        intent = context.get("intent")
+        if intent not in {QueryIntent.EDUCATION_ADVICE, QueryIntent.SKILL_PROGRESSION}:
+            return {"found": False, "reason": "not_education_intent",
+                    "message": "No course search performed for this query type."}
+
         try:
-            # Extract search parameters from the query
-            search_params = self._parse_query(query)
-            
-            # Search for courses
-            course_results = self._search_courses(search_params)
-            
-            if not course_results:
-                return {
-                    "found": False,
-                    "reason": "no_courses",
-                    "message": "No relevant courses found for this query."
-                }
-            
-            return {
-                "found": True,
-                "courses": course_results,
-                "count": len(course_results)
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in course search: {str(e)}")
-            return {
-                "found": False,
-                "reason": "exception",
-                "message": f"Error finding courses: {str(e)}"
-            }
+            params  = self._parse_query(query)
+            # run the (blocking) search in a worker thread
+            courses: List[Dict[str, str]] = await asyncio.to_thread(self._search_courses, params)
+        except Exception as exc:
+            logger.error("Course search error: %s", exc)
+            return {"found": False, "reason": "exception",
+                    "message": f"Error finding courses: {exc}"}
+
+        if not courses:
+            return {"found": False, "reason": "no_courses",
+                    "message": "No relevant courses found for this query."}
+
+        return {"found": True, "courses": courses, "count": len(courses)}
     
     def _parse_query(self, query: str) -> Dict[str, str]:
         """Extract searchable terms from the user query"""

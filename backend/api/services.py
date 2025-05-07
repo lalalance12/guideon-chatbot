@@ -1,6 +1,7 @@
 import logging
 import asyncio
 from asgiref.sync import sync_to_async
+import traceback
 from .agents.intent_classifier_agent import IntentClassifierAgent
 from .agents.orchestrator_agent import OrchestratorAgent
 from .agents.response_synthesizer_agent import ResponseSynthesizerAgent
@@ -34,8 +35,9 @@ class GuideonChatService:
         # Get chat history if available
         if chat_id:
             try:
-                chat = await sync_to_async(Chat.objects.get)(id=chat_id)
-                messages = await sync_to_async(lambda: list(chat.messages.all().order_by('timestamp')))()
+                # Replace with Django's native async query methods
+                chat = await Chat.objects.aget(id=chat_id)
+                messages = [msg async for msg in chat.messages.all().order_by('timestamp')]
                 context['chat_history'] = messages
             except Chat.DoesNotExist:
                 logger.warning(f"Chat with id {chat_id} not found")

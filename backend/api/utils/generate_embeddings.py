@@ -64,48 +64,141 @@ def generate_embeddings(text_chunks):
 # --- Data Processing Functions ---
 # (process_enabling_skills, process_functional_skills, process_roles, process_career_map functions remain as previously defined)
 def process_enabling_skills(filepath):
-    """Processes enabling skills data from esc_data.json."""
+    """Processes enabling skills data with organized chunking for better retrieval and search."""
     print(f"\nProcessing Enabling Skills from: {filepath}")
     text_chunks = []
     chunk_metadata = []
+    
     try:
         with open(filepath, "r", encoding='utf-8') as f:
             data = json.load(f)
-
+        
         for item in data:
             skill = item.get("enablingSkill", {})
             title = skill.get("title", "Untitled Skill")
             description = skill.get("description", "No description")
             code_prefix = skill.get("codePrefix", "")
-
-            skill_text = f"Enabling Skill: {title}\nDescription: {description}"
-            text_chunks.append(skill_text)
+            
+            # Get range of application data
+            range_data = skill.get("rangeOfApplication", {})
+            range_title = range_data.get("title", "Range of Application")
+            range_items = range_data.get("items", [])
+            
+            # Get valid levels data
+            valid_levels = [l for l in skill.get("proficiencyLevels", []) if l.get("description")]
+            level_labels = [l.get("level") for l in valid_levels if l.get("level")]
+            
+            # 1. COMPREHENSIVE SKILL OVERVIEW WITH RANGE OF APPLICATION
+            overview_text = f"# {title}\n\n"
+            overview_text += f"## Description\n{description}\n\n"
+            
+            # Add range of application if available
+            if range_items:
+                overview_text += f"## {range_title}\n"
+                for item in range_items:
+                    if item and not item.isspace():
+                        overview_text += f"- {item.strip()}\n"
+                overview_text += "\n"
+            
+            # Add available levels summary
+            if level_labels:
+                overview_text += f"## Available Proficiency Levels\n"
+                overview_text += f"This enabling skill has {len(level_labels)} defined proficiency levels: {', '.join(level_labels)}\n"
+            
+            # Add the comprehensive overview chunk
+            text_chunks.append(overview_text)
+            chunk_metadata.append({
+                "type": "esc_complete_overview",
+                "title": title,
+                "skill": title,
+                "codePrefix": code_prefix,
+                "available_levels": level_labels,
+                "skill_category": "enabling"
+            })
+            
+            # 2. COMPLETE LEVEL INFORMATION (one chunk per level with all details)
+            for lvl in valid_levels:
+                level_label = lvl.get("level")
+                if not level_label:
+                    continue
+                
+                level_desc = lvl.get("description", "")
+                esc_code = lvl.get("escCode", "")
+                knowledge_points = lvl.get("underpinningKnowledge", [])
+                skill_applications = lvl.get("skillsApplication", [])
+                
+                # Create comprehensive level chunk
+                level_text = f"# {title} - {level_label} Level\n\n"
+                if esc_code:
+                    level_text += f"**Code:** {esc_code}\n\n"
+                
+                # Add level description
+                level_text += f"## Level Description\n{level_desc}\n\n"
+                
+                # Add knowledge requirements
+                if knowledge_points:
+                    level_text += f"## Underpinning Knowledge\nAt this level, you should know:\n"
+                    for k in knowledge_points:
+                        if k and not k.isspace():
+                            level_text += f"- {k.strip()}\n"
+                    level_text += "\n"
+                
+                # Add skill applications
+                if skill_applications:
+                    level_text += f"## Skills Application\nAt this level, you should be able to:\n"
+                    for sa in skill_applications:
+                        if sa and not sa.isspace():
+                            level_text += f"- {sa.strip()}\n"
+                
+                # Add the comprehensive level chunk
+                text_chunks.append(level_text)
+                chunk_metadata.append({
+                    "type": "esc_complete_level",
+                    "title": f"{title} - {level_label} Level",
+                    "skill": title,
+                    "level": level_label,
+                    "escCode": esc_code,
+                    "skill_category": "enabling"
+                })
+            
+            # 3. Keep original overview chunk for backward compatibility
+            # Basic skill overview (without range)
+            basic_overview = f"Enabling Skill: {title}\nDescription: {description}\nLevels: {', '.join(level_labels)}"
+            text_chunks.append(basic_overview)
             chunk_metadata.append({
                 "type": "enabling_skill",
                 "title": title,
+                "skill": title,
                 "codePrefix": code_prefix,
-                "source_file": os.path.basename(filepath)
+                "available_levels": level_labels,
+                "skill_category": "enabling"
             })
-
+            
+            # Range of application as separate chunk (if available)
+            if range_items:
+                range_text = f"{title} - Contexts of Application\n\nThis skill can be applied in the following contexts:\n"
+                range_text += "\n".join([f"• {item.strip()}" for item in range_items if item and not item.isspace()])
+                
+                text_chunks.append(range_text)
+                chunk_metadata.append({
+                    "type": "esc_range",
+                    "title": f"{title} - Contexts of Application",
+                    "skill": title,
+                    "skill_category": "enabling"
+                })
+        
         print(f"Processed {len(chunk_metadata)} enabling skill chunks.")
-    except FileNotFoundError:
-        print(f"Error: File not found at {filepath}")
-    except json.JSONDecodeError:
-        print(f"Error: Could not decode JSON from {filepath}")
     except Exception as e:
-        print(f"Error processing {filepath}: {e}")
+        print(f"Error processing enabling skills: {e}")
+        traceback.print_exc()
+    
     return text_chunks, chunk_metadata
 
 def process_functional_skills(filepath):
-    """Processes functional skills data with optimized chunking for better retrieval."""
+    """Processes functional skills data with organized chunking for better retrieval and search."""
     print(f"\nProcessing Functional Skills from: {filepath}")
     text_chunks = []
     chunk_metadata = []
-    
-    # Helper function to add chunks consistently
-    def add_chunk(text, meta):
-        text_chunks.append(text)
-        chunk_metadata.append(meta)
     
     try:
         with open(filepath, "r", encoding='utf-8') as f:
@@ -117,124 +210,113 @@ def process_functional_skills(filepath):
             description = skill.get("description", "No description")
             code_prefix = skill.get("codePrefix", "")
             
-            # Filter for levels that have descriptions
-            valid_levels = [l for l in skill.get("proficiencyLevels", []) if l.get("description")]
-            level_numbers = [str(l.get("level")) for l in valid_levels]
-            max_level = max([int(l) for l in level_numbers]) if level_numbers else 0
-            
-            # 1. Skill overview
-            add_chunk(
-                f"Functional Skill: {title}\nDescription: {description}\nLevels: " +
-                " • ".join(level_numbers),
-                {
-                    "type": "fs_overview",
-                    "title": title,
-                    "skill": title,
-                    "codePrefix": code_prefix,
-                    "available_levels": level_numbers,
-                    "skill_category": "functional"
-                }
-            )
-            
-            # 2. Range of application if available
+            # Get range of application data
             range_data = skill.get("rangeOfApplication", {})
+            range_title = range_data.get("title", "Range of Application")
             range_items = range_data.get("items", [])
+            
+            # Get valid levels data
+            valid_levels = [l for l in skill.get("proficiencyLevels", []) if l.get("description")]
+            level_numbers = [str(l.get("level")) for l in valid_levels if l.get("level")]
+            
+            # 1. COMPREHENSIVE SKILL OVERVIEW WITH RANGE OF APPLICATION
+            overview_text = f"# {title}\n\n"
+            overview_text += f"## Description\n{description}\n\n"
+            
+            # Add range of application if available
+            if range_items:
+                overview_text += f"## {range_title}\n"
+                for item in range_items:
+                    if item and not item.isspace():
+                        overview_text += f"- {item.strip()}\n"
+                overview_text += "\n"
+            
+            # Add available levels summary
+            if level_numbers:
+                overview_text += f"## Available Proficiency Levels\n"
+                overview_text += f"This skill has {len(level_numbers)} defined proficiency levels: {', '.join(level_numbers)}\n"
+            
+            # Add the comprehensive overview chunk
+            text_chunks.append(overview_text)
+            chunk_metadata.append({
+                "type": "fs_complete_overview",
+                "title": title,
+                "skill": title,
+                "codePrefix": code_prefix,
+                "available_levels": level_numbers,
+                "skill_category": "functional"
+            })
+            
+            # 2. COMPLETE LEVEL INFORMATION (one chunk per level with all details)
+            for lvl in valid_levels:
+                level_no = lvl.get("level")
+                if not level_no:
+                    continue
+                
+                level_desc = lvl.get("description", "")
+                fsc_code = lvl.get("fscCode", "")
+                knowledge_points = lvl.get("underpinningKnowledge", [])
+                skill_applications = lvl.get("skillsApplication", [])
+                
+                # Create comprehensive level chunk
+                level_text = f"# {title} - Level {level_no}\n\n"
+                if fsc_code:
+                    level_text += f"**Code:** {fsc_code}\n\n"
+                
+                # Add level description
+                level_text += f"## Level Description\n{level_desc}\n\n"
+                
+                # Add knowledge requirements
+                if knowledge_points:
+                    level_text += f"## Underpinning Knowledge\nAt this level, you should know:\n"
+                    for k in knowledge_points:
+                        if k and not k.isspace():
+                            level_text += f"- {k.strip()}\n"
+                    level_text += "\n"
+                
+                # Add skill applications
+                if skill_applications:
+                    level_text += f"## Skills Application\nAt this level, you should be able to:\n"
+                    for sa in skill_applications:
+                        if sa and not sa.isspace():
+                            level_text += f"- {sa.strip()}\n"
+                
+                # Add the comprehensive level chunk
+                text_chunks.append(level_text)
+                chunk_metadata.append({
+                    "type": "fs_complete_level",
+                    "title": f"{title} - Level {level_no}",
+                    "skill": title,
+                    "level": level_no,
+                    "fscCode": fsc_code,
+                    "skill_category": "functional"
+                })
+            
+            # 3. Keep original overview and range chunks for specific searches
+            # Basic skill overview (without range)
+            basic_overview = f"Functional Skill: {title}\nDescription: {description}\nLevels: {', '.join(level_numbers)}"
+            text_chunks.append(basic_overview)
+            chunk_metadata.append({
+                "type": "fs_overview",
+                "title": title,
+                "skill": title,
+                "codePrefix": code_prefix,
+                "available_levels": level_numbers,
+                "skill_category": "functional"
+            })
+            
+            # Range of application as separate chunk (if available)
             if range_items:
                 range_text = f"{title} - Contexts of Application\n\nThis skill can be applied in the following contexts:\n"
                 range_text += "\n".join([f"• {item.strip()}" for item in range_items if item and not item.isspace()])
                 
-                add_chunk(
-                    range_text,
-                    {
-                        "type": "fs_range",
-                        "title": f"{title} - Contexts of Application",
-                        "skill": title,
-                        "skill_category": "functional"
-                    }
-                )
-            
-            # 3. Per-level chunks and micro-chunks
-            for lvl in skill.get("proficiencyLevels", []):
-                level_no = lvl.get("level")
-                if not level_no or not lvl.get("description"):
-                    continue  # Skip empty levels
-                
-                # Add progression context
-                progression_context = ""
-                if int(level_no) < max_level:
-                    progression_context = f"\nThis is level {level_no} of {max_level}. Higher levels represent more advanced proficiency."
-                elif int(level_no) == max_level:
-                    progression_context = f"\nThis is the highest proficiency level ({level_no} of {max_level}) for this skill."
-                
-                # Level summary with description
-                add_chunk(
-                    f"{title} – Level {level_no}\nCode: {lvl.get('fscCode', '')}\n"
-                    f"{lvl.get('description', '')}{progression_context}",
-                    {
-                        "type": "fs_level",
-                        "title": f"{title} - Level {level_no}",
-                        "skill": title,
-                        "level": level_no,
-                        "codePrefix": code_prefix,
-                        "fscCode": lvl.get("fscCode", ""),
-                        "max_level": max_level,
-                        "skill_category": "functional"
-                    }
-                )
-                
-                # Knowledge points as a group (if present)
-                knowledge_points = lvl.get("underpinningKnowledge", [])
-                if knowledge_points:
-                    knowledge_text = f"{title} – Level {level_no} – Required Knowledge\n\nAt this level, you should know:\n"
-                    knowledge_text += "\n".join([f"• {k.strip()}" for k in knowledge_points if k and not k.isspace()])
-                    
-                    add_chunk(
-                        knowledge_text,
-                        {
-                            "type": "fs_knowledge",
-                            "title": f"{title} - L{level_no} Knowledge",
-                            "skill": title,
-                            "level": level_no,
-                            "skill_category": "functional"
-                        }
-                    )
-                
-                # Micro-chunks for each skillApplication bullet
-                for bullet in lvl.get("skillsApplication", []):
-                    bullet = bullet.strip()
-                    if bullet:
-                        add_chunk(
-                            f"{title} – L{level_no} – Skill: {bullet}",
-                            {
-                                "type": "fs_skill_bullet",
-                                "title": f"{title} - L{level_no} Skill",
-                                "skill": title,
-                                "level": level_no,
-                                "bullet": bullet[:80],  # truncate for index
-                                "skill_category": "functional"
-                            }
-                        )
-            
-            # 4. Create a progression path view if multiple levels exist
-            if len(level_numbers) > 1:
-                progression_text = f"{title} - Progression Path\n\nThis skill has {len(level_numbers)} proficiency levels:\n"
-                
-                for level in sorted([int(l) for l in level_numbers]):
-                    level_data = next((l for l in skill.get("proficiencyLevels", []) 
-                                    if l.get("level") == level and l.get("description")), {})
-                    if level_data.get("description"):
-                        progression_text += f"\nLevel {level}: {level_data.get('description')}\n"
-                
-                add_chunk(
-                    progression_text,
-                    {
-                        "type": "fs_progression",
-                        "title": f"{title} - Progression Path",
-                        "skill": title,
-                        "levels": level_numbers,
-                        "skill_category": "functional"
-                    }
-                )
+                text_chunks.append(range_text)
+                chunk_metadata.append({
+                    "type": "fs_range",
+                    "title": f"{title} - Contexts of Application",
+                    "skill": title,
+                    "skill_category": "functional"
+                })
         
         print(f"Processed {len(chunk_metadata)} functional skill chunks.")
     except Exception as e:
@@ -256,10 +338,45 @@ def process_roles(filepath):
             title = role.get("job_title", "Untitled Role")
             description = role.get("description", "No description")
             key_tasks_list = role.get("key_tasks", [])
-            perf_list = role.get("performance_expectations", [])
+            # Intentionally ignoring performance expectations as requested
             func_skills_list = role.get("functional_skills", [])
             enable_skills_list = role.get("enabling_skills", [])
-
+            
+            # Create a comprehensive "whole role" chunk with all information
+            whole_role_text = f"# {title}\n\n"
+            whole_role_text += f"## Description\n{description.strip()}\n\n"
+            
+            # Add key tasks section
+            whole_role_text += f"## Key Tasks\n"
+            for kt in key_tasks_list:
+                function = kt.get("function", "").strip()
+                tasks = kt.get("tasks", [])
+                if function:
+                    whole_role_text += f"### {function}\n"
+                for task in tasks:
+                    whole_role_text += f"- {task.strip()}\n"
+                whole_role_text += "\n"
+            
+            # Add functional skills section
+            whole_role_text += f"## Functional Skills Required\n"
+            for skill in func_skills_list:
+                whole_role_text += f"- {skill.get('skill')} (Level {skill.get('level')})\n"
+            whole_role_text += "\n"
+            
+            # Add enabling skills section
+            whole_role_text += f"## Enabling Skills Required\n"
+            for skill in enable_skills_list:
+                whole_role_text += f"- {skill.get('skill')} (Level {skill.get('level')})\n"
+            
+            # Add this comprehensive chunk
+            text_chunks.append(whole_role_text)
+            chunk_metadata.append({
+                "type": "whole_role",
+                "title": title,
+                "source_file": os.path.basename(filepath)
+            })
+            
+            # Keep the existing granular chunks for specific queries
             # 1) Role description chunk
             desc_chunk = f"What does a {title} do?\nDescription: {description.strip()}"
             text_chunks.append(desc_chunk)
@@ -304,17 +421,6 @@ def process_roles(filepath):
                 "title": title,
                 "source_file": os.path.basename(filepath)
             })
-
-            # 4) Performance expectations chunk
-            if perf_list:
-                perf_chunk = f"Performance expectations for {title}:\n" + \
-                    "\n".join(f"- {p.strip()}" for p in perf_list)
-                text_chunks.append(perf_chunk)
-                chunk_metadata.append({
-                    "type": "role_performance",
-                    "title": title,
-                    "source_file": os.path.basename(filepath)
-                })
 
         print(f"Processed {len(chunk_metadata)} role chunks.")
     except FileNotFoundError:
