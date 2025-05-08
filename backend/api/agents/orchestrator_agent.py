@@ -7,8 +7,17 @@ from .psf_knowledge_agent import PSFKnowledgeAgent
 from .course_search_agent import CourseSearchAgent
 from .learning_path_agent import LearningPathAgent
 from ..utils.intent_classifier import QueryIntent
+from agno import AGNOAgent
 
 logger = logging.getLogger(__name__)
+
+# Initialize AGNO agent with chat history enabled
+agno_agent = AGNOAgent(
+    add_history_to_messages=True,
+    num_history_runs=3,
+    read_chat_history=True,
+    # Optionally: storage_driver=YourPersistentStorage()
+)
 
 class OrchestratorAgent(BaseAgent):
     """Coordinates the execution of specialised agents based on intent."""
