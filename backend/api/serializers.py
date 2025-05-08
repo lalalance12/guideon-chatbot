@@ -1,9 +1,8 @@
 # filepath: c:\Users\Asus\Desktop\guideon-chatbot\backend\api\serializers.py
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Pathway # Import Pathway if needed for context structure validation (optional)
 from django.contrib.auth.password_validation import validate_password
-from .models import Chat, Message
+from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk, PathwayCourse, PathwayKnowledge, UserLearnedCourse
 
 class UserSerializer(serializers.ModelSerializer):
     fullName = serializers.CharField(source='first_name', required=True)
@@ -69,3 +68,33 @@ class ChatRequestSerializer(serializers.Serializer):
 class ChatResponseSerializer(serializers.Serializer):
     response = serializers.CharField()
     chat_id = serializers.IntegerField()
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['id', 'title', 'provider', 'url', 'metadata']
+
+class CourseSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseSearch
+        fields = ['id', 'query', 'searched_at', 'user', 'course', 'chat']
+
+class LearningPathwaySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LearningPathway
+        fields = ['id', 'title', 'description', 'metadata', 'embedding', 'created_at', 'user']
+
+class KnowledgeSourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KnowledgeSource
+        fields = ['id', 'name', 'source_type', 'metadata']
+
+class KnowledgeChunkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KnowledgeChunk
+        fields = ['id', 'text', 'metadata', 'embedding', 'source']
+
+class UserLearnedCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserLearnedCourse
+        fields = ['id', 'user', 'course', 'learned_at', 'skill_text']
