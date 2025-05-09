@@ -127,17 +127,17 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
         """Format knowledge base results for the LLM"""
         if not kb_results or not kb_results.get('found', False):
             return {"found": False}
-        
+
         items = kb_results.get('items', [])
         formatted_items = []
-        
+
         for item in items:
             formatted_items.append({
                 "title": item.get('title', ''),
                 "type": item.get('type', ''),
                 "content": item.get('content', '')
             })
-        
+
         return {
             "found": True,
             "items": formatted_items,
@@ -170,10 +170,10 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
     def _create_template_response(self, query, intent, kb_results, course_results, path_results):
         """Create a template-based response when LLM is not available"""
         response_parts = []
-        
+
         # Add greeting
         response_parts.append("Hello! I'm Guideon, your PSF-AAI career guide.")
-        
+
         # Add knowledge base information if available
         if kb_results and kb_results.get('found', False):
             items = kb_results.get('items', [])
@@ -187,24 +187,21 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
                         response_parts.append(content)
         elif kb_results and not kb_results.get('found', False):
             response_parts.append("\nI don't have specific information about that in the PSF-AAI framework.")
-            if kb_results.get('psf_aai_info'):
-                info = kb_results.get('psf_aai_info')
-                response_parts.append(f"\nThe PSF-AAI is {info.get('description')} It {info.get('purpose')}")
-        
+
         # Add course recommendations if available
         if course_results and course_results.get('found', False):
             courses = course_results.get('courses', [])
             if courses:
                 response_parts.append("\n## Recommended Courses")
                 for course in courses:
-                    response_parts.append(f"\n- **{course.get('title')}** by {course.get('provider')} (Rating: {course.get('rating', 'N/A')})")
-        
+                    response_parts.append(f"\n- **{course.get('title')}** by {course.get('provider')}")
+
         # Add learning path if available
         if path_results and path_results.get('found', False):
             source = path_results.get('source_role', '')
             target = path_results.get('target_role', '')
             path = path_results.get('path', [])
-            
+
             if source and target and path:
                 response_parts.append(f"\n## Career Path: {source.title()} → {target.title()}")
                 for step in path:
@@ -215,10 +212,10 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
                         response_parts.append("\nKey skills: " + ", ".join(skills))
                     if step.get('estimated_time'):
                         response_parts.append(f"\nEstimated time: {step.get('estimated_time')}")
-        
+
         # Add closing
         response_parts.append("\nIs there anything specific you'd like to know more about?")
-        
+
         return "\n".join(response_parts)
     
     def _create_general_response(self, query):

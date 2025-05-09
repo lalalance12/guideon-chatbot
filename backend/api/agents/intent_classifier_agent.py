@@ -1,8 +1,8 @@
-from .base_agent import BaseAgent
-from ..utils.intent_classifier import classify_intent, QueryIntent
-import logging
 import re
+import logging
 from typing import Dict, Any
+from .base_agent import BaseAgent
+from ..utils.intent_classifier import classify_intent, extract_level_from_query, QueryIntent
 
 logger = logging.getLogger(__name__)
 
@@ -44,57 +44,24 @@ class IntentClassifierAgent(BaseAgent):
         # Use existing intent classifier with enhanced chat history
         intent, confidence = classify_intent(query, chat_history)
         
-        # Improve intent detection with follow-up patterns
-        if confidence < 0.7 and chat_history and len(chat_history) > 1:
-            # Check if current query seems like a follow-up
-            follow_up_patterns = [
-                r"^(and|also|what about|how about|tell me more|elaborate|explain)",
-                r"^(yes|yeah|sure|ok|okay|go on)",
-                r"^(no|nope)"
-            ]
-            
-            is_follow_up = any(re.match(pattern, query.lower()) for pattern in follow_up_patterns)
-            
-            if is_follow_up:
-                # If it's a follow-up and we have low confidence, try to maintain previous context
-                conversation_topics = memory_context.get('conversation_topics', [])
-                if conversation_topics:
-                    # Use conversation topics to boost confidence for relevant intents
-                    for topic in conversation_topics:
-                        topic_lower = topic.lower()
-                        # Check if any of these key patterns exist in the conversation topics
-                        if 'career' in topic_lower or 'path' in topic_lower:
-                            intent = QueryIntent.CAREER_PATH
-                            confidence += 0.2
-                            break
-                        elif 'role' in topic_lower or 'job' in topic_lower or 'position' in topic_lower:
-                            intent = QueryIntent.ROLE_INFO
-                            confidence += 0.2
-                            break
-                        elif 'skill' in topic_lower and ('level' in topic_lower or 'progress' in topic_lower):
-                            intent = QueryIntent.SKILL_PROGRESSION
-                            confidence += 0.2
-                            break
-                        elif 'skill' in topic_lower:
-                            intent = QueryIntent.SKILL_INFO
-                            confidence += 0.2
-                            break
-                        elif 'learn' in topic_lower or 'course' in topic_lower or 'education' in topic_lower:
-                            intent = QueryIntent.EDUCATION_ADVICE
-                            confidence += 0.2
-                            break
+        # Extract level or section information from the query
+        extracted_level = extract_level_from_query(query)
+        psf_section = None
         
-        # Extract level information from the query using regex if relevant
-        extracted_level = None
-        if intent in [QueryIntent.SKILL_LEVEL_INFO, QueryIntent.SKILL_PROGRESSION]:
-            level_pattern = r'level\s*(\d+)'
-            level_matches = re.findall(level_pattern, query.lower())
-            extracted_level = int(level_matches[0]) if level_matches else None
+        # Map intent to corresponding PSF section if applicable
+        if intent == QueryIntent.FUNCTIONAL_SKILLS:
+            psf_section = "functional_skills"
+        elif intent == QueryIntent.ENABLING_SKILLS:
+            psf_section = "enabling_skills"
+        elif intent in [QueryIntent.ROLE_INFO, QueryIntent.JOB_ROLES]:
+            psf_section = "job_roles"
+        elif intent == QueryIntent.CAREER_PATH:
+            psf_section = "career_map"
         
         # Get human-readable description of the intent
         description = self._get_intent_description(intent)
         
-        # Prepare response with extracted level if available
+        # Prepare response with extracted level or section
         result = {
             "intent": intent,
             "confidence": min(confidence, 1.0),  # Cap confidence at 1.0
@@ -103,6 +70,9 @@ class IntentClassifierAgent(BaseAgent):
         
         if extracted_level is not None:
             result["extracted_level"] = extracted_level
+        
+        if psf_section is not None:
+            result["psf_section"] = psf_section
         
         logger.info(f"Intent classified as: {intent.value} (confidence: {confidence:.2f})")
         return result
@@ -117,6 +87,20 @@ class IntentClassifierAgent(BaseAgent):
             QueryIntent.SKILL_PROGRESSION: "Questions about advancing through skill levels",
             QueryIntent.SKILL_COMPARISON: "Comparing different skills or competencies",
             QueryIntent.EDUCATION_ADVICE: "Questions about learning resources and education",
+            QueryIntent.FUNCTIONAL_SKILLS: "Questions about functional skills in the PSF-AAI framework",
+            QueryIntent.ENABLING_SKILLS: "Questions about enabling skills in the PSF-AAI framework",
+            QueryIntent.JOB_ROLES: "Questions about job roles in the PSF-AAI framework",
+            QueryIntent.CAREER_MAP: "Questions about career maps in the PSF-AAI framework",
             QueryIntent.GENERAL_QUERY: "General questions not related to specific career topics"
         }
         return descriptions.get(intent, "General query")
+    
+    def handle_error(self, err):
+        """Handle errors during intent classification"""
+        logger.error(f"Error in intent classification: {err}")
+        return {
+            "intent": QueryIntent.GENERAL_QUERY,
+            "confidence": 0.0,
+            "description": "Could not determine intent due to an error",
+            "error": str(err)
+        }
