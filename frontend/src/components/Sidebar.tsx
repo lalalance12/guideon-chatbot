@@ -7,7 +7,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { createContext, useContext, ReactNode, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { authService, User } from "../services/auth";
 
 interface SidebarContextProps {
@@ -24,6 +24,7 @@ interface SidebarProps {
 
 export default function Sidebar({ children }: SidebarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -44,6 +45,14 @@ export default function Sidebar({ children }: SidebarProps) {
     navigate('/auth');
   };
 
+  const handleNavigateToLearningPaths = () => {
+    navigate('/learning-pathways');
+  };
+
+  const handleNavigateToChat = () => {
+    navigate('/chat');
+  };
+
   return (
     <aside className="h-screen w-64 fixed left-0">
       <nav className="h-full flex flex-col bg-white border-r border-gray-200 shadow-sm">
@@ -51,7 +60,7 @@ export default function Sidebar({ children }: SidebarProps) {
           <h1 className="text-2xl font-bold text-indigo-600">Guideon</h1>
         </div>
 
-        <div className="px-4 py-6">
+        <div className="px-4 py-8">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
             Learning Hub
           </h2>
@@ -60,13 +69,16 @@ export default function Sidebar({ children }: SidebarProps) {
               <SidebarItem
                 icon={<MessageSquare size={18} />}
                 text="Chat with Guideon"
-                active
+                active={location.pathname === '/chat' || location.pathname === '/'}
+                onClick={handleNavigateToChat}
               />
               <SidebarItem icon={<Compass size={18} />} text="Explore Topics" />
               <SidebarItem
                 icon={<BookOpen size={18} />}
                 text="Learning Paths"
                 alert
+                onClick={handleNavigateToLearningPaths}
+                active={location.pathname === '/learning-pathways'}
               />
             </ul>
           </SidebarContext.Provider>
