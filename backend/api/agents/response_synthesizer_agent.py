@@ -57,8 +57,14 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
         try:
             # `model` is the expected kwarg in the latest Ollama SDK
             self.llm = Ollama(id="llama3.2:latest",
-                              provider="Ollama", host="http://localhost:11434")
-            self.agent = Agent(name="Synthesizer", model=self.llm)
+                              provider="Ollama", 
+                              host="http://localhost:11434")
+            self.agent = Agent(
+                name="Synthesizer", 
+                model=self.llm,
+                system_message=self.system_prompt,
+                temperature=0.7
+            )
         except Exception as exc:
             logger.error("Could not initialise Ollama: %s", exc)
             self.llm = None  # will fall back to template responses

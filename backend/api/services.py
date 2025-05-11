@@ -22,36 +22,71 @@ class GuideonChatService:
         self.orchestrator = OrchestratorAgent()
         self.synthesizer = ResponseSynthesizerAgent()
         
-        embedder = OllamaEmbedder()
+        # Initialize memory as None by default
+        self.memory = None
+        self.agent_db = None
+        self.agno_agent = None
         
-        # Initialize new Agno memory components with proper database connection
-        db_settings = settings.DATABASES['default']
-        dsn = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
-        
-        # Create SQLAlchemy engine for AGNO
-        db_engine = create_engine(dsn)
-        
-        # Initialize PgMemoryDb with required parameters
-        pg_db = PgMemoryDb(
-            table_name="guideon_chat_memory",
-            db_engine=db_engine,
-            embedder=embedder
-        )
-
-        # Store the db instance if needed elsewhere
-        self.agent_db = pg_db
-        
-        # Initialize AGNO AgentMemory
-        # The user's example shows AgentMemory(db=PgMemoryDb(), ...),
-        # it might take other params like history config.
-        self.memory = AgentMemory(db=self.agent_db)
-        
-        # Initialize AGNO agent with the new memory system
-        self.agno_agent = Agent(
-            name="ServicesAGNOAgent",
-            model=None, # Still a placeholder, needs a proper model
-            memory=self.memory # Using the new AgentMemory instance
-        )
+        # Try to initialize AGNO components
+        self._init_memory()
+        self._init_agent()
+    
+    def _init_memory(self):
+        """Initialize the memory system with proper error handling"""
+        try:
+            embedder = OllamaEmbedder()
+            
+            # Get database settings
+            db_settings = settings.DATABASES['default']
+            dsn = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
+            
+            # Create SQLAlchemy engine
+            db_engine = create_engine(dsn)
+            
+            # Initialize memory database
+            self.agent_db = PgMemoryDb(
+                table_name="guideon_chat_memory",
+                db_engine=db_engine
+            )
+            
+            # Initialize memory system with AGNO v1.4.5 compatible approach
+            self.memory = AgentMemory(db=self.agent_db)
+            logger.info("AGNO memory system initialized successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to initialize AGNO memory: {e}", exc_info=True)
+            self.memory = None
+            self.agent_db = None
+            return False
+    
+    def _init_agent(self):
+        """Initialize the AGNO agent with proper error handling"""
+        try:
+            from agno.models.ollama import Ollama
+            # Initialize Llama model
+            llama_model = Ollama(id="llama3.2:latest", provider="Ollama", host="http://localhost:11434")
+            self.agno_agent = Agent(
+                name="ServicesAGNOAgent",
+                model=llama_model,
+                memory=self.memory
+            )
+            logger.info("AGNO agent initialized successfully with Llama 3.2")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to initialize Llama 3.2 model: {e}", exc_info=True)
+            try:
+                # Fallback to agent without model
+                self.agno_agent = Agent(
+                    name="ServicesAGNOAgent",
+                    model=None,
+                    memory=self.memory
+                )
+                logger.info("AGNO agent initialized without model")
+                return True
+            except Exception as e2:
+                logger.error(f"Failed to initialize AGNO agent: {e2}", exc_info=True)
+                self.agno_agent = None
+                return False
     
     async def process_message(self, user_query: str, chat_id=None) -> str:
         """
@@ -77,87 +112,84 @@ class GuideonChatService:
                 
                 session_id = f"chat_{chat_id}"
                 
-                # NOTE: The API for self.memory.add and self.memory.search might have changed
-                # with AgentMemory. This section will likely need review and updates
-                # based on the new Agno API.
-
-                # Add current query to memory
-                # Assuming AgentMemory has an 'add' method similar to the old one.
-                # It might now require different parameters or structure.
-                await self.memory.add( # Assuming add is now async or we need to wrap it
-                    session_id=session_id,
-                    texts=[user_query], # AgentMemory might expect a list of texts
-                    metadata=[{ # And a list of metadata
+                # Add current query to memory if available
+                if self.memory:
+                    user_message = [{
+                        "role": "user",
+                        "content": user_query
+                    }]
+                    
+                    # Shared metadata for this message
+                    user_metadata = {
+                        "session_id": session_id,
                         "type": "user_query", 
                         "timestamp": str(asyncio.get_event_loop().time()),
                         "content_type": "question",
                         "entities": self._extract_entities(user_query)
-                    }]
-                )
-                
-                # Add chat history to memory
-                # This loop also needs to be checked against AgentMemory's API
-                history_texts = []
-                history_metadata = []
-                for msg in messages:
-                    # Simplified check, assuming AgentMemory's search might be different
-                    # existing_messages = await self.memory.search(session_id=session_id, query=msg.content[:50], limit=1)
-                    # if not any(mem.content == msg.content for mem in existing_messages): # This comparison might fail
-                    
-                    msg_meta = {
-                        "type": "message", 
-                        "role": msg.role,
-                        "timestamp": str(msg.timestamp) if hasattr(msg, 'timestamp') else "",
-                        "content_type": "question" if msg.role == "user" else "answer",
                     }
-                    if msg.role == "user":
-                        msg_meta["entities"] = self._extract_entities(msg.content)
                     
-                    history_texts.append(msg.content)
-                    history_metadata.append(msg_meta)
-
-                if history_texts:
-                    await self.memory.add(
-                        session_id=session_id,
-                        texts=history_texts,
-                        metadata=history_metadata
+                    await self._add_to_memory(
+                        user_message, 
+                        "User query",
+                        shared_metadata=user_metadata
                     )
                 
+                # Add chat history to memory using the correct AGNO v1.4.5 method
+                formatted_messages = []
+                for msg in messages:
+                    # Format each message with only role and content 
+                    # (metadata will be added as shared metadata)
+                    formatted_msg = {
+                        "role": msg.role,
+                        "content": msg.content
+                    }
+                    formatted_messages.append(formatted_msg)
+                
+                # Add chat history to memory if available
+                if formatted_messages:
+                    # Create shared metadata for all history messages
+                    history_metadata = {
+                        "session_id": session_id,
+                        "type": "chat_history",
+                        "timestamp": str(asyncio.get_event_loop().time()),
+                        "content_type": "conversation_history"
+                    }
+                    
+                    await self._add_to_memory(
+                        formatted_messages, 
+                        "Chat history", 
+                        shared_metadata=history_metadata
+                    )
+                
+                # Semantic search - implement using memory API from AGNO v1.4.5
                 memory_context = {}
+                if self.memory:
+                    # Use metadata filter to get messages for this session
+                    conversation_messages = await self._get_from_memory(
+                        limit=20, 
+                        metadata_filter={"session_id": session_id}
+                    )
+                    
+                    # Get the 5 most recent messages
+                    conversation_messages = conversation_messages[:5]
+                    
+                    if conversation_messages:
+                        # Extract user messages for conversation topics
+                        memory_context['conversation_topics'] = [
+                            msg.get("content", "") for msg in conversation_messages 
+                            if msg.get("role") == "user"
+                        ]
+                        
+                        # For short queries, get additional context
+                        if len(user_query.split()) <= 5:
+                            memory_context['recent_context'] = [
+                                msg.get("content", "") for msg in conversation_messages
+                            ]
                 
-                # Semantic search calls also need to be updated for AgentMemory's API
-                # Example:
-                # conversation_context_results = await self.memory.search(
-                #     session_id=session_id,
-                #     query="What are the main topics...",
-                #     limit=3
-                # )
-                # if conversation_context_results:
-                #    memory_context['conversation_topics'] = [res.text for res in conversation_context_results] # or res.content
-
-                # For now, commenting out the memory search part as it needs API verification
-                # conversation_context = self.memory.search(...)
-                # if conversation_context:
-                #     memory_context['conversation_topics'] = [mem.content for mem in conversation_context]
-                
-                # user_preferences = self.memory.search(...)
-                # if user_preferences:
-                #     memory_context['user_preferences'] = [mem.content for mem in user_preferences]
-
-                # if len(user_query.split()) <= 5:
-                #    recent_context = self.memory.search(...)
-                #    semantic_context = self.memory.search(...)
-                #    ...
-                #    if follow_up_context:
-                #        memory_context['recent_context'] = [mem.content for mem in follow_up_context]
-                
-                # Summary fetching might also change if AgentMemory handles it internally or via PgMemoryDb
-                # if len(messages) > 20:
-                #     await self._run_memory_maintenance(session_id) # This called self.storage which is gone
-                #     # Direct DB query might still work if PgMemoryDb creates similar tables,
-                #     # but ideally AgentMemory provides an API for summaries.
-                #     # with self.agent_db._get_connection() as cursor: # This is an assumption
-                #     # ...
+                # Summary fetching and pruning if needed
+                if self.memory and len(messages) > 20:
+                    # Run memory maintenance in the background without blocking the main flow
+                    asyncio.create_task(self._run_memory_maintenance(session_id))
 
                 if memory_context: # This will be empty for now
                     context['memory_context'] = memory_context
@@ -185,22 +217,30 @@ class GuideonChatService:
             response = synthesis_result.get('response', 'I apologize, but I was unable to generate a response.')
             logger.info(f"Response generated successfully (source: {synthesis_result.get('source', 'unknown')})")
             
-            if chat_id:
+            # Add response to memory
+            if chat_id and self.memory:
                 intent_value = getattr(context.get('intent'), 'value', str(context.get('intent')))
-                # Adding response to memory - check AgentMemory API
-                await self.memory.add( # Assuming add is async
-                    session_id=f"chat_{chat_id}",
-                    texts=[response],
-                    metadata=[{
-                        "type": "assistant_response", 
-                        "role": "assistant",
-                        "intent": intent_value,
-                        "source": synthesis_result.get('source', 'unknown'),
-                        "content_type": "answer",
-                        "topics": self._extract_entities(response),
-                        "has_course_info": bool(context.get("course_search", {}).get("found", False)),
-                        "has_pathway_info": bool(context.get("learning_path", {}).get("found", False))
-                    }]
+                assistant_message = [{
+                    "role": "assistant",
+                    "content": response
+                }]
+                
+                # Create shared metadata for the assistant response
+                assistant_metadata = {
+                    "session_id": f"chat_{chat_id}",
+                    "type": "assistant_response", 
+                    "intent": intent_value,
+                    "source": synthesis_result.get('source', 'unknown'),
+                    "content_type": "answer",
+                    "topics": self._extract_entities(response),
+                    "has_course_info": bool(context.get("course_search", {}).get("found", False)),
+                    "has_pathway_info": bool(context.get("learning_path", {}).get("found", False))
+                }
+                
+                await self._add_to_memory(
+                    assistant_message, 
+                    "Assistant response", 
+                    shared_metadata=assistant_metadata
                 )
             
             return response
@@ -208,6 +248,128 @@ class GuideonChatService:
         except Exception as e:
             logger.error(f"Error processing message: {str(e)}", exc_info=True) # Added exc_info
             return self._fallback_response(user_query)
+    
+    async def _run_memory_maintenance(self, session_id):
+        """Run memory maintenance tasks in the background"""
+        if not self.memory:
+            logger.warning("Memory maintenance skipped - memory system not available")
+            return
+            
+        try:
+            # Get all messages for the session using the metadata filter
+            all_messages = await self._get_from_memory(
+                limit=1000, 
+                metadata_filter={"session_id": session_id}
+            )
+            
+            if len(all_messages) > 100:
+                logger.info(f"Pruning memory for session {session_id}, found {len(all_messages)} messages")
+                
+                # For now, just log that pruning would be needed
+                logger.info(f"Memory maintenance would prune {len(all_messages) - 100} messages")
+                
+                # In a future implementation, you could delete old messages and add a summary
+                # summary_message = [{
+                #     "role": "system", 
+                #     "content": "This is a summary of previous conversations..."
+                # }]
+                # summary_metadata = {
+                #     "session_id": session_id,
+                #     "type": "summary", 
+                #     "timestamp": str(asyncio.get_event_loop().time())
+                # }
+                # await self._add_to_memory(summary_message, "Memory maintenance summary", shared_metadata=summary_metadata)
+            
+            logger.debug(f"Memory maintenance completed for session {session_id}")
+        except Exception as e:
+            logger.error(f"Error in memory maintenance: {e}", exc_info=True)
+    
+    async def _add_to_memory(self, messages, log_prefix="", shared_metadata=None):
+        """
+        Safe wrapper for memory operations
+        
+        Args:
+            messages: List of message objects to add to memory
+            log_prefix: Prefix for log messages
+            shared_metadata: Common metadata that applies to all messages
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.memory:
+            return False
+            
+        try:
+            # Extract session_id and type from individual message metadata if they exist
+            # and not already provided in shared_metadata
+            if messages and not shared_metadata:
+                # Get the first message's metadata as a baseline for shared metadata
+                first_msg = messages[0]
+                if isinstance(first_msg, dict) and "metadata" in first_msg:
+                    metadata = first_msg.get("metadata", {})
+                    shared_metadata = {
+                        "session_id": metadata.get("session_id", "unknown_session"),
+                        "type": metadata.get("type", "unknown_type")
+                    }
+            
+            # Clean the messages by removing individual metadata since we'll use shared metadata
+            cleaned_messages = []
+            for msg in messages:
+                if isinstance(msg, dict):
+                    # Keep only role and content in the message objects
+                    cleaned_msg = {
+                        "role": msg.get("role", "unknown"),
+                        "content": msg.get("content", "")
+                    }
+                    cleaned_messages.append(cleaned_msg)
+            
+            # Use the shared metadata approach from AGNO v1.4.5
+            await self.memory.add_messages(
+                messages=cleaned_messages,
+                metadata=shared_metadata
+            )
+            
+            if log_prefix:
+                logger.debug(f"{log_prefix}: Added {len(messages)} messages to memory")
+            return True
+        except Exception as e:
+            logger.error(f"Error adding messages to memory ({log_prefix}): {e}", exc_info=True)
+            return False
+            
+    async def _get_from_memory(self, limit=20, filter_func=None, metadata_filter=None):
+        """
+        Safe wrapper for memory retrieval
+        
+        Args:
+            limit: Maximum number of messages to retrieve
+            filter_func: Optional function to filter messages (legacy approach)
+            metadata_filter: Dictionary of metadata key-value pairs to filter by
+            
+        Returns:
+            List of messages, or empty list if no memory or error
+        """
+        if not self.memory:
+            return []
+            
+        try:
+            # If metadata_filter is provided, use it directly with the API
+            if metadata_filter:
+                messages = await self.memory.get_messages(
+                    limit=limit,
+                    metadata_filter=metadata_filter
+                )
+            else:
+                # Otherwise just get messages with limit
+                messages = await self.memory.get_messages(limit=limit)
+            
+            # Apply filter_func if provided (legacy approach)
+            if filter_func and callable(filter_func):
+                messages = [msg for msg in messages if filter_func(msg)]
+                
+            return messages
+        except Exception as e:
+            logger.error(f"Error retrieving messages from memory: {e}", exc_info=True)
+            return []
     
     def _extract_entities(self, text):
         """
@@ -235,23 +397,6 @@ class GuideonChatService:
                 entities.append(term.lower())
         
         return entities
-    
-    async def _run_memory_maintenance(self, session_id):
-        """Run memory maintenance tasks in the background"""
-        # This method needs to be re-evaluated.
-        # The old self.storage.summarize_and_prune is gone.
-        # PgMemoryDb or AgentMemory might have their own maintenance/pruning methods.
-        logger.warning(f"_run_memory_maintenance for session {session_id} needs to be updated for new Agno memory API.")
-        # try:
-        #     await asyncio.to_thread(
-        #         self.agent_db.summarize_and_prune, # This is a guess, API unknown
-        #         session_id=session_id,
-        #         max_items=100,
-        #         older_than_hours=24
-        #     )
-        #     logger.debug(f"Memory maintenance completed for session {session_id}")
-        # except Exception as e:
-        #     logger.error(f"Error in memory maintenance: {e}", exc_info=True)
     
     def _fallback_response(self, query):
         """Generate a fallback response when the main pipeline fails"""
