@@ -1,5 +1,14 @@
 @import 'tailwindcss';
 
+
+@theme {
+  /* your custom colors become utilities like bg-guideon-purple, text-guideon-purple, etc. */
+  --color-guideon-purple:        #6B46FE;
+  --color-guideon-light:  #EFF1FB;
+  --color-text-main:             #333333;
+  --color-text-accent:           #6B46FE;
+}
+
 :root {
   --primary-color: #4f46e5;
   --primary-hover: #4338ca;
