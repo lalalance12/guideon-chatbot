@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Auth from "./pages/Auth";
+import LearningPathways from "./pages/LearningPathways";
 import Sidebar from "./components/Sidebar";
 import { authService } from "./services/auth";
 import "typeface-muli";
@@ -35,6 +36,16 @@ const App = (): React.ReactElement => {
             <ProtectedRoute>
               <DashboardLayout>
                 <Chat />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/learning-pathways"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <LearningPathways />
               </DashboardLayout>
             </ProtectedRoute>
           }
