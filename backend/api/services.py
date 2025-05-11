@@ -1,9 +1,12 @@
 import logging
 import asyncio
+import os
+from django.conf import settings
 from agno.agent import Agent
 from agno.memory import AgentMemory
 from agno.memory.db.postgres import PgMemoryDb
 from agno.embedder.ollama import OllamaEmbedder
+from sqlalchemy import create_engine
 from .agents.intent_classifier_agent import IntentClassifierAgent
 from .agents.orchestrator_agent import OrchestratorAgent
 from .agents.response_synthesizer_agent import ResponseSynthesizerAgent
@@ -21,19 +24,23 @@ class GuideonChatService:
         
         embedder = OllamaEmbedder()
         
-        # Initialize new Agno memory components
-        # Assuming PgMemoryDb might take an embedder or uses Django settings
-        # Also, connection details for PgMemoryDb might be needed (e.g., dsn)
-        # For now, let's assume it can be initialized simply or picks up Django's DB settings.
-        # We might need to pass Django's DATABASES settings to it.
-        # Example: db_settings = settings.DATABASES['default']
-        #          dsn = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
-        #          pg_db = PgMemoryDb(dsn=dsn, embedder=embedder) # This is a guess
-        pg_db = PgMemoryDb(table_name="guideon_chat_memory")
+        # Initialize new Agno memory components with proper database connection
+        db_settings = settings.DATABASES['default']
+        dsn = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
+        
+        # Create SQLAlchemy engine for AGNO
+        db_engine = create_engine(dsn)
+        
+        # Initialize PgMemoryDb with required parameters
+        pg_db = PgMemoryDb(
+            table_name="guideon_chat_memory",
+            db_engine=db_engine,
+            embedder=embedder
+        )
 
-        # self.storage = PostgresMemoryStorage(embedder=embedder) # Old way
-        self.agent_db = pg_db # Store the db instance if needed elsewhere, e.g. for direct table operations
-
+        # Store the db instance if needed elsewhere
+        self.agent_db = pg_db
+        
         # Initialize AGNO AgentMemory
         # The user's example shows AgentMemory(db=PgMemoryDb(), ...),
         # it might take other params like history config.

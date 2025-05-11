@@ -12,14 +12,22 @@ from agno.agent import Agent
 logger = logging.getLogger(__name__)
 
 # Initialize AGNO agent
-agno_agent = Agent(
-    name="OrchestratorAGNOAgent",
-    model=None
-    # add_history_to_messages=True,
-    # num_history_runs=3,
-    # read_chat_history=True,
-    # Optionally: storage_driver=YourPersistentStorage()
-)
+try:
+    # Try with proper parameters based on AGNO version
+    agno_agent = Agent(
+        name="OrchestratorAGNOAgent",
+        model=None,  # Will be set later when needed
+        add_history_to_messages=True,
+        num_history_runs=3,
+        read_chat_history=True
+    )
+except TypeError:
+    # Fallback for different AGNO versions
+    logger.warning("Falling back to simpler Agent initialization")
+    agno_agent = Agent(
+        name="OrchestratorAGNOAgent",
+        model=None
+    )
 
 class OrchestratorAgent(BaseAgent):
     """Coordinates the execution of specialised agents based on intent."""
