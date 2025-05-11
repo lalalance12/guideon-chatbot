@@ -17,6 +17,7 @@ from .agents.course_search_agent import CourseSearchAgent
 logger = logging.getLogger(__name__)
 from .services import query_ollama
 from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk
+from api.utils.intent_classifier import QueryIntent
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -155,7 +156,7 @@ class CourseSearchView(APIView):
         try:
             # Create a context dict with education_advice intent
             context = {
-                'intent': 'education_advice',
+                'intent': QueryIntent.EDUCATION_ADVICE,
                 'confidence': 0.8
             }
             
