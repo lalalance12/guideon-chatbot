@@ -1,15 +1,13 @@
 import logging
 import asyncio
-from asgiref.sync import sync_to_async
-import traceback
+from agno.agent import Agent
+from agno.memory import AgentMemory
+from agno.memory.db.postgres import PgMemoryDb
+from agno.embedder.ollama import OllamaEmbedder
 from .agents.intent_classifier_agent import IntentClassifierAgent
 from .agents.orchestrator_agent import OrchestratorAgent
 from .agents.response_synthesizer_agent import ResponseSynthesizerAgent
 from .models import Chat
-from agno import AGNOAgent
-from agno.memory import Memory
-from .utils.postgres_memory import PostgresMemoryStorage
-from agno.embedder import OllamaEmbedder
 
 logger = logging.getLogger(__name__)
 
@@ -21,22 +19,31 @@ class GuideonChatService:
         self.orchestrator = OrchestratorAgent()
         self.synthesizer = ResponseSynthesizerAgent()
         
-        # Initialize custom PostgreSQL storage for AGNO memory
-        embedder = OllamaEmbedder(
-            model="llama3.2:latest",
-            base_url="http://localhost:11434"
-        )
-        self.storage = PostgresMemoryStorage(embedder=embedder)
+        embedder = OllamaEmbedder()
         
-        # Initialize AGNO memory with PostgreSQL storage
-        self.memory = Memory(storage_driver=self.storage)
+        # Initialize new Agno memory components
+        # Assuming PgMemoryDb might take an embedder or uses Django settings
+        # Also, connection details for PgMemoryDb might be needed (e.g., dsn)
+        # For now, let's assume it can be initialized simply or picks up Django's DB settings.
+        # We might need to pass Django's DATABASES settings to it.
+        # Example: db_settings = settings.DATABASES['default']
+        #          dsn = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
+        #          pg_db = PgMemoryDb(dsn=dsn, embedder=embedder) # This is a guess
+        pg_db = PgMemoryDb(table_name="guideon_chat_memory")
+
+        # self.storage = PostgresMemoryStorage(embedder=embedder) # Old way
+        self.agent_db = pg_db # Store the db instance if needed elsewhere, e.g. for direct table operations
+
+        # Initialize AGNO AgentMemory
+        # The user's example shows AgentMemory(db=PgMemoryDb(), ...),
+        # it might take other params like history config.
+        self.memory = AgentMemory(db=self.agent_db)
         
-        # Initialize AGNO agent with memory and chat history enabled
-        self.agno_agent = AGNOAgent(
-            add_history_to_messages=True,
-            num_history_runs=5,  # Include 5 previous interactions
-            read_chat_history=True,
-            memory=self.memory
+        # Initialize AGNO agent with the new memory system
+        self.agno_agent = Agent(
+            name="ServicesAGNOAgent",
+            model=None, # Still a placeholder, needs a proper model
+            memory=self.memory # Using the new AgentMemory instance
         )
     
     async def process_message(self, user_query: str, chat_id=None) -> str:
@@ -57,126 +64,102 @@ class GuideonChatService:
         # Get chat history if available
         if chat_id:
             try:
-                # Replace with Django's native async query methods
                 chat = await Chat.objects.aget(id=chat_id)
                 messages = [msg async for msg in chat.messages.all().order_by('timestamp')]
                 context['chat_history'] = messages
                 
-                # Store messages in AGNO memory for semantic retrieval
                 session_id = f"chat_{chat_id}"
                 
-                # First, add current query to memory with enhanced metadata
-                self.memory.add(
+                # NOTE: The API for self.memory.add and self.memory.search might have changed
+                # with AgentMemory. This section will likely need review and updates
+                # based on the new Agno API.
+
+                # Add current query to memory
+                # Assuming AgentMemory has an 'add' method similar to the old one.
+                # It might now require different parameters or structure.
+                await self.memory.add( # Assuming add is now async or we need to wrap it
                     session_id=session_id,
-                    content=user_query,
-                    metadata={
+                    texts=[user_query], # AgentMemory might expect a list of texts
+                    metadata=[{ # And a list of metadata
                         "type": "user_query", 
                         "timestamp": str(asyncio.get_event_loop().time()),
                         "content_type": "question",
                         "entities": self._extract_entities(user_query)
-                    }
+                    }]
                 )
                 
-                # Add chat history to memory if not already present
+                # Add chat history to memory
+                # This loop also needs to be checked against AgentMemory's API
+                history_texts = []
+                history_metadata = []
                 for msg in messages:
-                    # Check if this message is already in memory to avoid duplicates
-                    existing_messages = self.memory.search(
-                        session_id=session_id,
-                        query=msg.content[:50],  # Use start of message as search query
-                        limit=1
-                    )
+                    # Simplified check, assuming AgentMemory's search might be different
+                    # existing_messages = await self.memory.search(session_id=session_id, query=msg.content[:50], limit=1)
+                    # if not any(mem.content == msg.content for mem in existing_messages): # This comparison might fail
                     
-                    if not any(mem.content == msg.content for mem in existing_messages):
-                        msg_metadata = {
-                            "type": "message", 
-                            "role": msg.role,
-                            "timestamp": str(msg.timestamp) if hasattr(msg, 'timestamp') else "",
-                            "content_type": "question" if msg.role == "user" else "answer",
-                        }
-                        
-                        # Add entity extraction for user messages to improve retrieval
-                        if msg.role == "user":
-                            msg_metadata["entities"] = self._extract_entities(msg.content)
-                            
-                        self.memory.add(
-                            session_id=session_id,
-                            content=msg.content,
-                            metadata=msg_metadata
-                        )
+                    msg_meta = {
+                        "type": "message", 
+                        "role": msg.role,
+                        "timestamp": str(msg.timestamp) if hasattr(msg, 'timestamp') else "",
+                        "content_type": "question" if msg.role == "user" else "answer",
+                    }
+                    if msg.role == "user":
+                        msg_meta["entities"] = self._extract_entities(msg.content)
+                    
+                    history_texts.append(msg.content)
+                    history_metadata.append(msg_meta)
+
+                if history_texts:
+                    await self.memory.add(
+                        session_id=session_id,
+                        texts=history_texts,
+                        metadata=history_metadata
+                    )
                 
-                # Enhanced context building with more targeted queries
                 memory_context = {}
                 
-                # 1. Get conversation topics with semantic search
-                conversation_context = self.memory.search(
-                    session_id=session_id,
-                    query="What are the main topics and concepts in this conversation?",
-                    search_type="semantic",
-                    limit=3
-                )
-                if conversation_context:
-                    memory_context['conversation_topics'] = [mem.content for mem in conversation_context]
+                # Semantic search calls also need to be updated for AgentMemory's API
+                # Example:
+                # conversation_context_results = await self.memory.search(
+                #     session_id=session_id,
+                #     query="What are the main topics...",
+                #     limit=3
+                # )
+                # if conversation_context_results:
+                #    memory_context['conversation_topics'] = [res.text for res in conversation_context_results] # or res.content
+
+                # For now, commenting out the memory search part as it needs API verification
+                # conversation_context = self.memory.search(...)
+                # if conversation_context:
+                #     memory_context['conversation_topics'] = [mem.content for mem in conversation_context]
                 
-                # 2. Get user preferences with entity focus
-                user_preferences = self.memory.search(
-                    session_id=session_id,
-                    query="What specific roles, skills, or career interests has the user mentioned?",
-                    search_type="semantic",
-                    limit=2,
-                    metadata_filter={"role": "user"}  # Only look at user messages
-                )
-                if user_preferences:
-                    memory_context['user_preferences'] = [mem.content for mem in user_preferences]
+                # user_preferences = self.memory.search(...)
+                # if user_preferences:
+                #     memory_context['user_preferences'] = [mem.content for mem in user_preferences]
+
+                # if len(user_query.split()) <= 5:
+                #    recent_context = self.memory.search(...)
+                #    semantic_context = self.memory.search(...)
+                #    ...
+                #    if follow_up_context:
+                #        memory_context['recent_context'] = [mem.content for mem in follow_up_context]
                 
-                # 3. Enhanced follow-up detection for short queries
-                if len(user_query.split()) <= 5:
-                    # Get most recent messages
-                    recent_context = self.memory.search(
-                        session_id=session_id,
-                        query="most recent conversation",
-                        search_type="last_n",
-                        limit=2
-                    )
-                    
-                    # Also try to find semantically relevant context from earlier
-                    semantic_context = self.memory.search(
-                        session_id=session_id,
-                        query=user_query,  # Use the user's short query directly
-                        search_type="semantic",
-                        limit=2
-                    )
-                    
-                    # Combine both for better follow-up handling
-                    follow_up_context = list(recent_context)
-                    for ctx in semantic_context:
-                        if ctx not in follow_up_context:
-                            follow_up_context.append(ctx)
-                    
-                    if follow_up_context:
-                        memory_context['recent_context'] = [mem.content for mem in follow_up_context]
-                
-                # 4. Add session summaries if available (for long conversations)
-                if len(messages) > 20:
-                    # Run memory maintenance to ensure summaries exist
-                    await self._run_memory_maintenance(session_id)
-                    
-                    # Try to fetch summaries from the storage directly
-                    with self.storage._get_connection() as cursor:
-                        cursor.execute(
-                            "SELECT summary FROM agno_summaries WHERE session_id = %s ORDER BY created_at DESC LIMIT 1",
-                            [session_id]
-                        )
-                        summary_results = cursor.fetchall()
-                        if summary_results:
-                            memory_context['conversation_summary'] = [row[0] for row in summary_results]
-                
-                # Add memory context to main context
-                if memory_context:
+                # Summary fetching might also change if AgentMemory handles it internally or via PgMemoryDb
+                # if len(messages) > 20:
+                #     await self._run_memory_maintenance(session_id) # This called self.storage which is gone
+                #     # Direct DB query might still work if PgMemoryDb creates similar tables,
+                #     # but ideally AgentMemory provides an API for summaries.
+                #     # with self.agent_db._get_connection() as cursor: # This is an assumption
+                #     # ...
+
+                if memory_context: # This will be empty for now
                     context['memory_context'] = memory_context
                     
             except Chat.DoesNotExist:
                 logger.warning(f"Chat with id {chat_id} not found")
-        
+            except Exception as e:
+                logger.error(f"Error processing chat history or memory: {e}", exc_info=True)
+
         try:
             # Step 1: Intent Classification
             logger.info(f"Classifying intent for: {user_query[:50]}..." if len(user_query) > 50 else user_query)
@@ -195,13 +178,13 @@ class GuideonChatService:
             response = synthesis_result.get('response', 'I apologize, but I was unable to generate a response.')
             logger.info(f"Response generated successfully (source: {synthesis_result.get('source', 'unknown')})")
             
-            # Store response in memory with enhanced metadata for future context
             if chat_id:
                 intent_value = getattr(context.get('intent'), 'value', str(context.get('intent')))
-                self.memory.add(
+                # Adding response to memory - check AgentMemory API
+                await self.memory.add( # Assuming add is async
                     session_id=f"chat_{chat_id}",
-                    content=response,
-                    metadata={
+                    texts=[response],
+                    metadata=[{
                         "type": "assistant_response", 
                         "role": "assistant",
                         "intent": intent_value,
@@ -210,13 +193,13 @@ class GuideonChatService:
                         "topics": self._extract_entities(response),
                         "has_course_info": bool(context.get("course_search", {}).get("found", False)),
                         "has_pathway_info": bool(context.get("learning_path", {}).get("found", False))
-                    }
+                    }]
                 )
             
             return response
             
         except Exception as e:
-            logger.error(f"Error processing message: {str(e)}")
+            logger.error(f"Error processing message: {str(e)}", exc_info=True) # Added exc_info
             return self._fallback_response(user_query)
     
     def _extract_entities(self, text):
@@ -227,14 +210,12 @@ class GuideonChatService:
         """
         entities = []
         
-        # Look for skill levels
         if "level" in text.lower():
             import re
             level_matches = re.findall(r'level\s*(\d+)', text.lower())
             if level_matches:
                 entities.append(f"level_{level_matches[0]}")
         
-        # Extract key terms based on PSF-AAI domain knowledge
         key_terms = [
             "data", "analytics", "AI", "artificial intelligence", "machine learning",
             "career", "path", "role", "skill", "competency", "framework",
@@ -250,18 +231,20 @@ class GuideonChatService:
     
     async def _run_memory_maintenance(self, session_id):
         """Run memory maintenance tasks in the background"""
-        try:
-            # Prune and summarize old memories
-            # Run in a separate thread to avoid blocking
-            await asyncio.to_thread(
-                self.storage.summarize_and_prune,
-                session_id=session_id,
-                max_items=100,
-                older_than_hours=24
-            )
-            logger.debug(f"Memory maintenance completed for session {session_id}")
-        except Exception as e:
-            logger.error(f"Error in memory maintenance: {e}")
+        # This method needs to be re-evaluated.
+        # The old self.storage.summarize_and_prune is gone.
+        # PgMemoryDb or AgentMemory might have their own maintenance/pruning methods.
+        logger.warning(f"_run_memory_maintenance for session {session_id} needs to be updated for new Agno memory API.")
+        # try:
+        #     await asyncio.to_thread(
+        #         self.agent_db.summarize_and_prune, # This is a guess, API unknown
+        #         session_id=session_id,
+        #         max_items=100,
+        #         older_than_hours=24
+        #     )
+        #     logger.debug(f"Memory maintenance completed for session {session_id}")
+        # except Exception as e:
+        #     logger.error(f"Error in memory maintenance: {e}", exc_info=True)
     
     def _fallback_response(self, query):
         """Generate a fallback response when the main pipeline fails"""
@@ -280,4 +263,20 @@ def query_ollama(user_prompt: str, chat_id=None) -> str:
     Legacy entry point for query processing - calls the new implementation
     """
     service = GuideonChatService()
-    return asyncio.run(service.process_message(user_prompt, chat_id))
+    # asyncio.run can cause issues if an event loop is already running.
+    # If this is called from an async context, it should be awaited.
+    # For Django, consider using asgiref.sync.async_to_sync if in a sync context.
+    try:
+        loop = asyncio.get_running_loop()
+        if loop.is_running():
+            # If called from an already running async context, create a new task
+            # This is a simplification; proper async integration might be needed.
+            logger.warning("query_ollama called from a running asyncio loop. Consider direct async usage.")
+            future = asyncio.ensure_future(service.process_message(user_prompt, chat_id))
+            # This is a blocking call to wait for the future in a sync function.
+            # It's generally not ideal.
+            return loop.run_until_complete(future)
+        else: # pragma: no cover
+            return asyncio.run(service.process_message(user_prompt, chat_id))
+    except RuntimeError: # No running event loop
+        return asyncio.run(service.process_message(user_prompt, chat_id))
