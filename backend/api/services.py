@@ -5,7 +5,7 @@ from agno.agent import Agent
 from agno.memory import AgentMemory
 from agno.memory.db.postgres import PgMemoryDb
 from agno.embedder.ollama import OllamaEmbedder
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from .agents.intent_classifier_agent import IntentClassifierAgent
 from .agents.orchestrator_agent import OrchestratorAgent
 from .agents.response_synthesizer_agent import ResponseSynthesizerAgent
@@ -42,9 +42,11 @@ class GuideonChatService:
                         logger.info("Memory tables initialized")
                     except Exception as e:
                         logger.info(f"Memory tables already exist: {e}")
+                # Use SQLAlchemy's connection for raw SQL, not db_engine.execute()
                 try:
-                    result = db_engine.execute(f"SELECT COUNT(*) FROM {self.agent_db.table_name}").fetchone()
-                    logger.info(f"Memory database connected successfully. Current record count: {result[0] if result else 0}")
+                    with db_engine.connect() as conn:
+                        result = conn.execute(text(f"SELECT COUNT(*) FROM {self.agent_db.table_name}")).fetchone()
+                        logger.info(f"Memory database connected successfully. Current record count: {result[0] if result else 0}")
                 except Exception as db_e:
                     logger.warning(f"Database connection test failed: {db_e}")
             except Exception as table_e:
@@ -81,6 +83,7 @@ class GuideonChatService:
     def _init_agent(self):
         try:
             from agno.models.ollama import Ollama
+            # AGNO v1.4.5 does not support 'temperature' in Agent or Ollama
             llama_model = Ollama(id="llama3.2:latest", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",

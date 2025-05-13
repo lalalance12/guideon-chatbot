@@ -63,7 +63,6 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
                 name="Synthesizer", 
                 model=self.llm,
                 system_message=self.system_prompt,
-                temperature=0.7
             )
         except Exception as exc:
             logger.error("Could not initialise Ollama: %s", exc)
