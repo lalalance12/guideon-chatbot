@@ -98,13 +98,13 @@ const Chat: React.FC = () => {
   const addWelcomeMessage = () => {
     if (apiConnected === false) return; // Don't show welcome if API is disconnected
 
-    setMessages([
-      {
-        id: 1,
-        text: "Hi there! I'm Guideon, your learning assistant. How can I help you today?",
-        isUser: false,
-      },
-    ]);
+  setMessages([
+    {
+      id: 1,
+      text: "Hi there! I’m Guideon, your learning assistant. I can answer your questions about PSF-AAI, search for a course that aligns with functional skill from PSF-AAI, or generate a learning pathway for you. How can I assist you today?",
+      isUser: false,
+    },
+  ]);
   };
 
   // Scroll to the bottom of the chat when new messages are added
