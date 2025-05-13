@@ -5,6 +5,7 @@ from .base_agent import BaseAgent
 from ..utils.intent_classifier import QueryIntent
 from agno.agent import Agent
 from agno.models.ollama import Ollama
+from ..utils.context_manager import ContextManager
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +52,16 @@ class ResponseSynthesizerAgent(BaseAgent):
             "courses": self._format_course_results(courses),
             "learning_path": self._format_path_results(path),
         }
+        
+        # Apply context management to ensure we don't exceed token limits
+        managed_ctx = ContextManager.truncate_context(ctx)
+        
         prompt = (
             "You are Guideon, an AI assistant specialising in the Philippine Skills Framework "
             "for Analytics & AI (PSF-AAI).\n\n"
             f"USER QUERY:\n{query}\n\n"
             "INFORMATION SOURCES:\n"
-            f"{json.dumps(ctx, indent=2)}\n\n"
+            f"{json.dumps(managed_ctx, indent=2)}\n\n"
             "Guidelines:\n"
             "1. Answer directly and concisely.\n"
             "2. Use PSF knowledge first if present.\n"
@@ -65,8 +70,6 @@ class ResponseSynthesizerAgent(BaseAgent):
             "5. Omit irrelevant sections.\n\n"
             "Your response:"
         )
-
-        user_msg = [{"role": "user", "content": prompt}]
 
         try:
             if self.agent is None:                       # model failed to init
