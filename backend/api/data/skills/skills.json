@@ -1,0 +1,18 @@
+[
+  {
+    "Skill Category": "Applications Development",
+    "Skills": [
+      "Python Frameworks: Django or Flask for building robust and scalable web applications.",
+      "Agile Methodologies: Scrum or Kanban to work effectively in iterative development environments.",
+      "Cloud Computing Platforms: Amazon Web Services (AWS) or Google Cloud Platform (GCP) to deploy applications efficiently."
+    ]
+  },
+  {
+    "Skill Category": "Applications Integration",
+    "Skills": [
+      "API Design and Implementation using RESTful APIs or GraphQL, ensuring seamless data exchange between systems.",
+      "Integration Frameworks: Apache Kafka or RabbitMQ to manage complex integration workflows.",
+      "Data Mapping and Transformation Tools: pandas or NumPy for efficient data manipulation and analysis."
+    ]
+  }
+]
