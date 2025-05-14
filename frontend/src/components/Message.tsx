@@ -11,6 +11,17 @@ interface MessageProps {
 const Message: React.FC<MessageProps> = ({ text, type, showAvatar = true }) => {
   const isUser = type === "user";
 
+  // Function to convert newlines to <br> and render HTML content
+  const formatMessage = (message: string) => {
+    const lines = message.split('\n');
+    return lines.map((line, index) => (
+      <React.Fragment key={index}>
+        <span dangerouslySetInnerHTML={{ __html: line }} />
+        {index < lines.length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
+
   return (
     <div
       className={`flex items-start gap-3 ${
@@ -36,7 +47,7 @@ const Message: React.FC<MessageProps> = ({ text, type, showAvatar = true }) => {
             : "chat-bubble chat-bubble-bot"
         }`}
       >
-        {text}
+        {formatMessage(text)}
       </div>
     </div>
   );

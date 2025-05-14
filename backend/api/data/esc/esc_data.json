@@ -1,0 +1,1178 @@
+[
+  {
+    "enablingSkill": {
+      "title": "Adaptability",
+      "description": "Exercise flexibility in behaviors or approaches to respond to changes and evolving contexts",
+      "codePrefix": "ESC-SRE",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-SRE-B001-1",
+          "description": "Modify behaviors and approaches to",
+          "underpinningKnowledge": [
+            "Ideation techniques",
+            "Experimentation techniques",
+            "Problem solving techniques",
+            "Emotional regulation techniques",
+            "Questioning techniques",
+            "Information processing techniques",
+            "Self-awareness concepts",
+            "Impact measurement techniques"
+          ],
+          "skillsApplication": [
+            "Demonstrate an openness to seek and  interpret opinions and practices different  from own",
+            "Seek out information about changes or  evolving contexts which may impact work  activities or priorities",
+            "Set short-term goals in order to perform  work activities effectively during periods  of change",
+            "Adjust existing work activities in  response to new instructions, guidelines  or operating procedures",
+            "Assess own reactions to changes and  evolving contexts to improve future  responses and behaviors",
+            "Monitor own work performance to  identify potential development areas  to enhance responses to changes and  evolving contexts",
+            "Identify appropriate skills and training  which could improve one's response"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-SRE-I001-1",
+          "description": "Manage change in evolving contexts",
+          "underpinningKnowledge": [
+            "Stakeholder analysis techniques",
+            "Group dynamic concepts",
+            "Collaboration styles",
+            "Coaching and mentoring techniques",
+            "Risk analysis techniques",
+            "Self-reflection techniques",
+            "Strategies to evaluate impact of new  ideas, improvements or solutions"
+          ],
+          "skillsApplication": [
+            "Assess the impact of changes and  evolving contexts to identify ways to  adapt skills or processes",
+            "Analyze the rationale for change or  underlying factors driving evolving  contexts",
+            "Develop creative solutions to address  challenges and leverage on opportunities  arising from changes and evolving  contexts",
+            "Evaluate inputs from various  stakeholders and different courses of  actions to determine how to navigate  through change and evolving contexts",
+            "Prioritize work activities in order of  criticality to navigate through change  and evolving contexts",
+            "Coach team members in responding to  changes and evolving contexts",
+            "Reflect on responses to change and  evolving contexts to recommend future"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-SRE-A001-1",
+          "description": "Foster a culture of flexibility that caters to",
+          "underpinningKnowledge": [
+            "Organization's vision, objectives and  operating climate",
+            "Strategies to build resilient teams",
+            "Strategies to drive the continuous  development of new approaches",
+            "Risk mitigation strategies",
+            "Strategies to identify emerging industry  disruptors and trends",
+            "Change management strategies",
+            "Stakeholder dynamics",
+            "Stakeholder management strategies Conflict management strategies"
+          ],
+          "skillsApplication": [
+            "Articulate strategic goals to navigate  through periods of change and evolving  contexts",
+            "Evaluate the impact on the operating  climate, emerging trends and industry  disruptors",
+            "Determine potential opportunities and/or  risks of change or evolving contexts",
+            "Direct the development of new and  alternative approaches to respond to  changes and evolving contexts",
+            "Guide stakeholders to successfully  navigate through change and disruptions",
+            "Lead the resolution of any issues which  impact the organization's ability to adapt  to changes and evolving contexts",
+            "Review existing strategies and  approaches to changes and evolving  contexts"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Building Inclusivity",
+      "description": "Collaborate with stakeholders from different backgrounds or with different abilities, including diversity dimensions such as race, ethnicity, religion, gender orientation, age, physical and learning ability, education, socio-economic status and political belief, to understand the interests of diverse groups and build an inclusive work environment",
+      "codePrefix": "ESC-IWO",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-IWO-B001-1",
+          "description": "Demonstrate sensitivity to the differences  in diversity dimensions and perspectives",
+          "underpinningKnowledge": [
+            "Self-awareness concepts",
+            "Diversity dimensions and preferences",
+            "Types of unconscious bias",
+            "Fair employment practices"
+          ],
+          "skillsApplication": [
+            "Demonstrate understanding of  different types of personal values,  beliefs, perceptions and attitudes when  interacting with diverse groups",
+            "Conduct oneself in accordance with the  organization's inclusion policies and  practices",
+            "Participate in interactions with diverse  groups within the organization",
+            "Adopt active listening and demonstrate  respect for and acknowledge diverse  perspectives or differences",
+            "Assess own behaviour to identify  unconscious biases when operating in a  diverse environment",
+            "Support the development of inclusivity- related communication materials"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-IWO-I001-1",
+          "description": "Manage relationships across diverse groups  within the organization",
+          "underpinningKnowledge": [
+            "Barriers to workplace diversity and  inclusion",
+            "Communication styles",
+            "Interpersonal communication techniques",
+            "Social psychology concepts",
+            "Group dynamics concepts",
+            "Strategies to manage unconscious bias"
+          ],
+          "skillsApplication": [
+            "Convey cultural intelligence and  sensitivity towards differing values,  beliefs and behaviors across diverse  groups",
+            "Promote behaviors and practices that  support diversity and inclusion in the  organization",
+            "Ensure diversity in the composition of  work teams",
+            "Adapt communication styles to  accommodate diversity in stakeholder  dynamics and establish common ground",
+            "Facilitate conversations to encourage  mutual respect and understanding",
+            "Review own behaviour and work  processes for improvements to reduce  unconscious bias",
+            "Communicate the organization's  inclusivity related values and the  rationale for inclusive practices"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-IWO-A001-1",
+          "description": "Oversee the develop and implement  processes and practices which build an  inclusive work environment and enable  diverse groups to work effectively together",
+          "underpinningKnowledge": [
+            "Inclusion strategies and best practices",
+            "Dimensions and behaviors of non- inclusion",
+            "Types of social, political, economic and  cultural factors which impact stakeholder  interactions",
+            "Conflict management strategies"
+          ],
+          "skillsApplication": [
+            "Guide the develop policies and practices  to build inclusion and eliminate biases",
+            "Endorse inclusive outcomes and  initiatives across the organization",
+            "Champion support for the needs of  diverse groups within the organization",
+            "Design open and psychologically safe  environment for the expression of  diverse views",
+            "Manage conflicts and address non- inclusive behaviors",
+            "Champion the organization's inclusion- related communication efforts across  internal and external platforms"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Collaboration",
+      "description": "Manage relationships and work collaboratively and effectively with others to achieve goals",
+      "codePrefix": "ESC-IWO",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-IWO-B002-1",
+          "description": "Contribute to a positive and cooperative  working environment by fulfilling own  responsibilities, managing interpersonal  relationships and providing support to  others to achieve goals",
+          "underpinningKnowledge": [
+            "Types of collaboration tools and  platforms",
+            "Team roles and responsibilities",
+            "Team communication techniques",
+            "Diversity dimensions and preferences",
+            "Behavioral styles",
+            "Knowledge sharing methods and tools",
+            "Listening techniques",
+            "Emotional intelligence dimensions",
+            "Techniques to develop empathy",
+            "Workplace and social etiquette"
+          ],
+          "skillsApplication": [
+            "Perform work activities collaboratively  with others to foster team spirit and  contribute to identified goals",
+            "Demonstrate a positive attitude in  various situations and interactions with  stakeholders",
+            "Share information, knowledge and  experiences with co-workers",
+            "Implement collaboration tools and  platforms to enable different types of  collaboration and information sharing",
+            "Seek to understand others' situations,  perspectives and emotions",
+            "Build rapport with co-workers to  maintain relationships",
+            "Escalate information pertaining  to conflicts in teams to relevant  stakeholders",
+            "Seek feedback from co-workers on own  role and performance in the team"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-IWO-I002-1",
+          "description": "Build relationships and work effectively  with internal and external stakeholders to  create synergies in working towards shared  goals",
+          "underpinningKnowledge": [
+            "Types of team structures",
+            "Types of team development methods",
+            "Team goal-setting concepts",
+            "Group facilitation and problem-solving  methods",
+            "Stakeholder analysis techniques",
+            "Persuasion methods",
+            "Communication styles",
+            "Interpersonal communication techniques",
+            "Personality types and interpersonal  needs",
+            "Emerging virtual collaboration tools and  platforms"
+          ],
+          "skillsApplication": [
+            "Identify shared goals which require  collaboration to facilitate the  achievement of team and organizational  objectives",
+            "Organize teams in a manner that  capitalizes on team members' strengths",
+            "Adapt methods of interaction to cater to  the needs and motivations of others",
+            "Align values, beliefs and perceptions  amongst team members to establish  harmonious working relationships",
+            "Guide team members to manage work  challenges and tasks in a positive manner",
+            "Develop partnerships with key internal  and external stakeholders to achieve  win-win outcomes",
+            "Resolve issues arising from working in  teams",
+            "Provide feedback to team members  on their roles, working styles and  performance in the team",
+            "Suggest tools and platforms which  could be integrated to facilitate virtual  collaboration and enhance productivity"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-IWO-A002-1",
+          "description": "Establish team effectiveness and manage  partnerships to create a cooperative  working environment which enables the  achievement of goals",
+          "underpinningKnowledge": [
+            "Organization's vision, objectives and  operating climate",
+            "Team organization theories",
+            "Motivation theories",
+            "Measures of team effectiveness",
+            "Behavioral science concepts",
+            "Stakeholder dynamics",
+            "Stakeholder management strategies",
+            "Best practices in virtual collaboration",
+            "Conflict management strategies",
+            "Types of social, political, economic and  cultural factors which impact stakeholder  relationships"
+          ],
+          "skillsApplication": [
+            "Champion the development of an open  and collaborative organizational culture",
+            "Establish organizational policies and  procedures that promote a cooperative  working environment",
+            "Drive mutual understanding between  teams across the organization to  encourage the achievement of shared  goals",
+            "Navigate diverse views and opinions  within and beyond the organization to  achieve beneficial outcomes",
+            "Build strategic alliances and partnerships  to achieve desired organizational  objectives",
+            "Oversee the resolution of conflicts or  removal of barriers to collaboration  across the organization",
+            "Devise feedback processes to ensure  the organization strives to work  cooperatively and continuously improve",
+            "Evaluate the effectiveness of virtual  collaboration across the organization to  recommend improvements"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Communication",
+      "description": "Convey and exchange thoughts, ideas and information effectively through various mediums and approaches",
+      "codePrefix": "ESC-IWO",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-IWO-B003-1",
+          "description": "Communicate with others to share  information, respond to general inquiries  and obtain specific information",
+          "underpinningKnowledge": [
+            "Range of technical and non-technical  vocabulary",
+            "Verbal and non-verbal communication  techniques",
+            "Writing techniques",
+            "Listening techniques",
+            "Emotional intelligence dimensions",
+            "Types of communication channels and  tools",
+            "Information processing techniques",
+            "Questioning techniques",
+            "Information confidentiality and  disclosure considerations"
+          ],
+          "skillsApplication": [
+            "Identify appropriate communication  channels to convey or exchange  information",
+            "Deploy listening techniques to engage  with and understand the audience",
+            "Ask questions to seek clarity when  receiving information",
+            "Present ideas using concise and clear  language",
+            "Implement verbal and non-verbal  communication techniques to convey  and receive information across  communication channels",
+            "Define desired outcomes for the exchange  of information"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-IWO-I003-1",
+          "description": "Tailor communication approaches to  audience needs and determine suitable  methods to convey and exchange  information",
+          "underpinningKnowledge": [
+            "Verbal and non-verbal signals",
+            "Communication styles",
+            "Behavioral insights concepts",
+            "Types of writing styles",
+            "Presentation and information structuring  techniques",
+            "Types of visualization tools and  techniques",
+            "Stakeholder analysis techniques",
+            "Techniques for analyzing audience  reactions",
+            "Interpersonal communication techniques",
+            "Two-way communication techniques",
+            "Persuasion methods"
+          ],
+          "skillsApplication": [
+            "Analyze communication objectives,  types of stakeholders and needs to  determine communication priorities",
+            "Evaluate communication objectives,  styles, verbal and non-verbal signals to  adapt communication approaches and  channels",
+            "Present information in a structured flow  and format which is reflective of audience  needs",
+            "Determine relevant information and  visualization techniques to share and  convey a persuasive viewpoint",
+            "Adapt communication approaches  continuously to respond to audience  reactions",
+            "Analyze information exchanged to  identify communication gaps",
+            "Encourage two-way interactions and  seek feedback on communication"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-IWO-A003-1",
+          "description": "Synthesize information and inputs to  communicate an overarching storyline to  multiple stakeholders",
+          "underpinningKnowledge": [
+            "Storytelling techniques",
+            "Negotiation strategies",
+            "Stakeholder dynamics",
+            "Stakeholder management strategies",
+            "Strategies to drive behaviour change",
+            "Strategies to overcome communication  roadblocks",
+            "Emerging communication channels and  tools"
+          ],
+          "skillsApplication": [
+            "Evaluate stakeholder dynamics and  context to establish communication  objectives and principles",
+            "Synthesize various information sources  and communication objectives to create  a persuasive storyline",
+            "Anticipate responses from stakeholders  to adapt approaches appropriately",
+            "Manage sensitive communications with  discretion and tact",
+            "Evaluate different stakeholder  viewpoints to determine appropriate  negotiation strategies",
+            "Establish alignment between diverse  stakeholders with differing viewpoints to  achieve constructive outcomes",
+            "Evaluate emerging communication  channels and tools to define adoption  opportunities"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Creative Thinking",
+      "description": "Adopt diverse perspectives in combining ideas or information and making connections between different fields to create different ideas, improvements and solutions",
+      "codePrefix": "ESC-TCR",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-TCR-B001-1",
+          "description": "Connect ideas or information to propose  and test ideas, improvements and solutions  which challenge current assumptions or  ways of working • Process analysis techniques • Types of information collection tools",
+          "underpinningKnowledge": [
+            "Ideation techniques",
+            "Experimentation techniques",
+            "Problem solving techniques",
+            "Brainstorming techniques",
+            "Lateral thinking techniques",
+            "Impact measurement techniques"
+          ],
+          "skillsApplication": [
+            "Employ process analysis techniques  to review current work processes and  identify potential improvement areas",
+            "Collect information related to potential  new ideas, improvements or solutions  using a variety of identified tools",
+            "Apply lateral thinking techniques to  improve current ways of performing work  activities",
+            "Share inputs during brainstorming  sessions to support the generation of  ideas",
+            "Conduct experiments to test ideas,  improvements or new solutions in own  work areas",
+            "Collect information to monitor  implementation of ideas, improvements  or new solutions against impact criteria"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-TCR-I001-1",
+          "description": "Integrate multiple ideas and information  from across various fields to develop  solutions and new ways of working which  address specific issues and deliver impact",
+          "underpinningKnowledge": [
+            "Research and information collection  approaches and processes",
+            "Strategies for managing creative  processes",
+            "Techniques for developing imagination",
+            "Visualization techniques",
+            "Types of innovation drivers",
+            "Types of barriers to creativity",
+            "Convergent and divergent thinking  techniques",
+            "Strategies to evaluate impact of new  ideas, improvements or solutions"
+          ],
+          "skillsApplication": [
+            "Identify the desired outcomes of creative  thinking processes",
+            "Analyze improvement areas to prioritize  work areas for action",
+            "Develop resource and information  collection approaches and processes for  identified improvement areas",
+            "Facilitate exercises with different  stakeholders to enable the generation of  ideas and imaginative solutions",
+            "Integrate convergent and divergent  thinking techniques to develop new  approaches, ideas or solutions",
+            "Collaborate with internal and external  stakeholders to consider how ideas,  improvements or new solutions from  other areas can be applied to different  contexts",
+            "Deploy visualization techniques to  communicate proposed new ideas,  improvements or solutions",
+            "Design experiments to trial the  implementation of ideas, improvements  or solutions",
+            "Design criteria to measure impact of new  ideas, improvements or solutions",
+            "Analyze outcomes of experiments using  an iterative process to continuously  improve the implementation of ideas,  improvements or new solutions"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-TCR-A001-1",
+          "description": "Cultivate a culture of innovation and  creativity across the organization to  push boundaries and reshape goals and  possibilities",
+          "underpinningKnowledge": [
+            "Strategies to create a safe space for  creative exploration and experimentation",
+            "Storytelling techniques",
+            "Innovation management strategies",
+            "Strategies to evaluate lateral, convergent  and divergent thinking techniques",
+            "Emerging applications of innovation or  creative solutions across industries",
+            "Strategies to drive the continuous  improvement of the creative processes"
+          ],
+          "skillsApplication": [
+            "Champion organization's creativity and  innovation goals",
+            "Foster an organizational culture that  encourages creative imagination,  experimentation and innovation",
+            "Synthesize research and information  from various sources within the  organization to determine potential  synergies or opportunities for  organization-wide innovation initiatives",
+            "Evaluate the implementation of lateral,  convergent and divergent thinking  techniques to design 'out-of-the-box'  ideas, improvements or solutions which  push the boundaries and solve problems",
+            "Engage with internal and external  stakeholders to communicate compelling  narratives and rationale for implementing  new ideas, improvements or solutions",
+            "Evaluate outcomes of design experiments  to recommend new ideas, improvements  or solutions to be implemented across  the organization",
+            "Evaluate emerging applications of  innovations or solutions across industries  to determine any relevant applications  within own organization",
+            "Establish strategies to analyze the  effectiveness of creative processes  across the organization"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Customer Orientation",
+      "description": "Identify the needs of customers, both internal and external, to deliver an effective customer experience",
+      "codePrefix": "ESC-IWO",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-IWO-B004-1",
+          "description": "",
+          "underpinningKnowledge": [
+            "Customer needs analysis",
+            "Types of data collection tools and  methods",
+            "Customer listening methods and  guidelines",
+            "Customer feedback management systems",
+            "Organization's service policies and  procedures",
+            "Organization's customer experience  philosophy"
+          ],
+          "skillsApplication": [
+            "Analyze customer needs or perspectives  to identify appropriate responses or  actions",
+            "Demonstrate positive outlook and  behaviour in customer interactions in line  with organization's customer experience  philosophy",
+            "Respond to customer requests in  accordance with the organization's  service policies and procedures",
+            "Identify potential customer experience  issues to be escalated",
+            "Collect data to measure defined customer  experience parameters or metrics",
+            "Suggest potential methods to improve  customer experience",
+            "Apply learnings from customer feedback  to improve customer experience and  service standards"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-IWO-I004-1",
+          "description": "",
+          "underpinningKnowledge": [
+            "Customer behavioral patterns",
+            "Service evaluation models",
+            "Customer experience metrics",
+            "Customer experience management  strategies",
+            "Customer relationship management  strategies"
+          ],
+          "skillsApplication": [
+            "Analyze multiple information sources  on customer behaviour and trends  to anticipate customers' needs and  expectations",
+            "Evaluate customer needs to prioritize  responses or action based on urgency  and criticality",
+            "Analyze customer engagements and  conduct follow-up actions to analyze  customer experience",
+            "Manage critical customer issues and  identify appropriate service recovery  interventions",
+            "Analyze customer experience metrics to  identify areas for improvement or gaps in  customer experiences",
+            "Recommend changes to the  organization's service policies or  procedures to improve customer  experience"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-IWO-A004-1",
+          "description": "",
+          "underpinningKnowledge": [
+            "Strategies to design customer experience  philosophies",
+            "Strategies to develop service policies and  procedures",
+            "Types of business strategies and  operations",
+            "Organization's vision and objectives",
+            "Emerging industry and market trends",
+            "Stakeholder dynamics"
+          ],
+          "skillsApplication": [
+            "Establish the organization's customer  experience philosophy and strategy for  service delivery",
+            "Guide the development of service  policies and procedures to create a  customer experience which prioritizes  customer needs or objectives",
+            "Balance strategic and operational  requirements against the fulfilment  of customer needs to design effective  customer experience management  strategies",
+            "Evaluate the impact of emerging industry  and market trends on the customer  experience to pre-empt customer issues",
+            "Champion customer-oriented behaviors  across the organization",
+            "Define metrics to measure customer  experience",
+            "Advocate for continuous improvement"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Decision Making",
+      "description": "Choose a course of action from several alternatives developed through a structured process in order to achieve intended goals",
+      "codePrefix": "ESC-TCR",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "description": "Follow processes to make decisions  which achieve intended goals using given  information and guidelines",
+          "underpinningKnowledge": [
+            "Decision making processes",
+            "Decision making tools and techniques",
+            "Decision making styles",
+            "Decision making pitfalls and errors",
+            "Impact measurement techniques",
+            "Ethical guidelines, standards and  procedures"
+          ],
+          "skillsApplication": [
+            "Follow decision making processes which  align with organizational guidelines,  standards and procedures",
+            "Gather relevant information to support  ideation and decision making processes",
+            "Participate in brainstorming activities to  develop solutions during decision making  processes",
+            "Collate information on impact  of decisions made and suggest  improvements"
+          ],
+          "escCode": ""
+        },
+        {
+          "level": "Intermediate",
+          "description": "Implement structured decision making  processes and analyze multiple sources of  information to propose solutions",
+          "underpinningKnowledge": [
+            "Decision evaluation and prioritization  frameworks",
+            "Stakeholder analysis  techniques",
+            "Group decision making methods",
+            "Risk analysis techniques"
+          ],
+          "skillsApplication": [
+            "Implement structured decision making  processes which align with timelines and  refer to multiple sources of available  information",
+            "Analyze required information for decision  making and direct the collection of  relevant information",
+            "Facilitate decision making processes  within teams to design innovative  solutions",
+            "Assess impact and feasibility of solutions  to provide recommendations",
+            "Analyze risk factors for proposed  solutions or outcomes of decision  making processes and devise mitigation  strategies",
+            "Develop implementation plans for  solutions or outcomes of decision making  processes in adherence to organizational  guidelines, standards and procedures",
+            "Review outcomes of the decisions made  to determine whether goals have been  met",
+            "Calibrate the results and consequences  of the decisions made to propose  improvements to decision making"
+          ],
+          "escCode": ""
+        },
+        {
+          "level": "Advanced",
+          "description": "Define decision making criteria, processes  and strategies and evaluate their  effectiveness",
+          "underpinningKnowledge": [
+            "Decision making criteria and strategies",
+            "Decision automation tools",
+            "Organization's vision, objectives, and  operating climate",
+            "Organization communication techniques",
+            "Risk mitigation strategies",
+            "Regulatory frameworks and policies"
+          ],
+          "skillsApplication": [
+            "Evaluate contexts to determine critical  decision making points and requirements",
+            "Define criteria to be analyzed through  decision making processes",
+            "Formulate decision making strategies  and processes based on sources of  information",
+            "Communicate the importance of robust,  evidence-based decision making  processes",
+            "Synthesize sources of information to  prioritize solutions in alignment with  organizational priorities, operational and  strategic considerations",
+            "Articulate decisions amongst internal  and external platforms to guide key  stakeholders and obtain buy-ins",
+            "Leverage existing and emerging tools to  automate decision making processes",
+            "Evaluate potential causes of barriers to  making effective decisions",
+            "Endorse improvements to decision  making strategies and processes"
+          ],
+          "escCode": ""
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Developing People",
+      "description": "Empower others to learn and develop their capabilities to enhance their performance and achieve personal or professional goals",
+      "codePrefix": "ESC-IWO",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-IWO-B005-1",
+          "description": "Create individual career and development  plans, and support co-workers in  performing their work activities",
+          "underpinningKnowledge": [
+            "Personal strengths inventory",
+            "Goal-setting techniques",
+            "Learning styles",
+            "Organizational performance goals",
+            "Outcomes of career planning",
+            "Techniques to provide constructive  feedback"
+          ],
+          "skillsApplication": [
+            "Initiate career planning activities to  identify learning and development goals",
+            "Identify links among personal,  professional and organizational  performance goals",
+            "Support co-workers in executing work  activities to achieve intended goals and  improve work performance",
+            "Share career planning related  experiences with co-workers",
+            "Participate in activities that challenge  self and contribute to capability  development",
+            "Provide constructive feedback to  co-workers in accordance with  organizational guidelines, standards and  procedures"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-IWO-I005-1",
+          "description": "Develop and coach team members to  identify and leverage their strengths to  enhance performance",
+          "underpinningKnowledge": [
+            "Coaching and mentoring techniques",
+            "Motivation and reinforcement concepts",
+            "Listening techniques",
+            "Organization learning and development  policies and procedures",
+            "Questioning techniques",
+            "Self-reflection techniques",
+            "Performance review techniques"
+          ],
+          "skillsApplication": [
+            "Guide team members in identifying  personal and professional goals",
+            "Coach and mentor team members on  achieving personal, professional and  organizational goals",
+            "Evaluate individual strengths,  capabilities and learning styles to create  tailored coaching and development  interventions in different contexts",
+            "Facilitate discussions with team members  to ensure accountability for setting goals  and development plans",
+            "Advise team members on the formulation  of career development plans",
+            "Recommend stretch goals and  opportunities to harness the potential of  team members",
+            "Provide continuous feedback and  reinforce behaviors that contribute  positively to performance or growth"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-IWO-A005-1",
+          "description": "Foster a conducive environment to enable  employees' professional and personal  development, in alignment with the  organization's objectives and goals",
+          "underpinningKnowledge": [
+            "Career management reporting",
+            "Career development strategies",
+            "Engagement and empowerment  techniques",
+            "Performance management processes and  frameworks",
+            "Organization's vision, objectives, and  operating climate"
+          ],
+          "skillsApplication": [
+            "Build support for organization-wide  capability development interventions to  facilitate the attainment of personal and  professional goals",
+            "Guide employees to understand the  principles for translating organizational  objectives to personal and professional  goals",
+            "Provide expertise on coaching and  mentoring techniques",
+            "Create or recommend platforms and  procedures to enable exposure to new  opportunities and enriching experiences  within the organization",
+            "Champion the development of a  supportive and positive climate which  encourages continuous improvement and  development within the organization"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Digital Fluency",
+      "description": "Leverage digital technology tools, systems, and software across work processes and activities to solve problems, drive efficiency and facilitate information sharing",
+      "codePrefix": "ESC-SRE",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-SRE-B002-1",
+          "description": "Perform work processes and activities using  identified digital technology tools, systems  and software",
+          "underpinningKnowledge": [
+            "Digital terminologies",
+            "Digital etiquettes",
+            "Types of digital search and information  collection tools",
+            "Types of digital technology tools,  systems and software",
+            "Types of technology-enabled  communication channels",
+            "Organization's InfoComm Technology  troubleshooting and Information  Technology (IT) back-up processes",
+            "Organization's IT, personal data and  privacy policies",
+            "Types of cyber security risks",
+            "Organization's policies to monitor cyber  security risks"
+          ],
+          "skillsApplication": [
+            "Interpret instructions and actions based  on digital terminologies",
+            "Operate identified digital technology  tools, systems and software to perform  own work processes and activities",
+            "Present information using identified  digital technology tools, systems and  software",
+            "Exchange information with other  stakeholders using identified  technology-mediated communication  channels",
+            "Perform searches to source information  using digital search and information  collection tools",
+            "Assess the credibility of information  sourced using digital search and  information collection tools",
+            "Organize digital content to be stored  and retrieved in line with organizational  requirements",
+            "Adhere to organization's personal data  and privacy policies",
+            "Follow organization's cyber security  policies to identify potential risks"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-SRE-I002-1",
+          "description": "Identify opportunities and evaluate risks  of integrating digital technology tools,  systems and software across work processes  and activities",
+          "underpinningKnowledge": [
+            "Emerging digital technology tools,  systems and software",
+            "Emerging digital communication  channels",
+            "Methods to evaluate suitability of digital  technology tools, systems and software",
+            "Types of visualization tools and  techniques",
+            "Technology implementation processes",
+            "Problem solving techniques",
+            "Decision evaluation and prioritization  frameworks",
+            "Risk assessment techniques",
+            "Strategies to manager cyber security  risks",
+            "Types of metrics to measure  effectiveness of digital tools, systems  and software"
+          ],
+          "skillsApplication": [
+            "Analyze work processes and activities  across own team to identify potential  applications of digital technology  tools, systems or software which drive  efficiency and solve problems",
+            "Evaluate emerging digital technology  tools, systems or software to propose  applications which drive efficiency and  solve problems in own team",
+            "Identify applications of different  visualization techniques and tools to  analyze and present information",
+            "Deploy processes to manage technology  implementation",
+            "Review usage of digital technology tools,  systems and software to identify any  breaches of organization's digital and IT  policies",
+            "Assess current applications of digital  technology tools, systems or software to  propose improvement areas"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-SRE-A002-1",
+          "description": "Drive the creation of a digital culture and  environment, educating stakeholders across  the organization on the benefits and risks  of digital technology tools, systems and  software",
+          "underpinningKnowledge": [
+            "Best practice applications of digital  technology tools, systems and software",
+            "Emerging trends in the digital  environment",
+            "Strategies to manage technology  implementation",
+            "Digital education strategies",
+            "Types of digital training programs",
+            "Strategies to manage InfoComm  Technology troubleshooting and back-up  processes",
+            "Strategies to manage cyber security risk  strategies and policies",
+            "Strategies to manage personal data and  privacy policies",
+            "Legal and regulatory frameworks related  to digital technology tools, systems and  software"
+          ],
+          "skillsApplication": [
+            "Champion the benefits of digital  applications and advancements to build  an organization-wide community which  focuses on digital approaches and adopts  a digital mindset",
+            "Synthesis emerging trends in the digital  environment to anticipate changes  required to organization's current digital  technology tools, systems and software",
+            "Oversee the progress of digital  intervention implementations  across the  organization",
+            "Champion digital education strategies  across the organization to address digital  literacy skill gaps and drive continuous  learning",
+            "Influence stakeholders to communicate  the narrative of digital transformation  and manage any change barriers",
+            "Direct the development and  implementation of organizational digital  and IT policies",
+            "Guide the analysis of past breaches of  organizational digital and IT policies to  mitigate future impacts of cyber security"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": [
+          "Including prompt engineering"
+        ]
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Influence",
+      "description": "Influence behaviors, beliefs or attitudes in order to achieve desired outcomes and solutions",
+      "codePrefix": "ESC-IWO",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-IWO-B006-1",
+          "description": "Demonstrate empathy to understand  the feelings and actions of others  and communicate in ways that limit  misunderstandings and influence others on  operational issues",
+          "underpinningKnowledge": [
+            "Diversity dimensions and preferences",
+            "Emotional intelligence dimensions",
+            "Listening techniques",
+            "Problem solving techniques",
+            "Types of communication channels and  tools",
+            "Verbal and non-verbal communication  techniques",
+            "Knowledge sharing methods and tools",
+            "Questioning techniques"
+          ],
+          "skillsApplication": [
+            "Develop a clear understanding of purpose  and desired goals or outcomes",
+            "Analyze stakeholder responses and  interactions to understand needs",
+            "Encourage stakeholders to share views  and opinions to enable an understanding  of different perspectives",
+            "Appreciate nuances and impact of  diversity dimensions and cultural  backgrounds when interacting with  stakeholders",
+            "Communicate to stakeholders in  a manner which encourages open  conversations and reduces potential  misunderstandings",
+            "Adapt personal style to demonstrate  empathy and enable the communication  of desired goals",
+            "Ask questions to understand  stakeholders' responses or potential  issues"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-IWO-I006-1",
+          "description": "Develop relationships with stakeholders  to build confidence, alignment and  communicate desired purpose, goals or  objectives",
+          "underpinningKnowledge": [
+            "Types of networks",
+            "Verbal and non-verbal signals",
+            "Stakeholder analysis techniques",
+            "Strategies to develop trust",
+            "Interpersonal communication techniques",
+            "Communication styles",
+            "Persuasion methods",
+            "Techniques for analyzing audience  reactions",
+            "Collaboration techniques"
+          ],
+          "skillsApplication": [
+            "Identify stakeholders and networks that  are critical in meeting desired goals and  objectives",
+            "Integrate different stakeholders into the  decision-making process to garner their  support",
+            "Utilize combinations of logic,  conviction and interpersonal skills  when communicating desired goals and  objectives",
+            "Align ideas and plans with relevant  stakeholders to build ownership and  garner buy-in",
+            "Ensure l decisions made are supported  with relevant experience, facts and  knowledge",
+            "Articulate pros and cons behind decisions  taken and proposed to build confidence  amongst stakeholders",
+            "Present findings and thoughts in an open  and flexible manner",
+            "Escalate issues to senior stakeholders  if own efforts to enlist support have not  succeeded"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-IWO-A006-1",
+          "description": "Build consensus with stakeholders to  achieve desired outcomes on matters of  strategic importance",
+          "underpinningKnowledge": [
+            "Goal or purpose setting strategies",
+            "Strategies to drive behaviour change",
+            "Negotiation strategies",
+            "Motivation theories",
+            "Types of social, political, economic and  cultural factors which impact stakeholder  relationships",
+            "Stakeholder dynamics",
+            "Stakeholder management strategies",
+            "Storytelling techniques",
+            "Conflict management strategies"
+          ],
+          "skillsApplication": [
+            "Establish alignment among different  stakeholders' needs and objectives to  achieve intended outcomes",
+            "Establish key stakeholder relationships to  ensure goals and objectives are achieved",
+            "Share strategic insights in a manner that  addresses the issues and interests of  relevant stakeholders",
+            "Evaluate compromises to gain  commitment from relevant stakeholders",
+            "Endorse win-win solutions that benefit all  parties involved",
+            "Anticipate objections and challenges that  potentially impact desired results",
+            "Negotiate issues that impact long-term  strategic objectives"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Learning Agility",
+      "description": "Deploy different learning approaches which enable continuous learning across different contexts to drive self-development and the achievement of long-term career goals",
+      "codePrefix": "ESC-SRE",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-SRE-B004-1",
+          "description": "Identify opportunities and targets for  learning to facilitate continuous career  development",
+          "underpinningKnowledge": [
+            "Goal-setting techniques",
+            "Career planning techniques",
+            "Methods to gather feedback about own  performance from others",
+            "Questioning techniques",
+            "Types of feedback channels",
+            "Types of learning preferences",
+            "Types of learning modes",
+            "Techniques to structure learning  approaches"
+          ],
+          "skillsApplication": [
+            "Collect feedback from internal and  external sources on own career and  learning development",
+            "Identify areas of strengths and  development needs by internalizing  experiences, feedback and knowledge  acquired",
+            "Set learning goals in line with  development needs, interest areas and  career plans",
+            "Record previous learning experiences  in order to identify own learning  preferences",
+            "Review different learning modes  to identify suitable systematic  learning approaches which meet own  development needs",
+            "Use appropriate questioning techniques  in different settings to acquire new skills  and knowledge",
+            "Document own progress against learning  goals"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-SRE-I004-1",
+          "description": "Deploy various learning approaches in  different settings to maximize opportunities  for learning and self-reflection and  measure their impact on the achievement  of career goals",
+          "underpinningKnowledge": [
+            "Career management strategies",
+            "Coaching and mentoring techniques",
+            "Experimentation techniques",
+            "Self-directed learning techniques",
+            "Self-reflection techniques",
+            "Strategies to measure impact of learning  outcomes",
+            "Types of learning and development  pathways",
+            "Techniques to apply learning outcomes"
+          ],
+          "skillsApplication": [
+            "Communicate the importance of  knowledge sharing and feedback to team  members",
+            "Design personal learning and  development pathways which maximize  learning opportunities across multiple  contexts, modes and content areas",
+            "Evaluate learning goals to determine  potential opportunities for collaborative  learning or exchange of knowledge and  skills with other stakeholders",
+            "Prioritize opportunities to apply new  knowledge or skills across multiple  different work areas or disciplines",
+            "Integrate mentoring or reverse mentoring  approaches to enable continuous self- reflection and feedback sharing",
+            "Identify learning opportunities which  can support the development of team  members",
+            "Implement different learning approaches  to test strengths and weaknesses of  different approaches for own learning  goals",
+            "Analyze effectiveness and impact of  learning on work performance and  development against defined criteria",
+            "Measure progress against learning goals  to identify potential stretch targets or  adjustments to be made to learning"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-SRE-A004-1",
+          "description": "Establish an organizational culture of  continuous learning to encourage the  adoption of new learning approaches and  identification of new learning opportunities",
+          "underpinningKnowledge": [
+            "Best practices in learning and  development",
+            "Career development strategies",
+            "Emerging learning trends, approaches  and theories",
+            "Methods to tailor learning approaches",
+            "Methods to overcome learning obstacles",
+            "Purposes of learning goals",
+            "Strategies to evaluate learning  effectiveness"
+          ],
+          "skillsApplication": [
+            "Champion the importance of self- reflection and development to foster a  culture of continuous learning across the  organization",
+            "Formulate long-term career development  strategies to determine priority learning  goals and opportunities",
+            "Define criteria to evaluate learning  approaches for diverse development  needs",
+            "Evaluate causes of learning obstacles to  recommend alternative approaches",
+            "Lead the development and  implementation of organizational  learning initiatives",
+            "Leverage organization-wide networks  to establish opportunities for cross- organizational learning exchanges and  initiatives",
+            "Spearhead the integration of mentoring  approaches across the organization",
+            "Devise criteria to measure learning  effectiveness and impact on work  performance and development",
+            "Assess emerging learning trends,  approaches and theories to recommend  improvements to learning approaches  and initiatives"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Problem Solving",
+      "description": "Generate effective and efficient solutions to solve problems and capitalize on new opportunities",
+      "codePrefix": "ESC-TCR",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-TCR-B003-1",
+          "description": "Identify problems and implement  guidelines and procedures to solve  problems and test solutions",
+          "underpinningKnowledge": [
+            "Problem identification techniques",
+            "Questioning techniques",
+            "Types of corrective actions",
+            "Problem solving processes, tools and  techniques",
+            "Experimentation techniques",
+            "Impact measurement techniques"
+          ],
+          "skillsApplication": [
+            "Implement problem identification  techniques to recognize issues within  work area",
+            "Identify decisions to be made to solve  problems",
+            "Suggest potential corrective actions to  solve problems",
+            "Conduct work area experiments to test  potential solutions",
+            "Report any issues which occur during  solution testing to other stakeholders",
+            "Collect information to monitor  implementation of potential solutions  against impact criteria"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-TCR-I003-1",
+          "description": "Determine underlying causes of problems  and collaborate with other stakeholders to  implement and evaluate solutions",
+          "underpinningKnowledge": [
+            "Root cause analysis techniques",
+            "Decision evaluation and prioritization  frameworks",
+            "Exercises for developing big picture  thinking approaches",
+            "Strategies to manage experimentation  processes",
+            "Stakeholder analysis techniques",
+            "Risk analysis techniques",
+            "Types of metrics to measure solution  effectiveness"
+          ],
+          "skillsApplication": [
+            "Diagnose underlying causes of issues by  considering wider contexts",
+            "Encourage behaviors and practices for  team members that promote effective  problem-solving approaches and  continuous improvement",
+            "Facilitate exercises with different  stakeholders to develop big picture  thinking approaches to inform solution  development",
+            "Collaborate with other stakeholders to  seek opinions on potential solutions",
+            "Develop experiments to test potential  solutions",
+            "Determine the constraints and risks  associated with potential solutions",
+            "Analyze outcomes of experiments to  recommend the most suitable solution  for a problem",
+            "Engage different stakeholders to secure  buy-in for proposed solution",
+            "Review the effectiveness of the problem- solving process and solution against  defined goals"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-TCR-A003-1",
+          "description": "Anticipate potential problems to drive a  culture of continuous improvement which  seeks to turn problems into opportunities  across the organization",
+          "underpinningKnowledge": [
+            "Organization's vision, objectives and  operating climate",
+            "Emerging problem-solving processes,  tools and strategies",
+            "Types of social, political, economic and  cultural factors which impact stakeholder  relationships",
+            "Conflict management strategies",
+            "Risk management strategies",
+            "Strategies to evaluate solution  effectiveness"
+          ],
+          "skillsApplication": [
+            "Define objectives of organizational  problem-solving processes in line with  organization vision, objectives and  operating climate",
+            "Synthesis emerging trends to design  organizational problem-solving  processes, tools and techniques",
+            "Champion a culture of continuous  improvement across the organization",
+            "Evaluate multiple variables and contexts  to anticipate potential problems which  may occur",
+            "Determine appropriate stakeholders to  be involved in problem solving processes  in the organization",
+            "Oversee collaboration between multiple  stakeholders across the organization to  design solutions",
+            "Direct the resolution of any conflicts  during problem solving processes",
+            "Evaluate the business implications of  implementing the proposed solutions  across the organization",
+            "Endorse solutions to be implemented  across the organization",
+            "Establish strategies to evaluate the  effectiveness of problem-solving"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Self Management",
+      "description": "Take ownership of managing one's personal effectiveness, personal brand and holistic physical, mental, emotional and social well-being",
+      "codePrefix": "ESC-SRE",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-SRE-B005-1",
+          "description": "Exercise self-awareness by monitoring own  behaviors and ways of working in personal  and professional capacities, and implement  techniques for improvement",
+          "underpinningKnowledge": [
+            "Characteristics of personal branding",
+            "Emotional regulation techniques",
+            "Emotional intelligence dimensions",
+            "Methods for gathering feedback",
+            "Self-awareness concepts",
+            "Self-care techniques",
+            "Stress management techniques",
+            "Time management and prioritization  techniques",
+            "Types of feedback channels",
+            "Workplace and social etiquettes"
+          ],
+          "skillsApplication": [
+            "Identify goals and priorities across  workload and plan work activities  accordingly",
+            "Monitor progress against goals and  priorities to identify time management  issues",
+            "Escalate time management issues to  stakeholders to mitigate its impact on  intended goals and priorities",
+            "Implement stress management  techniques to maintain own well-being",
+            "Monitor emotional well-being and  regulate responses to situations",
+            "Implement self-care techniques to  maintain physical and mental wellness",
+            "Maintain standards for personal  and professional image in line with  expectations of work environment",
+            "Follow workplace and social etiquette  when interacting with stakeholders"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-SRE-I005-1",
+          "description": "Analyze own well-being and personal  effectiveness to develop strategies to  regulate self and build personal brand",
+          "underpinningKnowledge": [
+            "Self-reflection techniques",
+            "Coaching and mentoring techniques",
+            "Methods to develop personal branding",
+            "Productivity metrics",
+            "Productivity tools",
+            "Stress management concepts",
+            "Types of stress triggers",
+            "Types of networking strategies"
+          ],
+          "skillsApplication": [
+            "Review work goals and priorities to align  with personal vision and purpose",
+            "Resolve barriers or issues encountered  while managing goals and priorities",
+            "Integrate productivity enhancement  tools to improve personal effectiveness",
+            "Analyze own personal effectiveness to  review productivity and effectiveness of  time management approaches",
+            "Analyze own well-being to reflect on  potential issues or improvement areas",
+            "Apply appropriate stress management  strategies to address triggers of stress  identified",
+            "Evaluate strengths and weaknesses to  define own personal brand",
+            "Identify stakeholders and networks to  build own personal brand"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-SRE-A005-1",
+          "description": "Evaluate strategies to manage own well- being, personal effectiveness and personal  brand",
+          "underpinningKnowledge": [
+            "Emerging self management trends,  approaches and theories",
+            "Strategies to promote work-life balance",
+            "Strategies to evaluate well-being and  work-life balance",
+            "Strategies to promote personal brand",
+            "Strategies to evaluate stress  management techniques"
+          ],
+          "skillsApplication": [
+            "Anticipate potential workload or stress  triggers to implement mitigating actions",
+            "Reflect on personal and professional life  to improve prioritization, time and stress  management",
+            "Integrate emerging trends, approaches  and theories in self management to  improve own personal effectiveness and  well-being",
+            "Design a strategy to build own personal  brand across organization, industry and  networks",
+            "Evaluate own personal branding  strategies to identify areas for  improvement"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  },
+  {
+    "enablingSkill": {
+      "title": "Transdisciplinary Thinking",
+      "description": "Apply concepts from multiple disciplines, and synthesize different areas of knowledge and insights to guide decisions, foster cooperation and drive continuous improvement",
+      "codePrefix": "ESC-TCR",
+      "proficiencyLevels": [
+        {
+          "level": "Basic",
+          "escCode": "ESC-TCR-B005-1",
+          "description": "Explore concepts from outside one's field of  expertise to supplement one's knowledge,  proficiency and work practices",
+          "underpinningKnowledge": [
+            "Research techniques",
+            "Types of information collection tools",
+            "Verbal and non-verbal communication  techniques",
+            "Types of communication channels and  tools",
+            "Modes of collaboration",
+            "Knowledge sharing methods and tools",
+            "Decision-making processes",
+            "Problem-solving techniques",
+            "Self-assessment concepts",
+            "Diversity dimensions and preferences",
+            "Workplace and social etiquettes"
+          ],
+          "skillsApplication": [
+            "Identify areas and methods to  supplement knowledge outside one's field  of expertise or work area",
+            "Explore perspectives from diverse  sources of information",
+            "Exchange information using identified  knowledge sharing methods and tools",
+            "Perform work activities in collaboration  with other co-workers from different  disciplines to meet shared goals",
+            "Review own work performance to  identify potential areas where knowledge  from other disciplines may deliver  improvements, address gaps and/or  value add",
+            "Seek guidance from and consult  co-workers who have knowledge in a  particular work area"
+          ]
+        },
+        {
+          "level": "Intermediate",
+          "escCode": "ESC-TCR-I005-1",
+          "description": "Identify opportunities for transdisciplinary  collaboration and knowledge transfer to  facilitate the integration of knowledge from  different disciplines",
+          "underpinningKnowledge": [
+            "Research and information collection  methodologies",
+            "Pattern recognition techniques",
+            "Strategies for developing big picture  thinking approaches",
+            "Decision evaluation and prioritization  frameworks",
+            "Stakeholder analysis techniques",
+            "Interpersonal communication techniques"
+          ],
+          "skillsApplication": [
+            "Establish connections, patterns and  synergies between information gathered  from diverse sources of information",
+            "Integrate knowledge from different  disciplines to develop effective solutions",
+            "Explore opportunities to leverage new  sources of information or collaborations  in new ways",
+            "Analyze other areas in the organization  to identify potential collaboration  opportunities",
+            "Integrate inputs from stakeholders across  other disciplines to recommend decisions  and prioritization approaches",
+            "Evaluate the effectiveness and impact of  current transdisciplinary collaboration  and knowledge transfer interventions",
+            "Recommend changes to work processes  that restrict knowledge transfer and  transdisciplinary collaboration"
+          ]
+        },
+        {
+          "level": "Advanced",
+          "escCode": "ESC-TCR-A005-1",
+          "description": "Endorse collaboration and the integration  of knowledge across disciplines to make  decisions and solve problems within and  outside the organization",
+          "underpinningKnowledge": [
+            "Organization's vision, objectives and  operating climate",
+            "Types of organization structures",
+            "Emerging research and information  collection methodologies",
+            "Knowledge transfer systems and  mechanisms",
+            "Information filtering methods",
+            "Context framing techniques",
+            "Strategies to influence diverse  stakeholders",
+            "Stakeholder management strategies",
+            "Types of social, political, economic  and cultural factors which impact  collaboration across disciplines Conflict management strategies"
+          ],
+          "skillsApplication": [
+            "Establish systems and mechanisms to  facilitate effective knowledge transfer  across disciplines",
+            "Establish opportunities within the  organization for co-workers from  different disciplines to collaborate",
+            "Lead the development of strategic  transdisciplinary partnerships across and  beyond the organization",
+            "Determine interdependencies between  different disciplines when making  decisions that impact the organization",
+            "Synthesize information extracted from  different disciplines to develop new  insights",
+            "Endorse solutions that impact different  disciplines in the organization and  address organization-wide problems",
+            "Oversee the removal of any barriers to  transdisciplinary collaboration across the  organization",
+            "Evaluate emerging research and  information collection methodologies  and recommend updates to  organization's knowledge transfer  and transdisciplinary collaboration"
+          ]
+        }
+      ],
+      "rangeOfApplication": {
+        "title": "Range of Application",
+        "items": []
+      }
+    }
+  }
+]
