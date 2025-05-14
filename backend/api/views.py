@@ -17,6 +17,7 @@ from .agents.course_search_agent import CourseSearchAgent
 logger = logging.getLogger(__name__)
 from .services import query_ollama
 from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk
+from api.utils.intent_classifier import QueryIntent, classify_intent
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -155,7 +156,7 @@ class CourseSearchView(APIView):
         try:
             # Create a context dict with education_advice intent
             context = {
-                'intent': 'education_advice',
+                'intent': QueryIntent.EDUCATION_ADVICE,
                 'confidence': 0.8
             }
             
@@ -181,6 +182,49 @@ class CourseSearchView(APIView):
                 {"error": f"Failed to search for courses: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class SemanticCourseSearchView(APIView):
+    """
+    API endpoint for semantic course search using only a query and context.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        query = request.data.get('query')
+        context = request.data.get('context', {})
+
+        if not query:
+            return Response({'error': 'query is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Classify the query intent
+            intent, confidence = classify_intent(query)
+            
+            # Check if the intent is EDUCATION_ADVICE or SKILL_PROGRESSION
+            if intent not in [QueryIntent.EDUCATION_ADVICE, QueryIntent.SKILL_PROGRESSION]:
+                return Response(
+                    {'error': 'Query intent must be EDUCATION_ADVICE or SKILL_PROGRESSION'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Add the classified intent to the context
+            context['intent'] = intent.value
+            context['confidence'] = confidence
+
+            # Use the CourseSearchAgent with the updated context
+            agent = CourseSearchAgent()
+            import asyncio
+            result = asyncio.run(agent.process(query, context))
+
+            return Response(result)
+
+        except Exception as e:
+            logger.error(f"Error in semantic course search: {str(e)}")
+            return Response(
+                {"error": f"Failed to search for courses: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 class ChatView(APIView):
     """

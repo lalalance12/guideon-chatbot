@@ -1,0 +1,47 @@
+[
+  {
+    "skill": "Applications Development",
+    "course_info": [
+      {
+        "course_title": "Programming Mobile Applications for Android Handheld Systems: Part 1",
+        "course_provider": "Coursera",
+        "course_rating": 4.0,
+        "course_description": "This course introduces you to the design and implementation of Android applications for mobile devices. You will develop an app from scratch, assuming a basic knowledge of Java, and learn how to set up Android Studio, work with various Activities and create simple user interfaces to make your apps run smoothly.",
+        "course_url": "https://www.classcentral.com/course/androidpart1-1178"
+      },
+      {
+        "course_title": "Programming Mobile Applications for Android Handheld Systems: Part 2",
+        "course_provider": "Coursera",
+        "course_rating": 4.5,
+        "course_description": "This course introduces you to the design and implementation of Android applications for mobile devices. You will build upon concepts from the prior course, including handling notifications, using multimedia and graphics and incorporating touch and gestures into your apps.",
+        "course_url": "https://www.classcentral.com/course/androidpart2-3076"
+      }
+    ]
+  },
+  {
+    "skill": "Applications Integration",
+    "course_info": [
+      {
+        "course_title": "Programming Mobile Applications for Android Handheld Systems: Part 2",
+        "course_provider": "Coursera",
+        "course_rating": 4.5,
+        "course_description": "This course introduces you to the design and implementation of Android applications for mobile devices. You will build upon concepts from the prior course, including handling notifications, using multimedia and graphics and incorporating touch and gestures into your apps.",
+        "course_url": "https://www.classcentral.com/course/androidpart2-3076"
+      },
+      {
+        "course_title": "Building Web Applications in PHP",
+        "course_provider": "Coursera",
+        "course_rating": 0.0,
+        "course_description": "In this course, you'll explore the basic structure of a web application, and how a web browser interacts with a web server. You'll be introduced to the request/response cycle, including GET/POST/Redirect. You'll also gain an introductory understanding of Hypertext Markup Language (HTML), as well as the basic syntax and data structures of the PHP language, variables, logic, iteration, arrays, error handling, and superglobal variables, among other elements. An introduction to Cascading Style Sheets (CSS) will allow you to style markup for webpages. Lastly, you'll gain the skills and knowledge to install and use an integrated PHP/MySQL environment like XAMPP or MAMP.",
+        "course_url": "https://www.classcentral.com/course/web-applications-php-9566"
+      },
+      {
+        "course_title": "Networking and Security in iOS Applications",
+        "course_provider": "Coursera",
+        "course_rating": 0.0,
+        "course_description": "You will learn to extend your knowledge of making iOS apps so that they can securely interact with web services and receive push notifications. You'll learn how to store data securely on a device using Core Data.  You’ll also learn to securely deploy apps to the App Store and beta users over-the-air.\n\nThe format of the course is through a series of code tutorials.  We will walk you through the creation of several apps that you can keep as a personal app toolbox.  When you make your own apps after this course, you can bring in these capabilities as needed.  When necessary we pop out of the code tutorials to talk about concepts at a higher level so that what you are programming makes sense.\n\nUpon completing this course, you will be able to:\n1.       Post Facebook, Twitter, Sina Weibo, Tencent Weibo messages to social media using single sign-on on behalf of a user.\n2.       Use OAuth 2.0 to securely authenticate to Instagram and retrieve photos on behalf of a user\n3.       JSON\n4.       Describe JSON’s syntax\n5.       Write well-formed JSON\n6.       Work with JSON data objects in Objective-C\n7.       Appropriately set the security settings for App Transport Security in iOS 9.0\n8.       Use http, https and https with perfect forward secrecy to fetch web resources\n9.       Obtain permissions to receive local push notifications\n11.       Write an app that can send and receive local push notifications\n12.       Obtain permissions to receive remote push notifications\n13.       Write an app that can receive remote push notifications\n14.       Authenticate using Apple’s cryptographic services such that the developer can use 3rd party infrastructure to send remote push notifications to their app.\n15.       Securely store data on the user’s device.\n16.       Authenticate using Apple’s cryptographic services such that they can deploy an app to the app store",
+        "course_url": "https://www.classcentral.com/course/security-4518"
+      }
+    ]
+  }
+]

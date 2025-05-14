@@ -78,18 +78,23 @@ def classify_intent(query_text, chat_history=None):
             if keyword in query_lower:
                 intent_scores[intent] += len(keyword.split())  # Weight multi-word keywords higher
     
+    # Log intent scores for debugging
+    logger.info(f"Intent scores: {intent_scores}")
+    
     # Get the highest scoring intent
     max_score = max(intent_scores.values())
     selected_intent = max(intent_scores, key=intent_scores.get)
     
     # Confidence calculation
-    confidence = min(max_score / 5.0, 1.0) if max_score > 0 else 0.0
+    confidence = min(max_score / 3.0, 1.0) if max_score > 0 else 0.0
+    
+    # Log the selected intent and confidence
+    logger.info(f"Intent: {selected_intent.value}, Score: {max_score:.2f}, Confidence: {confidence:.2f}")
     
     # Default to GENERAL_QUERY if confidence is too low
-    if confidence < 0.4:
+    if confidence < 0.3:
         selected_intent = QueryIntent.GENERAL_QUERY
     
-    logger.info(f"Intent: {selected_intent.value}, Score: {max_score:.2f}, Confidence: {confidence:.2f}")
     return selected_intent, confidence
 
 def extract_level_from_query(query_text):

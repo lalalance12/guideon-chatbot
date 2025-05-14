@@ -4,9 +4,15 @@ anyio==4.9.0
 asgiref==3.8.1
 attrs==25.3.0
 beautifulsoup4==4.13.4
+<<<<<<< HEAD
+certifi==2025.4.26
+cffi==1.17.1
+charset-normalizer==3.4.2
+=======
 certifi==2025.1.31
 cffi==1.17.1
 charset-normalizer==3.4.1
+>>>>>>> e105b0b6461a7ff48a857f941c06df23b7eb31bf
 click==8.1.8
 colorama==0.4.6
 coloredlogs==15.0.1
@@ -28,6 +34,7 @@ filelock==3.18.0
 filetype==1.2.0
 flatbuffers==25.2.10
 fsspec==2025.3.2
+fuzzywuzzy==0.18.0
 gitdb==4.0.12
 GitPython==3.1.44
 greenlet==3.2.1
@@ -45,6 +52,7 @@ jsonschema==4.23.0
 jsonschema-specifications==2025.4.1
 latex2mathml==3.78.0
 lazy_loader==0.4
+Levenshtein==0.27.1
 lxml==5.4.0
 magika==0.6.2
 Markdown==3.8
@@ -86,11 +94,13 @@ python-bidi==0.6.6
 python-dateutil==2.9.0.post0
 python-docx==1.1.2
 python-dotenv==1.1.0
+python-Levenshtein==0.27.1
 python-multipart==0.0.20
 python-pptx==1.0.2
 pytz==2025.2
 pywin32==310
 PyYAML==6.0.2
+RapidFuzz==3.13.0
 referencing==0.36.2
 regex==2024.11.6
 requests==2.32.3
@@ -101,6 +111,7 @@ safetensors==0.5.3
 scikit-image==0.25.2
 scipy==1.15.2
 semchunk==2.2.2
+setuptools==80.3.1
 shapely==2.1.0
 shellingham==1.5.4
 six==1.17.0

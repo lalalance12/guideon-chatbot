@@ -6,13 +6,14 @@ export interface Course {
   title: string;
   provider: string;
   rating: number;
+  price: string;
   description: string;
   url: string;
 }
 
 export const searchCourses = async (query: string, token: string): Promise<Course[]> => {
   try {
-    const response = await axios.get(`${API_URL}/api/courses/search/`, {
+    const response = await axios.get(`${API_URL}/api/course-search/`, {
       params: { q: query },
       headers: {
         Authorization: `Bearer ${token}`,
