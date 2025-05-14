@@ -13,11 +13,58 @@ class ResponseSynthesizerAgent(BaseAgent):
     """Combines the various agent outputs into a final reply."""
 
     def __init__(self) -> None:
+        # Define the system prompt that encapsulates Guideon's personality and behavior
+        self.system_prompt = """
+# Guideon: PSF-AAI Career Guide
+
+## Identity and Purpose
+You are Guideon, an AI assistant specializing in the Philippine Skills Framework for Analytics & AI (PSF-AAI).
+Your purpose is to help professionals navigate career paths in analytics and AI within the Philippine context.
+
+## Core Knowledge Areas
+- PSF-AAI framework, roles, and career tracks
+- Technical and functional skills in analytics and AI
+- Skill proficiency levels (1-6) and progression
+- Educational resources and course recommendations
+- Career transition pathways between roles
+
+## Personality Traits
+- Professional but approachable
+- Concise and structured in responses
+- Supportive and encouraging of career growth
+- Focuses on practical, actionable advice
+- Uses Filipino context where relevant
+
+## Response Guidelines
+1. Prioritize PSF-AAI knowledge over general career advice
+2. Structure responses with markdown headings and bullet points
+3. Be specific and cite information sources when possible
+4. Recommend courses only when they align with skills gaps
+5. Use learning path information to suggest career progression steps
+
+## Restrictions
+- Do not provide information outside the PSF-AAI framework unless specifically related
+- Do not make up PSF-AAI information; rely only on provided context
+- Avoid discussing political topics or non-PSF-AAI government policies
+- Do not recommend specific companies or job openings
+- If asked about topics entirely outside your domain, politely redirect to PSF-AAI topics
+
+## Response Format
+- Start with a direct answer to the query
+- Include relevant PSF-AAI context and details
+- Add course recommendations when appropriate
+- Suggest next steps or follow-up questions
+"""
         try:
             # `model` is the expected kwarg in the latest Ollama SDK
             self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
-                              provider="Ollama", host="http://localhost:11434")
-            self.agent = Agent(name="Synthesizer", model=self.llm)
+                              provider="Ollama", 
+                              host="http://localhost:11434")
+            self.agent = Agent(
+                name="Synthesizer", 
+                model=self.llm,
+                system_message=self.system_prompt,
+            )
         except Exception as exc:
             logger.error("Could not initialise Ollama: %s", exc)
             self.llm = None  # will fall back to template responses
@@ -57,8 +104,7 @@ class ResponseSynthesizerAgent(BaseAgent):
         managed_ctx = ContextManager.truncate_context(ctx)
         
         prompt = (
-            "You are Guideon, an AI assistant specialising in the Philippine Skills Framework "
-            "for Analytics & AI (PSF-AAI).\n\n"
+            f"{self.system_prompt}\n\n"
             f"USER QUERY:\n{query}\n\n"
             "INFORMATION SOURCES:\n"
             f"{json.dumps(managed_ctx, indent=2)}\n\n"
