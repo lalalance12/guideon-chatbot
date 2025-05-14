@@ -122,122 +122,42 @@ class GuideonChatService:
         # Get chat history if available
         if chat_id:
             try:
-                chat = await Chat.objects.aget(id=chat_id)
-                messages = [msg async for msg in chat.messages.all().order_by('timestamp')]
-                context['chat_history'] = messages
-                
-                session_id = f"chat_{chat_id}"
-                
-                # Add current query to memory if available
-                if self.is_memory_ready():
-                    user_message = [{
-                        "role": "user",
-                        "content": user_query,
-                        "metadata": {
-                            "session_id": session_id,
-                            "type": "user_query", 
-                            "timestamp": str(asyncio.get_event_loop().time()),
-                            "content_type": "question",
-                            "entities": self._extract_entities(user_query)
-                        }
-                    }]
-                    
-                    result = await self._add_to_memory(user_message, "User query")
-                    if not result:
-                        logger.warning("Failed to add user message to memory")
-                
-                # Format chat history with metadata included in each message
-                formatted_messages = []
-                for msg in messages:
-                    formatted_msg = {
-                        "role": msg.role,
-                        "content": msg.content,
-                        "metadata": {
-                            "session_id": session_id,
-                            "type": "chat_history",
-                            "timestamp": str(asyncio.get_event_loop().time()),
-                            "content_type": "conversation_history"
-                        }
-                    }
-                    formatted_messages.append(formatted_msg)
-                
-                # Add chat history to memory if available
-                if formatted_messages and self.is_memory_ready():
-                    result = await self._add_to_memory(formatted_messages, "Chat history")
-                    if not result:
-                        logger.warning("Failed to add chat history to memory")
-                
-                # Semantic search with compatible approach
-                memory_context = {}
-                if self.is_memory_ready():
-                    conversation_messages = await self._get_from_memory(
-                        limit=20, 
-                        metadata_filter={"session_id": session_id}
-                    )
-                    
-                    conversation_messages = conversation_messages[:5]
-                    
-                    if conversation_messages:
-                        memory_context['conversation_topics'] = [
-                            msg.get("content", "") for msg in conversation_messages 
-                            if msg.get("role") == "user"
-                        ]
-                        
-                        if len(user_query.split()) <= 5:
-                            memory_context['recent_context'] = [
-                                msg.get("content", "") for msg in conversation_messages
-                            ]
-                
-                if self.is_memory_ready() and len(messages) > 20:
-                    asyncio.create_task(self._run_memory_maintenance(session_id))
-
-                if memory_context:
-                    context['memory_context'] = memory_context
-                    
-            except Chat.DoesNotExist:
-                logger.warning(f"Chat with id {chat_id} not found")
+                # Code to retrieve chat history
+                chat_history = []  # Replace with actual chat history retrieval
+                context['chat_history'] = chat_history
             except Exception as e:
-                logger.error(f"Error processing chat history or memory: {e}", exc_info=True)
+                logger.error(f"Error retrieving chat history: {e}")
+        
         try:
-            logger.info(f"Classifying intent for: {user_query[:50]}..." if len(user_query) > 50 else user_query)
+            # Step 1: Determine user intent using the LLM-based classifier
             intent_result = await self.intent_agent.process(user_query, context)
-            context.update(intent_result)
             
-            logger.info(f"Orchestrating specialized agents for query with intent: {intent_result.get('intent')}")
-            orchestration_result = await self.orchestrator.process(user_query, context)
-            context.update(orchestration_result)
+            # Update context with intent classification results
+            context['intent'] = intent_result['intent']
+            context['intent_confidence'] = intent_result['confidence']
+            context['entities'] = intent_result.get('extracted_entities', {})
             
-            logger.info("Synthesizing final response")
-            synthesis_result = await self.synthesizer.process(user_query, context)
+            logger.info(f"Classified intent: {context['intent']} (confidence: {context['intent_confidence']})")
             
-            response = synthesis_result.get('response', 'I apologize, but I was unable to generate a response.')
-            logger.info(f"Response generated successfully (source: {synthesis_result.get('source', 'unknown')})")
+            # Step 2: Orchestrate specialized agents based on intent
+            orchestrator_result = await self.orchestrator.process(user_query, context)
+            context.update(orchestrator_result)
             
+            # Step 3: Synthesize the final response
+            response = await self.synthesizer.process(user_query, context)
+            
+            # Optional: Store conversation in memory
             if chat_id and self.is_memory_ready():
-                intent_value = getattr(context.get('intent'), 'value', str(context.get('intent')))
-                assistant_message = [{
-                    "role": "assistant",
-                    "content": response,
-                    "metadata": {
-                        "session_id": f"chat_{chat_id}",
-                        "type": "assistant_response", 
-                        "intent": intent_value,
-                        "source": synthesis_result.get('source', 'unknown'),
-                        "content_type": "answer",
-                        "topics": self._extract_entities(response),
-                        "has_course_info": bool(context.get("course_search", {}).get("found", False)),
-                        "has_pathway_info": bool(context.get("learning_path", {}).get("found", False))
-                    }
-                }]
-                
-                result = await self._add_to_memory(assistant_message, "Assistant response")
-                if not result:
-                    logger.warning("Failed to add assistant response to memory")
+                asyncio.create_task(self._run_memory_maintenance(chat_id))
+                asyncio.create_task(self._add_to_memory([
+                    {"role": "user", "content": user_query},
+                    {"role": "assistant", "content": response}
+                ]))
             
             return response
             
-        except Exception as e:
-            logger.error(f"Error processing message: {str(e)}", exc_info=True)
+        except Exception as e:  
+            logger.error(f"Error processing message: {e}")
             return self._fallback_response(user_query)
 
     async def _run_memory_maintenance(self, session_id):

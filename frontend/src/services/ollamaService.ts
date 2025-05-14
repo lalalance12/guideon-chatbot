@@ -41,8 +41,23 @@ export const queryOllama = async (userPrompt: string, chatId?: number): Promise<
     console.log("Frontend: Received response from backend");
     console.log("Response data:", response.data);
     
+    // Extract the nested response if it exists
+    let responseText = response.data.response;
+    
+    // Handle case where response is an object with its own response property
+    if (responseText && typeof responseText === 'object' && responseText.response) {
+      console.log("Detected nested response object, extracting inner response");
+      responseText = responseText.response;
+    }
+    
+    // Ensure response is a string
+    if (typeof responseText !== 'string') {
+      console.log("Converting non-string response to string:", responseText);
+      responseText = responseText ? JSON.stringify(responseText) : "No response received";
+    }
+    
     return {
-      response: response.data.response,
+      response: responseText,
       chat_id: response.data.chat_id
     };
   } catch (error) {
@@ -102,9 +117,20 @@ export const useOllamaQuery = () => {
       if (result.chat_id > 0) {
         console.log(`Received and saved chat ID: ${result.chat_id}`);
         setCurrentChatId(result.chat_id);
+        
+        // Save to localStorage for persistence
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({chatId: result.chat_id}));
+        } catch (e) {
+          console.warn("Could not save chat ID to localStorage:", e);
+        }
       }
       
-      return result.response;
+      // Ensure we're returning a string
+      return typeof result.response === 'string' 
+        ? result.response 
+        : JSON.stringify(result.response);
+        
     } catch (err) {
       console.error("Error in sendQuery:", err);
       const errorMessage = "Failed to get a response.";
@@ -116,4 +142,4 @@ export const useOllamaQuery = () => {
   };
 
   return { sendQuery, isLoading, error, currentChatId };
-}; 
+};
