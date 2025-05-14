@@ -11,9 +11,9 @@ EMBEDDING_MODEL = "bge-m3"  # Ensure this is bge-m3
 OUTPUT_EMBEDDINGS_FILE = "backend/api/data/all_embeddings_data.json" # Consistent output file
 
 # Input data file paths
-ESC_DATA_PATH = "backend/api/data/esc/sample_esc_data.json"
-FSC_DATA_PATH = "backend/api/data/fsc/sample_processed_data.json"
-ROLES_DATA_PATH = "backend/api/data/roles/sample_processed_roles.json"
+ESC_DATA_PATH = "backend/api/data/esc/esc_data.json"
+FSC_DATA_PATH = "backend/api/data/fsc/processed_data.json"
+ROLES_DATA_PATH = "backend/api/data/roles/processed_roles.json"
 CAREER_MAP_PATH = "backend/api/data-sample/career_map.json" # Using sample path provided
 
 # --- Embedding Generation ---

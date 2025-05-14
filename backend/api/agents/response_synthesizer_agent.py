@@ -5,6 +5,7 @@ from .base_agent import BaseAgent
 from ..utils.intent_classifier import QueryIntent
 from agno.agent import Agent
 from agno.models.ollama import Ollama
+from ..utils.context_manager import ContextManager
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
 """
         try:
             # `model` is the expected kwarg in the latest Ollama SDK
-            self.llm = Ollama(id="llama3.2:latest",
+            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
                               provider="Ollama", 
                               host="http://localhost:11434")
             self.agent = Agent(
@@ -99,16 +100,22 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
             "learning_path": self._format_path_results(path),
         }
         
-        # Use the comprehensive system prompt
+        # Apply context management to ensure we don't exceed token limits
+        managed_ctx = ContextManager.truncate_context(ctx)
+        
         prompt = (
             f"{self.system_prompt}\n\n"
             f"USER QUERY:\n{query}\n\n"
             "INFORMATION SOURCES:\n"
-            f"{json.dumps(ctx, indent=2)}\n\n"
+            f"{json.dumps(managed_ctx, indent=2)}\n\n"
+            "Guidelines:\n"
+            "1. Answer directly and concisely.\n"
+            "2. Use PSF knowledge first if present.\n"
+            "3. Include course/path advice when relevant.\n"
+            "4. Friendly, structured markdown.\n"
+            "5. Omit irrelevant sections.\n\n"
             "Your response:"
         )
-
-        user_msg = [{"role": "user", "content": prompt}]
 
         try:
             if self.agent is None:                       # model failed to init
