@@ -15,14 +15,33 @@ class IntentClassifierAgent(BaseAgent):
         
         Args:
             query: The user's query text
-            context: Contains chat_history if available
+            context: Contains chat_history and memory_context if available
             
         Returns:
             Dict with classified intent and confidence score
         """
         chat_history = context.get('chat_history', None)
+        memory_context = context.get('memory_context', {})
         
-        # Use existing intent classifier
+        # Use memory_context to enhance confidence in intent classification
+        if memory_context:
+            # If we have recent context for short queries (follow-up questions)
+            recent_context = memory_context.get('recent_context', [])
+            user_preferences = memory_context.get('user_preferences', [])
+            
+            # Combine chat history with memory insights for richer context
+            if not chat_history:
+                chat_history = []
+                
+            # Create synthetic history from memory contexts if needed
+            if recent_context and len(query.split()) <= 5:
+                for content in recent_context:
+                    chat_history.append(type('MemoryMessage', (), {
+                        'content': content,
+                        'role': 'user' 
+                    }))
+        
+        # Use existing intent classifier with enhanced chat history
         intent, confidence = classify_intent(query, chat_history)
         
         # Extract level or section information from the query
@@ -45,7 +64,7 @@ class IntentClassifierAgent(BaseAgent):
         # Prepare response with extracted level or section
         result = {
             "intent": intent,
-            "confidence": confidence,
+            "confidence": min(confidence, 1.0),  # Cap confidence at 1.0
             "description": description
         }
         

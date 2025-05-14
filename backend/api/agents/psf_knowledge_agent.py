@@ -25,6 +25,12 @@ class PSFKnowledgeAgent(BaseAgent):
         try:
             # Run blocking vector search in a worker thread
             results = await asyncio.to_thread(search_similar_content, search_query, int(search_limit))
+            
+            # If we don't get any results, try using the async version which might handle Django ORM better
+            if not results or (isinstance(results, dict) and "error" in results):
+                logger.info("Trying async search method as fallback")
+                from ..utils.query_vectors import search_similar_content_async
+                results = await search_similar_content_async(search_query, int(search_limit))
         except Exception as exc:
             logger.error("Search error: %s", exc)
             return self._fail("exception", f"Error accessing knowledge base: {exc}")
@@ -78,16 +84,17 @@ class PSFKnowledgeAgent(BaseAgent):
 
             if item_type:
                 types.add(item_type)
+                
             if distance >= 0.75:
                 continue
-
+                
             result = {
                 "title": meta.get("title", "Information"),
                 "type": item_type,
                 "content": item.get("text", ""),
                 "relevance": f"{(1 - distance) * 100:.1f}%",
             }
-
+            
             # Prioritize exact level hits first
             if intent == QueryIntent.SKILL_LEVEL_INFO and lvl is not None and str(lvl_match) == str(lvl):
                 filtered.insert(0, result)
