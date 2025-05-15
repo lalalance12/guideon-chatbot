@@ -3,9 +3,10 @@ import requests
 from collections import defaultdict
 
 # Load skill titles from the embeddings file
-with open(r'c:\Users\Nasvil\Desktop\guideon-chatbot\backend\api\data\roles\sample_role_skill_embeddings_bge_m3.json', 'r', encoding='utf-8') as f:
+with open(r'c:\Users\Nasvil\Desktop\guideon-chatbot\backend\api\data\courses\role_skill_knowledge_embeddings.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
+# Extract skill titles from the role_skill_knowledge_embeddings.json format
 skill_titles = set()
 for entry in data:
     meta = entry.get('metadata', {})
@@ -45,5 +46,7 @@ for skill in skill_titles:
     })
 
 # Save to JSON
-with open(r'c:\Users\Nasvil\Desktop\guideon-chatbot\backend\api\data\roles\skill_courses.json', 'w', encoding='utf-8') as f:
+with open(r'c:\Users\Nasvil\Desktop\guideon-chatbot\backend\api\data\courses\skill_courses.json', 'w', encoding='utf-8') as f:
     json.dump(results, f, indent=2, ensure_ascii=False)
+    
+print(f"Successfully saved courses for {len(results)} skills to skill_courses.json")

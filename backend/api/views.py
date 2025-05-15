@@ -197,21 +197,7 @@ class SemanticCourseSearchView(APIView):
             return Response({'error': 'query is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Classify the query intent
-            intent, confidence = classify_intent(query)
-            
-            # Check if the intent is EDUCATION_ADVICE or SKILL_PROGRESSION
-            if intent not in [QueryIntent.EDUCATION_ADVICE, QueryIntent.SKILL_PROGRESSION]:
-                return Response(
-                    {'error': 'Query intent must be EDUCATION_ADVICE or SKILL_PROGRESSION'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Add the classified intent to the context
-            context['intent'] = intent.value
-            context['confidence'] = confidence
-
-            # Use the CourseSearchAgent with the updated context
+            # Use the CourseSearchAgent directly with the provided context
             agent = CourseSearchAgent()
             import asyncio
             result = asyncio.run(agent.process(query, context))
@@ -224,7 +210,6 @@ class SemanticCourseSearchView(APIView):
                 {"error": f"Failed to search for courses: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
 
 class ChatView(APIView):
     """
