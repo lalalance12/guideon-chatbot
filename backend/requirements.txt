@@ -4,15 +4,9 @@ anyio==4.9.0
 asgiref==3.8.1
 attrs==25.3.0
 beautifulsoup4==4.13.4
-<<<<<<< HEAD
 certifi==2025.4.26
 cffi==1.17.1
 charset-normalizer==3.4.2
-=======
-certifi==2025.1.31
-cffi==1.17.1
-charset-normalizer==3.4.1
->>>>>>> e105b0b6461a7ff48a857f941c06df23b7eb31bf
 click==8.1.8
 colorama==0.4.6
 coloredlogs==15.0.1

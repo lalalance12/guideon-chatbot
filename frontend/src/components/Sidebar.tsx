@@ -106,7 +106,7 @@ export default function Sidebar({ children }: SidebarProps) {
           />
           <div className="flex justify-between items-center w-full ml-3">
             <div className="leading-4">
-              <h4 className="font-semibold text-gray-800">{currentUser?.fullName || 'Loading...'}</h4>
+              <h4 className="font-semibold text-gray-800">{currentUser?.fullName || '-'}</h4>
               <span className="text-xs text-gray-500">{currentUser?.email || ''}</span>
             </div>
             <button

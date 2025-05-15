@@ -1,21 +1,17 @@
-import json
 import os
 import sys
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+sys.path.append(str(BASE_DIR))
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+
+import json
 import traceback
 import django
 
-# Add project root to path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
-if project_root not in sys.path:
-    sys.path.append(project_root)
-
-# Add backend directory to path
-backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
-if backend_dir not in sys.path:
-    sys.path.append(backend_dir)
-
-# Set up Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.backend.settings')
 django.setup()
 
 # Import the models *after* Django setup

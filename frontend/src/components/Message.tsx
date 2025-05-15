@@ -1,6 +1,9 @@
 // components/Message.tsx
-import React from "react";
+import { cn } from "@/lib/utils";
 import { Bot, User } from "lucide-react";
+import React from "react";
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface MessageProps {
   text: string;
@@ -11,22 +14,11 @@ interface MessageProps {
 const Message: React.FC<MessageProps> = ({ text, type, showAvatar = true }) => {
   const isUser = type === "user";
 
-  // Function to convert newlines to <br> and render HTML content
-  const formatMessage = (message: string) => {
-    const lines = message.split('\n');
-    return lines.map((line, index) => (
-      <React.Fragment key={index}>
-        <span dangerouslySetInnerHTML={{ __html: line }} />
-        {index < lines.length - 1 && <br />}
-      </React.Fragment>
-    ));
-  };
 
   return (
     <div
-      className={`flex items-start gap-3 ${
-        isUser ? "flex-row-reverse" : "flex-row"
-      }`}
+      className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : "flex-row"
+        }`}
     >
       {showAvatar && (
         <div
@@ -41,13 +33,14 @@ const Message: React.FC<MessageProps> = ({ text, type, showAvatar = true }) => {
         </div>
       )}
       <div
-        className={`${
-          isUser
+        className={cn("prose leading-snug !max-w-none p-4", isUser
             ? "chat-bubble chat-bubble-user"
             : "chat-bubble chat-bubble-bot"
-        }`}
+          )}
       >
-        {formatMessage(text)}
+        <Markdown remarkPlugins={[remarkGfm]}>
+          {text}
+        </Markdown>
       </div>
     </div>
   );

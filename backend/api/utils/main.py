@@ -1,30 +1,19 @@
-# filepath: c:\Users\Asus\Desktop\guideon-chatbot\backend\api\utils\main.py
 import os
 import sys
+from pathlib import Path
 
-# Add project root and backend directory to Python path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, '../../..'))
-backend_dir = os.path.abspath(os.path.join(current_dir, '../..'))
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-if project_root not in sys.path:
-    sys.path.append(project_root)
-if backend_dir not in sys.path:
-    sys.path.append(backend_dir)
+sys.path.append(str(BASE_DIR))
 
-# Import necessary functions AFTER path setup
-# Note: Adjusted import paths assuming 'utils' is a package within 'api'
-try:
-    from backend.api.utils.generate_embeddings import process_all_data
-    from backend.api.utils.setup_db import setup_database
-    from backend.api.utils.store_embeddings import store_embeddings_from_json
-    # from backend.api.utils.query_vectors import search_similar_content # Keep commented for now
-    # from backend.api.utils.generate_pathways import generate_learning_pathway # Keep commented for now
-except ImportError as e:
-     print(f"Error importing modules: {e}")
-     print("Ensure the script is run from the correct directory or PYTHONPATH is set.")
-     sys.exit(1)
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
+from generate_embeddings import process_all_data
+from setup_db import setup_database
+from store_embeddings import store_embeddings_from_json
+import django
+
+django.setup()
 
 def run_embedding_pipeline():
     """Runs the pipeline to generate and store embeddings from JSON data."""
@@ -33,12 +22,7 @@ def run_embedding_pipeline():
     print("Using bge-m3 model")
     print("=" * 50)
 
-    # Ensure data directories exist (optional, but good practice)
-    os.makedirs("backend/api/data/esc", exist_ok=True)
-    os.makedirs("backend/api/data/fsc", exist_ok=True)
-    os.makedirs("backend/api/data/roles", exist_ok=True)
-    # Ensure the directory for the output embeddings file exists
-    output_embeddings_file = "backend/api/data/all_embeddings_data.json"
+    output_embeddings_file = f"{BASE_DIR}/api/data/all_embeddings_data.json"
     os.makedirs(os.path.dirname(output_embeddings_file), exist_ok=True)
 
 

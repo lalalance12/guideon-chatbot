@@ -1,20 +1,33 @@
-# filepath: c:\Users\Asus\Desktop\guideon-chatbot\backend\api\utils\generate_embeddings.py
+import os
+import sys
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+sys.path.append(str(BASE_DIR))
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+
 import json
 import requests
 import numpy as np
-import os
 import traceback
+import django
+
+
+django.setup()
+
 
 # --- Configuration ---
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
 EMBEDDING_MODEL = "bge-m3"  # Ensure this is bge-m3
-OUTPUT_EMBEDDINGS_FILE = "backend/api/data/all_embeddings_data.json" # Consistent output file
+OUTPUT_EMBEDDINGS_FILE = f"{BASE_DIR}/api/data/all_embeddings_data.json" # Consistent output file
 
 # Input data file paths
-ESC_DATA_PATH = "backend/api/data/esc/esc_data.json"
-FSC_DATA_PATH = "backend/api/data/fsc/processed_data.json"
-ROLES_DATA_PATH = "backend/api/data/roles/processed_roles.json"
-CAREER_MAP_PATH = "backend/api/data-sample/career_map.json" # Using sample path provided
+ESC_DATA_PATH = f"{BASE_DIR}/api/data/esc/esc_data.json"
+FSC_DATA_PATH = f"{BASE_DIR}/api/data/fsc/processed_data.json"
+ROLES_DATA_PATH = f"{BASE_DIR}/api/data/roles/processed_roles.json"
+CAREER_MAP_PATH = f"{BASE_DIR}/api/data-sample/career_map.json" # Using sample path provided
 
 # --- Embedding Generation ---
 def generate_embeddings(text_chunks):
