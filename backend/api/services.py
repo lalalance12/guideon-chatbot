@@ -84,7 +84,7 @@ class GuideonChatService:
         try:
             from agno.models.ollama import Ollama
             # AGNO v1.4.5 does not support 'temperature' in Agent or Ollama
-            llama_model = Ollama(id="llama3.2:latest", provider="Ollama", host="http://localhost:11434")
+            llama_model = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",
                 model=llama_model,
@@ -122,9 +122,9 @@ class GuideonChatService:
         # Get chat history if available
         if chat_id:
             try:
-                # Code to retrieve chat history
-                chat_history = []  # Replace with actual chat history retrieval
-                context['chat_history'] = chat_history
+                chat = await self._get_chat_history(chat_id)
+                if chat:
+                    context['chat_history'] = chat
             except Exception as e:
                 logger.error(f"Error retrieving chat history: {e}")
         
@@ -135,31 +135,85 @@ class GuideonChatService:
             # Update context with intent classification results
             context['intent'] = intent_result['intent']
             context['intent_confidence'] = intent_result['confidence']
-            context['entities'] = intent_result.get('extracted_entities', {})
+            context['extracted_entities'] = intent_result.get('extracted_entities', {})
             
             logger.info(f"Classified intent: {context['intent']} (confidence: {context['intent_confidence']})")
             
             # Step 2: Orchestrate specialized agents based on intent
             orchestrator_result = await self.orchestrator.process(user_query, context)
-            context.update(orchestrator_result)
+            
+            # Make sure we have the updated context with flow information
+            if isinstance(orchestrator_result, dict) and 'context' in orchestrator_result:
+                context = orchestrator_result['context']
+            else:
+                # Just update context with whatever we got
+                context.update(orchestrator_result)
             
             # Step 3: Synthesize the final response
-            response = await self.synthesizer.process(user_query, context)
+            response_result = await self.synthesizer.process(user_query, context)
             
-            # Optional: Store conversation in memory
+            # Extract the actual response text
+            if isinstance(response_result, dict) and 'response_text' in response_result:
+                response_text = response_result['response_text']
+            else:
+                # Fallback to using the entire result as the response
+                response_text = str(response_result)
+            
+            # Optional: Store conversation in memory if available
             if chat_id and self.is_memory_ready():
                 asyncio.create_task(self._run_memory_maintenance(chat_id))
                 asyncio.create_task(self._add_to_memory([
-                    {"role": "user", "content": user_query},
-                    {"role": "assistant", "content": response}
+                    {"role": "user", "content": user_query, "metadata": {"session_id": chat_id}},
+                    {"role": "assistant", "content": response_text, "metadata": {"session_id": chat_id}}
                 ]))
             
-            return response
-            
+            return response_text
+        
         except Exception as e:  
-            logger.error(f"Error processing message: {e}")
+            logger.error(f"Error processing message: {e}", exc_info=True)
             return self._fallback_response(user_query)
 
+    async def _get_chat_history(self, chat_id):
+        """Retrieve chat history for context building"""
+        try:
+            # Try to get from memory first if available
+            if self.is_memory_ready():
+                memory_messages = await self._get_from_memory(
+                    limit=10,
+                    metadata_filter={"session_id": chat_id}
+                )
+                if memory_messages:
+                    return [{
+                        "text": msg.get("content", ""),
+                        "is_user": msg.get("role") == "user",
+                        "timestamp": msg.get("metadata", {}).get("timestamp", "")
+                    } for msg in memory_messages]
+            
+            # Fall back to database if needed
+            from django.db.models import Prefetch
+            from .models import Chat, Message
+            
+            try:
+                # Use Prefetch to efficiently load related messages
+                chat = await Chat.objects.filter(id=chat_id).prefetch_related(
+                    Prefetch('messages', queryset=Message.objects.order_by('created_at'))
+                ).afirst()
+                
+                if chat:
+                    return [{
+                        "text": msg.text,
+                        "is_user": msg.is_user,
+                        "timestamp": msg.created_at.isoformat()
+                    } for msg in chat.messages.all()]
+                return []
+            except Exception as db_error:
+                logger.error(f"Database error getting chat history: {db_error}")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Error retrieving chat history: {e}")
+            return []
+        
     async def _run_memory_maintenance(self, session_id):
         """Run memory maintenance tasks in the background with AGNO v1.4.5 compatibility"""
         if not self.is_memory_ready():
