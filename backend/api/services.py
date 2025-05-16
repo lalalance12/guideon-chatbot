@@ -2,8 +2,9 @@ import logging
 import asyncio
 from django.conf import settings
 from agno.agent import Agent
-from agno.memory import AgentMemory
-from agno.memory.db.postgres import PgMemoryDb
+from agno.memory.v2.memory import Memory
+from agno.memory.v2.db.postgres import PostgresMemoryDb
+from agno.storage.postgres import PostgresStorage
 from agno.embedder.ollama import OllamaEmbedder
 from sqlalchemy import create_engine, text
 from .agents.intent_classifier_agent import IntentClassifierAgent
@@ -19,61 +20,54 @@ class GuideonChatService:
         self.orchestrator = OrchestratorAgent()
         self.synthesizer = ResponseSynthesizerAgent()
         self.memory = None
-        self.agent_db = None
+        self.memory_db = None
+        self.storage = None
         self.agno_agent = None
-        self._init_memory()
+        self._init_memory_and_storage()
         self._init_agent()
 
-    def _init_memory(self):
-        """Initialize the memory system with proper error handling for AGNO v1.4.5"""
+    def _init_memory_and_storage(self):
+        """Initialize the memory and storage system for AGNO v1.4.5"""
         try:
-            embedder = OllamaEmbedder()
+            # Get database connection parameters from Django settings
             db_settings = settings.DATABASES['default']
-            dsn = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
-            db_engine = create_engine(dsn)
-            self.agent_db = PgMemoryDb(
-                table_name="guideon_chat_memory",
-                db_engine=db_engine
+            db_url = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
+            
+            # Initialize memory database
+            self.memory_db = PostgresMemoryDb(
+                table_name="guideon_user_memories",
+                db_url=db_url,
+                schema=db_settings.get('SCHEMA', 'public')  # Use schema from settings or default to 'public'
             )
+            
+            # Initialize storage for session history
+            self.storage = PostgresStorage(
+                table_name="guideon_agent_sessions",
+                db_url=db_url,
+                schema=db_settings.get('SCHEMA', 'public')
+            )
+            
+            # Initialize the memory manager with Ollama model
             try:
-                if hasattr(self.agent_db, 'initialize'):
-                    try:
-                        self.agent_db.initialize()
-                        logger.info("Memory tables initialized")
-                    except Exception as e:
-                        logger.info(f"Memory tables already exist: {e}")
-                # Use SQLAlchemy's connection for raw SQL, not db_engine.execute()
-                try:
-                    with db_engine.connect() as conn:
-                        result = conn.execute(text(f"SELECT COUNT(*) FROM {self.agent_db.table_name}")).fetchone()
-                        logger.info(f"Memory database connected successfully. Current record count: {result[0] if result else 0}")
-                except Exception as db_e:
-                    logger.warning(f"Database connection test failed: {db_e}")
-            except Exception as table_e:
-                logger.warning(f"Error during table initialization check: {table_e}")
-            try:
-                mem_args = {'db': self.agent_db}
-                import inspect
-                if 'embedder' in inspect.signature(AgentMemory.__init__).parameters:
-                    mem_args['embedder'] = embedder
-                self.memory = AgentMemory(**mem_args)
-                logger.info("AGNO memory system initialized successfully")
-                if hasattr(self.memory, 'get_messages'):
-                    try:
-                        _ = self.memory.get_messages()
-                        logger.info("Memory.get_messages() working correctly")
-                    except Exception as e:
-                        logger.warning(f"Memory.get_messages() test failed: {e}")
-                return True
-            except Exception as mem_e:
-                logger.error(f"Failed to initialize AgentMemory: {mem_e}", exc_info=True)
-                self.memory = None
-                self.agent_db = None
-                return False
+                from agno.models.ollama import Ollama
+                llama_model = Ollama(id="llama3.2:latest", provider="Ollama", host="http://localhost:11434")
+                self.memory = Memory(
+                    model=llama_model,
+                    db=self.memory_db
+                )
+                logger.info("AGNO memory system initialized successfully with Llama 3.2")
+            except Exception as model_e:
+                logger.error(f"Failed to initialize memory with Llama model: {model_e}", exc_info=True)
+                # Try to initialize memory without a model
+                self.memory = Memory(db=self.memory_db)
+                logger.info("AGNO memory system initialized WITHOUT model")
+                
+            return True
         except Exception as e:
-            logger.error(f"Failed to initialize AGNO memory: {e}", exc_info=True)
+            logger.error(f"Failed to initialize AGNO memory and storage: {e}", exc_info=True)
             self.memory = None
-            self.agent_db = None
+            self.memory_db = None
+            self.storage = None
             return False
 
     def is_memory_ready(self):
@@ -83,23 +77,34 @@ class GuideonChatService:
     def _init_agent(self):
         try:
             from agno.models.ollama import Ollama
-            # AGNO v1.4.5 does not support 'temperature' in Agent or Ollama
+            # Initialize Ollama model for the agent
             llama_model = Ollama(id="llama3.2:latest", provider="Ollama", host="http://localhost:11434")
+            
+            # Create the agent with memory and storage configured
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",
                 model=llama_model,
-                memory=self.memory
+                memory=self.memory,
+                storage=self.storage,
+                enable_agentic_memory=True,
+                enable_user_memories=True,
+                enable_session_summaries=True,
+                add_history_to_messages=True,
+                num_history_runs=3,
+                markdown=True
             )
             logger.info("AGNO agent initialized successfully with Llama 3.2")
         except Exception as e:
             logger.error(f"Failed to initialize Llama 3.2 model: {e}", exc_info=True)
             try:
+                # Fallback initialization with minimal parameters
                 self.agno_agent = Agent(
                     name="ServicesAGNOAgent",
                     model=None,
-                    memory=self.memory
+                    memory=self.memory,
+                    storage=self.storage
                 )
-                logger.info("AGNO agent initialized without model")
+                logger.info("AGNO agent initialized with minimal configuration")
             except Exception as e2:
                 logger.error(f"Failed to initialize AGNO agent: {e2}", exc_info=True)
                 self.agno_agent = None
@@ -120,11 +125,17 @@ class GuideonChatService:
         context = {'chat_id': chat_id}
         
         # Get chat history if available
-        if chat_id:
+        if chat_id and self.is_memory_ready():
             try:
-                # Code to retrieve chat history
-                chat_history = []  # Replace with actual chat history retrieval
-                context['chat_history'] = chat_history
+                # Retrieve chat history using the new v1.4.5 API
+                user_id = str(chat_id)  # Convert UUID to string
+                if isinstance(user_id, str) and user_id.startswith('chat_'):
+                    user_id = user_id.replace('chat_', '')
+                    
+                # Get stored memories for this user
+                if self.memory and hasattr(self.memory, 'get_user_memories'):
+                    chat_history = self.memory.get_user_memories(user_id=user_id)
+                    context['chat_history'] = chat_history
             except Exception as e:
                 logger.error(f"Error retrieving chat history: {e}")
         
@@ -146,13 +157,18 @@ class GuideonChatService:
             # Step 3: Synthesize the final response
             response = await self.synthesizer.process(user_query, context)
             
-            # Optional: Store conversation in memory
-            if chat_id and self.is_memory_ready():
-                asyncio.create_task(self._run_memory_maintenance(chat_id))
-                asyncio.create_task(self._add_to_memory([
-                    {"role": "user", "content": user_query},
-                    {"role": "assistant", "content": response}
-                ]))
+            # Store conversation in memory using v1.4.5 API
+            if chat_id and self.is_memory_ready() and self.agno_agent:
+                user_id = str(chat_id)  # Convert UUID to string
+                if isinstance(user_id, str) and user_id.startswith('chat_'):
+                    user_id = user_id.replace('chat_', '')
+                
+                # Store the interaction in memory
+                try:
+                    # Use the agent's API to store the interaction
+                    asyncio.create_task(self._store_interaction(user_id, user_query, response))
+                except Exception as mem_e:
+                    logger.error(f"Error storing memory: {mem_e}", exc_info=True)
             
             return response
             
@@ -160,198 +176,36 @@ class GuideonChatService:
             logger.error(f"Error processing message: {e}")
             return self._fallback_response(user_query)
 
-    async def _run_memory_maintenance(self, session_id):
-        """Run memory maintenance tasks in the background with AGNO v1.4.5 compatibility"""
-        if not self.is_memory_ready():
-            logger.warning("Memory maintenance skipped - memory system not available")
-            return
-            
+    async def _store_interaction(self, user_id, user_query, response):
+        """Store an interaction in the agent's memory system"""
         try:
-            all_messages = await self._get_from_memory(
-                limit=1000, 
-                metadata_filter={"session_id": session_id}
-            )
+            # Ensure user_id is a string
+            user_id = str(user_id)
             
-            if len(all_messages) > 100:
-                logger.info(f"Pruning memory for session {session_id}, found {len(all_messages)} messages")
-                logger.info(f"Memory maintenance would prune {len(all_messages) - 100} messages")
-            
-            logger.debug(f"Memory maintenance completed for session {session_id}")
+            if self.agno_agent:
+                # Use the agent's API to process the message and store it
+                # This will handle storing in both memory and storage
+                await self.agno_agent.generate_response(
+                    user_query,
+                    user_id=user_id,
+                    stream=False
+                )
+                
+                # If the agent's response is different from our synthesized response,
+                # we may want to explicitly store our synthesized response
+                if hasattr(self.memory, 'add_memory'):
+                    self.memory.add_memory(
+                        user_id=user_id,
+                        content=f"User asked: {user_query}\nGuideon responded: {response}"
+                    )
+            elif self.memory and hasattr(self.memory, 'add_memory'):
+                # Direct memory storage if agent isn't available
+                self.memory.add_memory(
+                    user_id=user_id,
+                    content=f"User asked: {user_query}\nGuideon responded: {response}"
+                )
         except Exception as e:
-            logger.error(f"Error in memory maintenance: {e}", exc_info=True)
-
-    async def _add_to_memory(self, messages, log_prefix=""):
-        """
-        Safe wrapper for memory operations with AGNO v1.4.5 compatibility
-        
-        Args:
-            messages: List of message objects to add to memory
-            log_prefix: Prefix for log messages
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        if not self.is_memory_ready():
-            logger.warning(f"{log_prefix}: Memory system is not initialized; skipping memory operation.")
-            return False
-            
-        try:
-            if not isinstance(messages, list):
-                logger.warning(f"{log_prefix}: Messages must be a list, got {type(messages)}")
-                if isinstance(messages, dict):
-                    messages = [messages]
-                else:
-                    return False
-            
-            validated_messages = []
-            for msg in messages:
-                if not isinstance(msg, dict):
-                    logger.warning(f"{log_prefix}: Skipping non-dict message: {msg}")
-                    continue
-                    
-                if 'role' not in msg or 'content' not in msg:
-                    logger.warning(f"{log_prefix}: Message missing role or content: {msg}")
-                    continue
-                
-                if 'metadata' not in msg:
-                    metadata = {k: v for k, v in msg.items() if k not in ['role', 'content']}
-                    if metadata:
-                        msg['metadata'] = metadata
-                
-                validated_messages.append(msg)
-                
-            if not validated_messages:
-                logger.warning(f"{log_prefix}: No valid messages to add")
-                return False
-                
-            success = False
-            
-            if hasattr(self.memory, 'add_messages'):
-                try:
-                    self.memory.add_messages(messages=validated_messages)
-                    success = True
-                except Exception as e:
-                    logger.warning(f"{log_prefix}: Error using add_messages: {e}")
-            
-            if not success and hasattr(self.memory, 'messages') and isinstance(self.memory.messages, list):
-                try:
-                    self.memory.messages.extend(validated_messages)
-                    success = True
-                except Exception as e:
-                    logger.warning(f"{log_prefix}: Error extending memory.messages: {e}")
-            
-            if not success and hasattr(self.memory, 'add_message'):
-                errors = 0
-                for msg in validated_messages:
-                    try:
-                        self.memory.add_message(msg)
-                    except Exception as e:
-                        errors += 1
-                        logger.warning(f"{log_prefix}: Error adding individual message: {e}")
-                
-                if errors < len(validated_messages):
-                    success = True
-            
-            if success:
-                logger.debug(f"{log_prefix}: Added {len(validated_messages)} messages to memory")
-                return True
-            else:
-                logger.warning(f"{log_prefix}: Failed to add messages through any available method")
-                return False
-                
-        except Exception as e:
-            logger.error(f"Error adding messages to memory ({log_prefix}): {e}", exc_info=True)
-            return False
-
-    async def _get_from_memory(self, limit=20, metadata_filter=None):
-        """
-        Safe wrapper for memory retrieval with AGNO v1.4.5 compatibility
-        
-        Args:
-            limit: Maximum number of messages to retrieve (may not be used in v1.4.5)
-            metadata_filter: Dictionary of metadata key-value pairs to filter by
-            
-        Returns:
-            List of messages, or empty list if no memory or error
-        """
-        if not self.is_memory_ready():
-            logger.warning("Memory system is not initialized; skipping memory retrieval.")
-            return []
-        try:
-            if hasattr(self.memory, 'get_messages'):
-                try:
-                    all_messages = self.memory.get_messages()
-                except AttributeError as e:
-                    # AGNO expects message objects with model_dump, but found dicts
-                    logger.warning(f"model_dump missing on message objects, returning raw messages: {e}")
-                    if hasattr(self.memory, 'messages'):
-                        all_messages = self.memory.messages
-                    else:
-                        all_messages = []
-                if metadata_filter:
-                    filtered_messages = []
-                    for msg in all_messages:
-                        msg_metadata = msg.get('metadata', {})
-                        if not msg_metadata and isinstance(msg, dict):
-                            msg_metadata = {k: v for k, v in msg.items() if k not in ['role', 'content']}
-                        matches = True
-                        for key, value in metadata_filter.items():
-                            if key not in msg_metadata or msg_metadata[key] != value:
-                                matches = False
-                                break
-                        if matches:
-                            filtered_messages.append(msg)
-                    return filtered_messages[:limit] if filtered_messages else []
-                else:
-                    return all_messages[:limit] if all_messages else []
-            elif hasattr(self.memory, 'messages'):
-                all_messages = self.memory.messages
-                if metadata_filter:
-                    messages = []
-                    for msg in all_messages:
-                        msg_metadata = msg.get('metadata', {})
-                        if not msg_metadata and 'role' in msg and 'content' in msg:
-                            msg_metadata = {k: v for k, v in msg.items() if k not in ['role', 'content']}
-                        matches = True
-                        for key, value in metadata_filter.items():
-                            if key not in msg_metadata or msg_metadata[key] != value:
-                                matches = False
-                                break
-                        if matches:
-                            messages.append(msg)
-                else:
-                    messages = all_messages
-                return messages[:limit] if messages else []
-            elif hasattr(self.memory, 'get_user_memories') and metadata_filter and 'session_id' in metadata_filter:
-                try:
-                    session_id = metadata_filter.get('session_id')
-                    user_id = session_id.replace('chat_', '') if session_id.startswith('chat_') else session_id
-                    user_memories = self.memory.get_user_memories(user_id=user_id)
-                    formatted_memories = []
-                    for memory in user_memories:
-                        if isinstance(memory, dict):
-                            if 'content' in memory and 'role' not in memory:
-                                formatted_memory = {
-                                    'role': 'system',
-                                    'content': memory.get('content', ''),
-                                    'metadata': {
-                                        'session_id': session_id,
-                                        'type': 'memory',
-                                        'timestamp': memory.get('timestamp', str(asyncio.get_event_loop().time()))
-                                    }
-                                }
-                                formatted_memories.append(formatted_memory)
-                            else:
-                                formatted_memories.append(memory)
-                    return formatted_memories[:limit] if formatted_memories else []
-                except Exception as e:
-                    logger.warning(f"Error getting user memories: {e}")
-                    return []
-            logger.warning("No compatible memory retrieval method found")
-            return []
-        except Exception as e:
-            logger.error(f"Error retrieving messages from memory: {e}", exc_info=True)
-            return []
+            logger.error(f"Error storing interaction: {e}", exc_info=True)
 
     def _extract_entities(self, text):
         entities = []
