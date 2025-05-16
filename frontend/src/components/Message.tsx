@@ -4,14 +4,17 @@ import { Bot, User } from "lucide-react";
 import React from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import CourseCard from "./CourseCard";
+import { Course } from "../services/courseService";
 
 interface MessageProps {
   text: string;
   type: "user" | "guideon";
   showAvatar?: boolean;
+  courses?: Course[];
 }
 
-const Message: React.FC<MessageProps> = ({ text, type, showAvatar = true }) => {
+const Message: React.FC<MessageProps> = ({ text, type, showAvatar = true, courses }) => {
   const isUser = type === "user";
 
   return (
@@ -29,17 +32,13 @@ const Message: React.FC<MessageProps> = ({ text, type, showAvatar = true }) => {
 
       <div
         className={cn(
-          // Option A: tightened prose
           "prose prose-sm !max-w-none !prose-p:my-1 !prose-ul:my-1 !prose-ol:my-1 leading-snug p-3",
-          // Option B: custom spacing instead of prose
-          // "leading-snug !max-w-none p-3 space-y-1",
           isUser ? "chat-bubble-user" : "chat-bubble-bot"
         )}
       >
         <Markdown
           remarkPlugins={[remarkGfm]}
           components={{
-            // Optionally override child spacing even further:
             p: ({ node, ...props }) => <p className="mb-1">{props.children}</p>,
             li: ({ node, ...props }) => (
               <li className="ml-4 mb-1 list-disc">{props.children}</li>
@@ -48,6 +47,14 @@ const Message: React.FC<MessageProps> = ({ text, type, showAvatar = true }) => {
         >
           {text}
         </Markdown>
+        
+        {courses && courses.length > 0 && (
+          <div className="mt-4 space-y-4">
+            {courses.map((course, index) => (
+              <CourseCard key={index} course={course} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
