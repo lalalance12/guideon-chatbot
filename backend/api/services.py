@@ -77,10 +77,8 @@ class GuideonChatService:
     def _init_agent(self):
         try:
             from agno.models.ollama import Ollama
-            # Initialize Ollama model for the agent
-            llama_model = Ollama(id="llama3.2:latest", provider="Ollama", host="http://localhost:11434")
-            
-            # Create the agent with memory and storage configured
+            # AGNO v1.4.5 does not support 'temperature' in Agent or Ollama
+            llama_model = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",
                 model=llama_model,
@@ -146,16 +144,29 @@ class GuideonChatService:
             # Update context with intent classification results
             context['intent'] = intent_result['intent']
             context['intent_confidence'] = intent_result['confidence']
-            context['entities'] = intent_result.get('extracted_entities', {})
+            context['extracted_entities'] = intent_result.get('extracted_entities', {})
             
             logger.info(f"Classified intent: {context['intent']} (confidence: {context['intent_confidence']})")
             
             # Step 2: Orchestrate specialized agents based on intent
             orchestrator_result = await self.orchestrator.process(user_query, context)
-            context.update(orchestrator_result)
+            
+            # Make sure we have the updated context with flow information
+            if isinstance(orchestrator_result, dict) and 'context' in orchestrator_result:
+                context = orchestrator_result['context']
+            else:
+                # Just update context with whatever we got
+                context.update(orchestrator_result)
             
             # Step 3: Synthesize the final response
-            response = await self.synthesizer.process(user_query, context)
+            response_result = await self.synthesizer.process(user_query, context)
+            
+            # Extract the actual response text
+            if isinstance(response_result, dict) and 'response_text' in response_result:
+                response_text = response_result['response_text']
+            else:
+                # Fallback to using the entire result as the response
+                response_text = str(response_result)
             
             # Store conversation in memory using v1.4.5 API
             if chat_id and self.is_memory_ready() and self.agno_agent:
@@ -170,10 +181,10 @@ class GuideonChatService:
                 except Exception as mem_e:
                     logger.error(f"Error storing memory: {mem_e}", exc_info=True)
             
-            return response
-            
+            return response_text
+        
         except Exception as e:  
-            logger.error(f"Error processing message: {e}")
+            logger.error(f"Error processing message: {e}", exc_info=True)
             return self._fallback_response(user_query)
 
     async def _store_interaction(self, user_id, user_query, response):

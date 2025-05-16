@@ -1,11 +1,11 @@
 from __future__ import annotations
-import logging
-import asyncio
-import time
 from typing import Dict, Any, Tuple, Optional
+import time
+import logging
+import re, asyncio
 
 from .base_agent import BaseAgent
-from ..utils.intent_classifier import QueryIntent
+from ..utils.intent_classifier import QueryIntent, classify_intent
 from agno.agent import Agent
 from agno.models.ollama import Ollama
 
@@ -20,22 +20,19 @@ class IntentClassifierAgent(BaseAgent):
     def __init__(self) -> None:
         """Initialize the intent classifier with an LLM."""
         try:
-            # Initialize with the same pattern used in response_synthesizer_agent.py
             self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
                               provider="Ollama", 
                               host="http://localhost:11434")
-            
-            # Create an agent wrapper for the model
             self.agent = Agent(
-                name="IntentClassifier",
+                name="Synthesizer", 
                 model=self.llm,
                 system_message="You are an intent classification assistant that analyzes user queries."
             )
-            logger.info("IntentClassifierAgent initialized with Ollama LLM")
+            logger.info("Intent classifier initialized with LLM")
         except Exception as e:
-            logger.error(f"Failed to initialize Ollama LLM: {e}")
-            self.llm = None
+            logger.error(f"Failed to initialize intent classifier LLM: {e}")
             self.agent = None
+            logger.warning("Will fall back to rule-based classification")
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -46,56 +43,64 @@ class IntentClassifierAgent(BaseAgent):
         
         # Fall back to rule-based if LLM not available
         if not self.agent:
-            logger.warning("LLM not available, falling back to rule-based classification")
-            return self._rule_based_classification(query, context)
+            logger.warning("Using rule-based intent classification (LLM unavailable)")
+            classification = self._rule_based_classification(query, context)
+            classification["processing_time"] = time.time() - start
+            return classification
         
         # Prepare conversation history if available
         chat_history = self._format_chat_history(context.get("chat_history", []))
         
         # Construct the classification prompt
         prompt = self._construct_prompt(query, chat_history)
-        
+            
         try:
-            # Use the agent to generate a response (matching the pattern in synthesizer)
-            if hasattr(self.agent, "arun"):
-                run_resp = await self.agent.arun(prompt)
-            else:
-                run_resp = await asyncio.to_thread(self.agent.run, prompt)
-                
-            # Extract text content from response
-            response = getattr(run_resp, "content", str(run_resp))
-            
-            # Parse the response
-            intent, confidence, entities = self._parse_llm_response(response, query)
-            
-            result = {
-                "intent": intent,
-                "confidence": confidence,
-                "extracted_entities": entities
-            }
-            
-            logger.info(f"Classified intent as {intent.value} with confidence {confidence:.2f} in {time.time() - start:.2f}s")
-            return result
-            
+                # Generate classification with LLM using robust method calling
+                if hasattr(self.agent, "arun"):
+                    run_response = await self.agent.arun(prompt)
+                else:
+                    # Fall back to threaded run() if arun() isn't available
+                    run_response = await asyncio.to_thread(self.agent.run, prompt)
+                    
+                # Extract content safely using getattr for robustness
+                response = getattr(run_response, "content", str(run_response))
+                logger.debug(f"LLM classification response: {response[:200]}...")
+
+                # Parse the LLM's response
+                intent, confidence, extracted_entities = self._parse_llm_response(response, query)
+
+                # If parsing failed, fall back to rule-based
+                if not intent:
+                    logger.warning("Failed to parse LLM response, using rule-based classification")
+                    classification = self._rule_based_classification(query, context)
+                else:
+                    classification = {
+                        "intent": intent,
+                        "confidence": confidence,
+                        "extracted_entities": extracted_entities,
+                        "llm_response": response[:500]  # Store truncated response for debugging
+                    }
+
+                classification["processing_time"] = time.time() - start
+                classification["method"] = "llm" if intent else "rule_based_fallback"
+                return classification
+
         except Exception as e:
-            logger.error(f"LLM classification failed: {e}. Falling back to rule-based.")
-            return self._rule_based_classification(query, context)
+            logger.exception(f"Error during intent classification: {e}")
+            # Fall back to rule-based on error
+            classification = self._rule_based_classification(query, context)
+            classification["processing_time"] = time.time() - start
+            classification["method"] = "rule_based_fallback"
+            classification["error"] = str(e)
+            return classification
 
     def _construct_prompt(self, query: str, chat_history: str = "") -> str:
         """Build a prompt for the LLM to classify the intent."""
         intent_descriptions = {
-            QueryIntent.CAREER_PATH: "Questions about career progression, paths from one role to another",
-            QueryIntent.ROLE_INFO: "Questions about specific roles or positions",
-            QueryIntent.SKILL_INFO: "Questions about specific skills or competencies",
-            QueryIntent.SKILL_LEVEL_INFO: "Questions about specific proficiency levels for skills",
-            QueryIntent.SKILL_PROGRESSION: "Questions about how to advance skills between levels",
-            QueryIntent.SKILL_COMPARISON: "Comparing different skills",
-            QueryIntent.EDUCATION_ADVICE: "Questions about training, courses, or learning paths",
-            QueryIntent.FUNCTIONAL_SKILLS: "Questions about technical/functional skills",
-            QueryIntent.ENABLING_SKILLS: "Questions about soft skills/enabling skills",
-            QueryIntent.JOB_ROLES: "Questions about specific job roles",
-            QueryIntent.CAREER_MAP: "Questions about overall career mapping",
-            QueryIntent.GENERAL_QUERY: "General questions or chitchat"
+            QueryIntent.KNOWLEDGE_BASE_QUERY: "Questions about PSF-AAI framework, including roles, skills, career paths, proficiency levels, or any information contained in the PSF-AAI knowledge base",
+            QueryIntent.LEARNING_PATHWAY: "Questions about career roles, progression paths, or how to develop skills for specific roles within the PSF-AAI framework",
+            QueryIntent.COURSE_SEARCH: "Questions about specific courses, training, or education resources to learn particular skills",
+            QueryIntent.GENERAL_CONVERSATION: "General conversation or topics unrelated to PSF-AAI or professional development",
         }
         
         # Build the intent descriptions section
@@ -109,7 +114,7 @@ class IntentClassifierAgent(BaseAgent):
         # Build the prompt
         prompt = """# Intent Classification Task
 
-You are an AI assistant specializing in classifying user queries about data science, AI, and career development.
+You are an AI assistant specializing in the Philippine Skills Framework for Analytics & AI (PSF-AAI).
 
 ## Available Intents:
 {}
@@ -120,7 +125,7 @@ You are an AI assistant specializing in classifying user queries about data scie
 {}
 ## Instructions:
 1. Analyze the query and determine the SINGLE most appropriate intent
-2. Extract any relevant entities (skills, roles, levels mentioned)
+2. Extract any relevant entities (skills, roles mentioned)
 3. Provide your classification in the following format:
 
 INTENT: [intent name]
@@ -133,77 +138,84 @@ Only respond with this exact format!
         
         return prompt
 
-    def _parse_llm_response(self, response: str, query: str) -> Tuple[QueryIntent, float, Dict[str, Any]]:
-        """Parse the LLM's response to extract intent, confidence and entities."""
+    def _parse_llm_response(self, response: str, query: str) -> Tuple[Optional[QueryIntent], float, Dict[str, Any]]:
+        """Parse the LLM's intent classification response."""
         try:
-            # Default values
-            intent = QueryIntent.GENERAL_QUERY
-            confidence = 0.5
-            entities = {}
+            # Extract intent
+            intent_match = re.search(r"INTENT:\s*(\w+)", response)
+            intent_name = intent_match.group(1).lower() if intent_match else ""
             
-            # Parse lines
-            lines = response.strip().split('\n')
-            for line in lines:
-                line = line.strip()
-                
-                if line.startswith("INTENT:"):
-                    intent_str = line[7:].strip().lower()
-                    # Try to match to enum
-                    for intent_enum in QueryIntent:
-                        if intent_enum.value.lower() == intent_str:
-                            intent = intent_enum
-                            break
-                
-                elif line.startswith("CONFIDENCE:"):
-                    try:
-                        conf_str = line[11:].strip()
-                        confidence = float(conf_str)
-                        # Ensure valid range
-                        confidence = max(0.0, min(1.0, confidence))
-                    except:
-                        pass
-                
-                elif line.startswith("ENTITIES:"):
-                    entities_str = line[9:].strip()
-                    if entities_str and entities_str.lower() != "none":
-                        entity_list = [e.strip() for e in entities_str.split(',')]
-                        entities = {"detected": entity_list}
+            # Try to map the intent name to an enum
+            intent = None
+            for enum_intent in QueryIntent:
+                if enum_intent.value == intent_name:
+                    intent = enum_intent
+                    break
             
-            return intent, confidence, entities
+            # If no match, try to find the most similar intent
+            if not intent:
+                for enum_intent in QueryIntent:
+                    if enum_intent.value in intent_name or intent_name in enum_intent.value:
+                        intent = enum_intent
+                        break
             
+            # Extract confidence
+            confidence_match = re.search(r"CONFIDENCE:\s*(0\.\d+|1\.0|1)", response)
+            confidence = float(confidence_match.group(1)) if confidence_match else 0.5
+            
+            # Extract entities
+            entities_match = re.search(r"ENTITIES:\s*(.+?)(?=\n|$)", response)
+            entities_text = entities_match.group(1) if entities_match else ""
+            
+            # Process entities
+            extracted_entities = {}
+            if entities_text and entities_text.lower() != "none":
+                entity_items = [item.strip() for item in entities_text.split(",")]
+                
+                for entity in entity_items:
+                    if "role:" in entity.lower():
+                        extracted_entities["extracted_role"] = entity.split(":", 1)[1].strip()
+                    elif "level:" in entity.lower():
+                        extracted_entities["extracted_level"] = entity.split(":", 1)[1].strip()
+                    elif "skill:" in entity.lower():
+                        extracted_entities["skill"] = entity.split(":", 1)[1].strip()
+                    else:
+                        # Just add as generic entity
+                        extracted_entities[f"entity_{len(extracted_entities)}"] = entity
+            
+            # Fall back to rule-based role extraction if LLM didn't find a role
+            if intent == QueryIntent.LEARNING_PATHWAY and "extracted_role" not in extracted_entities:
+                from ..utils.intent_classifier import extract_role_from_query
+                role = extract_role_from_query(query)
+                if role:
+                    extracted_entities["extracted_role"] = role
+            
+            # Return parsed information
+            if intent:
+                return intent, confidence, extracted_entities
+            else:
+                logger.warning(f"Failed to parse intent from: {response[:100]}")
+                return None, 0.0, {}
+                
         except Exception as e:
-            logger.error(f"Failed to parse LLM response: {e}")
-            # Fall back to a reasonable default
-            return QueryIntent.GENERAL_QUERY, 0.5, {}
+            logger.exception(f"Error parsing LLM response: {e}")
+            return None, 0.0, {}
 
     def _format_chat_history(self, history: list) -> str:
-        """Format chat history for inclusion in the prompt."""
-        if not history:
+        """Format chat history for context in the prompt."""
+        if not history or len(history) == 0:
             return ""
             
         formatted = []
-        for msg in history[-3:]:  # Only use last 3 messages for context
-            if 'role' in msg and 'content' in msg:
-                role = "User" if msg['role'].lower() == 'user' else "Assistant"
-                content = msg['content']
-                formatted.append(f"{role}: {content}")
-                
+        for item in history[-5:]:  # Only use the 5 most recent messages
+            role = "User" if item.get("is_user", False) else "Assistant"
+            text = item.get("text", "").replace("\n", " ")
+            formatted.append(f"{role}: {text}")
+            
         return "\n".join(formatted)
 
     def _rule_based_classification(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Fall back to rule-based classification when LLM is unavailable."""
-        # Import the original classifier function
-        from ..utils.intent_classifier import classify_intent, extract_level_from_query
-        
-        # Use the existing rule-based classifier
-        intent, confidence = classify_intent(query, context.get('chat_history'))
-        
-        # Extract any entities using existing methods
-        level = extract_level_from_query(query) if extract_level_from_query else None
-        entities = {"level": level} if level else {}
-        
-        return {
-            "intent": intent,
-            "confidence": confidence,
-            "extracted_entities": entities
-        }
+        result = classify_intent(query, context.get("chat_history"))
+        logger.info(f"Rule-based classification: {result.get('intent').value} ({result.get('confidence'):.2f})")
+        return result

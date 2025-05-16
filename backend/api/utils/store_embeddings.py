@@ -19,7 +19,7 @@ from api.models import KnowledgeChunk, KnowledgeSource
 
 # --- Configuration ---
 # Use the same output file name as defined in generate_embeddings.py
-INPUT_EMBEDDINGS_FILE = "backend/api/data/all_embeddings_data.json"
+INPUT_EMBEDDINGS_FILE = BASE_DIR / "api" / "data" / "all_embeddings_data.json"
 
 def determine_section_type(metadata):
     """Determine which section of the PSF-AAI document this chunk belongs to"""
