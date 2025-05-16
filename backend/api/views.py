@@ -187,7 +187,7 @@ class SemanticCourseSearchView(APIView):
     """
     API endpoint for semantic course search using only a query and context.
     """
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         query = request.data.get('query')
