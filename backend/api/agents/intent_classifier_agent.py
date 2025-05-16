@@ -101,19 +101,23 @@ class IntentClassifierAgent(BaseAgent):
         # Build the intent descriptions section
         descriptions = "\n".join([f"- {intent.value}: {desc}" for intent, desc in intent_descriptions.items()])
         
+        # Build the history section if present
+        history_section = ""
+        if chat_history:
+            history_section = "## Recent Conversation History:\n{}\n".format(chat_history)
+        
         # Build the prompt
-        prompt = f"""# Intent Classification Task
+        prompt = """# Intent Classification Task
 
 You are an AI assistant specializing in classifying user queries about data science, AI, and career development.
 
 ## Available Intents:
-{descriptions}
+{}
 
 ## User Query:
-"{query}"
+"{}"
 
-{f'## Recent Conversation History:\n{chat_history}\n' if chat_history else ''}
-
+{}
 ## Instructions:
 1. Analyze the query and determine the SINGLE most appropriate intent
 2. Extract any relevant entities (skills, roles, levels mentioned)
@@ -125,7 +129,8 @@ ENTITIES: [comma-separated list of extracted entities]
 REASONING: [brief explanation of why you chose this intent]
 
 Only respond with this exact format!
-"""
+""".format(descriptions, query, history_section)
+        
         return prompt
 
     def _parse_llm_response(self, response: str, query: str) -> Tuple[QueryIntent, float, Dict[str, Any]]:

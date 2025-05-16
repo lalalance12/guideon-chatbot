@@ -8,26 +8,37 @@ from .course_search_agent import CourseSearchAgent
 from .learning_path_agent import LearningPathAgent
 from ..utils.intent_classifier import QueryIntent
 from agno.agent import Agent
+from agno.models.ollama import Ollama
 
 logger = logging.getLogger(__name__)
 
-# Initialize AGNO agent
+# Initialize AGNO agent with v1.4.5 API
 try:
-    # Try with proper parameters based on AGNO version
+    # Initialize with Llama model
+    llama_model = Ollama(id="llama3.2:latest", provider="Ollama", host="http://localhost:11434")
+    
+    # Create the agent with the proper configuration for v1.4.5
     agno_agent = Agent(
         name="OrchestratorAGNOAgent",
-        model=None,  # Will be set later when needed
+        model=llama_model,
         add_history_to_messages=True,
         num_history_runs=3,
-        read_chat_history=True
+        enable_session_summaries=True,
+        markdown=True
     )
-except TypeError:
-    # Fallback for different AGNO versions
-    logger.warning("Falling back to simpler Agent initialization")
-    agno_agent = Agent(
-        name="OrchestratorAGNOAgent",
-        model=None
-    )
+    logger.info("AGNO orchestrator agent initialized successfully with Llama 3.2")
+except Exception as e:
+    logger.error(f"Failed to initialize full Llama agent: {e}", exc_info=True)
+    try:
+        # Fallback to simpler initialization
+        agno_agent = Agent(
+            name="OrchestratorAGNOAgent",
+            model=None
+        )
+        logger.warning("Falling back to simpler Agent initialization")
+    except Exception as e2:
+        logger.error(f"Failed to initialize any AGNO agent: {e2}", exc_info=True)
+        agno_agent = None
 
 class OrchestratorAgent(BaseAgent):
     """Coordinates the execution of specialised agents based on intent."""
@@ -58,7 +69,7 @@ class OrchestratorAgent(BaseAgent):
             if isinstance(res, Exception):
                 logger.error("Agent failed: %s", res)
             else:
-                aggregated.update(res)          # <- accept {key: value} dicts of any length
+                aggregated.update(res)
 
         logger.info("Orchestration finished in %.2fs", time.time() - start)
         return aggregated
