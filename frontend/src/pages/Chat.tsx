@@ -101,7 +101,7 @@ const Chat: React.FC = () => {
   setMessages([
     {
       id: 1,
-      text: "Hi there! I’m Guideon, your learning assistant. I can answer your questions about PSF-AAI, search for a course that aligns with functional skill from PSF-AAI, or generate a learning pathway for you. How can I assist you today?",
+      text: "Hi there! I'm Guideon, your learning assistant. I can answer your questions about PSF-AAI, search for a course that aligns with functional skill from PSF-AAI, or generate a learning pathway for you. How can I assist you today?",
       isUser: false,
     },
   ]);
@@ -198,12 +198,25 @@ const Chat: React.FC = () => {
     try {
       // Get response from Ollama using our hook
       const botResponse = await sendQuery(userPrompt);
+      
+      // Check if botResponse is an object with courses
+      let responseText;
+      let courses;
+      
+      if (typeof botResponse === 'object' && botResponse !== null) {
+        responseText = botResponse.response || '';
+        courses = botResponse.courses;
+      } else {
+        // If botResponse is a string
+        responseText = botResponse;
+      }
 
       // Add bot message
       const botMessage: MessageType = {
         id: Date.now() + 1,
-        text: botResponse,
+        text: responseText,
         isUser: false,
+        courses: courses
       };
 
       setMessages((prevMessages) => [...prevMessages, botMessage]);
@@ -245,14 +258,8 @@ const Chat: React.FC = () => {
             text={message.text}
             type={message.isUser ? "user" : "guideon"}
             showAvatar={isFirstInGroup}
+            courses={message.courses}
           />
-          {message.courses && (
-            <div className="mt-4 space-y-4">
-              {message.courses.map((course, idx) => (
-                <CourseCard key={idx} course={course} />
-              ))}
-            </div>
-          )}
         </div>
       );
     });
