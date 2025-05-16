@@ -77,6 +77,21 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
         course_res  = context.get("course_search", {})
         path_res    = context.get("learning_path", {})
 
+        # For education advice and skill progression, only use course results
+        if intent in {QueryIntent.EDUCATION_ADVICE, QueryIntent.SKILL_PROGRESSION}:
+            if course_res and course_res.get("found", False):
+                return {
+                    "response": "Here are some recommended courses that match your query:",
+                    "source": "courses_only",
+                    "courses": course_res.get("courses", [])
+                }
+            else:
+                return {
+                    "response": "I couldn't find any courses matching your query. Please try rephrasing your request.",
+                    "source": "courses_only"
+                }
+
+        # For other intents, use the normal response flow
         if not kb_results.get("found") and confidence < 0.6:
             return {"response": self._create_general_response(query), "source": "fallback"}
 
