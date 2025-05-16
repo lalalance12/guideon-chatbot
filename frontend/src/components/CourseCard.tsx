@@ -27,6 +27,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
     ]
   };
 
+  console.log('Course data:', course); // Debug log
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-4 border border-gray-200">
       <h3 className="text-xl font-semibold mb-2">
@@ -35,7 +37,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
         </a>
       </h3>
       <p className="text-gray-600 mb-2">Provider: {course.provider}</p>
-      <p className="text-gray-600 mb-4">Rating: {course.rating}/5</p>
+      <p className="text-gray-600 mb-4">Rating: {course.rating.toFixed(1)}/5</p>
       <p className="text-gray-700 mb-4">{course.description}</p>
 
       {!showFeedback && (
