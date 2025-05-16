@@ -215,7 +215,7 @@ class ChatView(APIView):
     """
     API endpoint for chat interactions with Ollama model
     """
-    permission_classes = [IsAuthenticated]  # Can be changed to IsAuthenticated if needed
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         logger.info(f"Received chat request: {request.data}")
@@ -223,8 +223,6 @@ class ChatView(APIView):
         if serializer.is_valid():
             prompt = serializer.validated_data['prompt']
             chat_id = serializer.validated_data.get('chat_id')
-            
-            # logger.info(f"Processing chat request - Prompt: '{prompt}', Chat ID: {chat_id}")
             
             # Get or create chat session
             chat = None
@@ -239,7 +237,6 @@ class ChatView(APIView):
                 logger.info("No chat_id provided, creating new chat")
                 chat = Chat.objects.create(user=request.user if request.user.is_authenticated else None)
                 
-            
             logger.info(f"Using chat with ID: {chat.id}")
             
             # Save user message
@@ -248,38 +245,75 @@ class ChatView(APIView):
                 role='user',
                 content=prompt
             )
-            logger.info(f"Saved user message with ID: {user_message.id}")
-            
-            # Get response from Ollama service
-            logger.info(f"Querying Ollama with chat_id: {chat.id}")
-            response_text = query_ollama(prompt, chat.id)
-            
-            # Save assistant response
-            assistant_message = Message.objects.create(
-                chat=chat,
-                role='assistant',
-                content=response_text
-            )
-            # logger.info(f"Saved assistant message with ID: {assistant_message.id}")
-            
-            # Get all messages in this chat for debugging
-            all_messages = Message.objects.filter(chat=chat).order_by('timestamp')
-            # logger.info(f"All messages in chat {chat.id}:")
-            # for idx, msg in enumerate(all_messages):
-            #     logger.info(f"  {idx+1}. {msg.role}: {msg.content[:50]}{'...' if len(msg.content) > 50 else ''}")
-            
-            # Return the response
-            response_data = {
-                'response': response_text,
-                'chat_id': chat.id
-            }
-            logger.info(f"Returning response with chat_id: {chat.id}")
-            response_serializer = ChatResponseSerializer(data=response_data)
-            response_serializer.is_valid()
-            return Response(response_serializer.data, status=status.HTTP_200_OK)
-        
-        logger.error(f"Invalid request data: {serializer.errors}")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                # Classify the intent of the user's message
+                intent_result = classify_intent(prompt)
+                intent = intent_result["intent"]
+                confidence = intent_result["confidence"]
+                extracted_entities = intent_result.get("extracted_entities", {})
+
+                # Handle course search intent
+                if intent == QueryIntent.COURSE_SEARCH:
+                    # Create context for course search
+                    context = {
+                        'intent': intent,
+                        'confidence': confidence,
+                        **extracted_entities
+                    }
+                    
+                    # Use CourseSearchAgent to find relevant courses
+                    agent = CourseSearchAgent()
+                    course_result = asyncio.run(agent.process(prompt, context))
+                    
+                    if course_result.get('found', False):
+                        courses = course_result.get('courses', [])
+                        logger.info(f"Found {len(courses)} courses")
+                        
+                        # Generate a response message
+                        response_text = "Based on your query, here are some recommended courses that might help you:"
+                        
+                        # Save the assistant's message
+                        assistant_message = Message.objects.create(
+                            chat=chat,
+                            role='assistant',
+                            content=response_text
+                        )
+                        
+                        # Return the response with courses
+                        response_data = {
+                            'chat_id': chat.id,
+                            'response': response_text,
+                            'courses': courses
+                        }
+                        logger.info(f"Returning response with {len(courses)} courses")
+                        return Response(response_data, status=status.HTTP_200_OK)
+                
+                # For other intents, use the regular chat flow
+                response = query_ollama(prompt)
+                
+                # Save the assistant's message
+                assistant_message = Message.objects.create(
+                    chat=chat,
+                    role='assistant',
+                    content=response
+                )
+                
+                # Return the response
+                response_data = {
+                    'chat_id': chat.id,
+                    'response': response
+                }
+                return Response(response_data, status=status.HTTP_200_OK)
+                
+            except Exception as e:
+                logger.error(f"Error processing chat request: {str(e)}", exc_info=True)
+                return Response(
+                    {"error": f"Failed to process chat request: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ChatHistoryView(APIView):
     """
