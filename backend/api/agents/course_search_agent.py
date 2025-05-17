@@ -9,6 +9,7 @@ import numpy as np
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
+from .topic_extractor import TopicExtractor
 
 from .base_agent import BaseAgent
 
@@ -42,6 +43,15 @@ def load_skill_embeddings():
     return data
 
 SKILL_EMBEDDINGS = load_skill_embeddings()
+
+# Update the get_topic_from_query function
+
+async def get_topic_from_query(query: str) -> str:
+    """Extract the topic from the query using the TopicExtractor."""
+    topic_extractor = TopicExtractor()
+    topic = await topic_extractor.extract_topic(query)
+    return topic
+
 
 def match_query_to_skills_and_get_underpinning_knowledge(query: str):
     """Find the skill that has a skill_title that exactly matches the query and return its underpinning knowledge"""
@@ -221,17 +231,32 @@ class CourseSearchAgent(BaseAgent):
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            logger.info(f"Processing query: '{query}'")
+    #        Check if we're receiving an extracted topic from the orchestrator
+            extracted_topic = context.get("extracted_topic")
+            
+            if extracted_topic and extracted_topic != query:
+                logger.info(f"Using extracted topic from orchestrator: '{extracted_topic}' (original query: '{query}')")
+                topic = extracted_topic
+            else:
+                # Fall back to extracting the topic ourselves
+                logger.info(f"No extracted topic in context, extracting from query: '{query}'")
+                topic_extractor = TopicExtractor()
+                topic = await topic_extractor.extract_topic(query)
+                logger.info(f"Extracted topic: '{topic}'")
+            
+            # Log the processing of the query with the extracted topic
+            logger.info(f"Processing query: '{query}' with topic: '{topic}'")
             
             # First, find the matching skill and its underpinning knowledge
-            skill_match = match_query_to_skills_and_get_underpinning_knowledge(query)
+            # Use the topic for matching instead of the raw query
+            skill_match = match_query_to_skills_and_get_underpinning_knowledge(topic)
             has_skill_match = skill_match is not None
             
             if has_skill_match:
                 logger.info(f"Found matching skill: {skill_match.get('skill_title')}")
                 logger.debug(f"Underpinning knowledge items: {len(skill_match.get('underpinning_knowledge', []))}")
             else:
-                logger.info("No matching skill found in embeddings, will use direct title comparison")
+                logger.info(f"No matching skill found for topic '{topic}', will use direct title comparison")
             
             # If skill match is found, use underpinning knowledge for comparison
             # Otherwise, we'll directly compare with the query
@@ -240,8 +265,8 @@ class CourseSearchAgent(BaseAgent):
                 underpinning_knowledge = skill_match.get('underpinning_knowledge', [])
             
             # Now search for relevant courses
-            logger.info("Searching Class Central for courses...")
-            urls = search_class_central(query)
+            logger.info(f"Searching Class Central for courses about '{topic}'...")
+            urls = search_class_central(topic)
             if not urls:
                 logger.warning("No course URLs found from Class Central")
                 return {

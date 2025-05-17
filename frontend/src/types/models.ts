@@ -21,3 +21,9 @@ export interface OllamaResponse {
   eval_count?: number;
   eval_duration?: number;
 } 
+
+export interface ChatResponse {
+  response: string;
+  chat_id: string;
+  courses?: Course[];
+}

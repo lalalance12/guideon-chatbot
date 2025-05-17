@@ -139,49 +139,49 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-class CourseSearchView(APIView):
-    """
-    API endpoint for searching courses using the new CourseSearchAgent
-    """
-    permission_classes = [AllowAny]
+# class CourseSearchView(APIView):
+#     """
+#     API endpoint for searching courses using the new CourseSearchAgent
+#     """
+#     permission_classes = [AllowAny]
 
-    def get(self, request):
-        query = request.query_params.get('q', '')
-        if not query:
-            return Response(
-                {"error": "Please provide a search query using the 'q' parameter"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#     def get(self, request):
+#         query = request.query_params.get('q', '')
+#         if not query:
+#             return Response(
+#                 {"error": "Please provide a search query using the 'q' parameter"},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
         
-        try:
-            # Create a context dict with education_advice intent
-            context = {
-                'intent': QueryIntent.EDUCATION_ADVICE,
-                'confidence': 0.8
-            }
+#         try:
+#             # Create a context dict with education_advice intent
+#             context = {
+#                 'intent': QueryIntent.EDUCATION_ADVICE,
+#                 'confidence': 0.8
+#             }
             
-            # Use our new CourseSearchAgent
-            agent = CourseSearchAgent()
-            result = asyncio.run(agent.process(query, context))
+#             # Use our new CourseSearchAgent
+#             agent = CourseSearchAgent()
+#             result = asyncio.run(agent.process(query, context))
             
-            if not result.get('found', False):
-                return Response(
-                    {"error": result.get('message', 'No courses found')},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+#             if not result.get('found', False):
+#                 return Response(
+#                     {"error": result.get('message', 'No courses found')},
+#                     status=status.HTTP_404_NOT_FOUND
+#                 )
             
-            # Return the courses found
-            return Response(
-                {"courses": result.get('courses', [])},
-                status=status.HTTP_200_OK
-            )
+#             # Return the courses found
+#             return Response(
+#                 {"courses": result.get('courses', [])},
+#                 status=status.HTTP_200_OK
+#             )
             
-        except Exception as e:
-            logger.error(f"Error in course search: {str(e)}")
-            return Response(
-                {"error": f"Failed to search for courses: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+#         except Exception as e:
+#             logger.error(f"Error in course search: {str(e)}")
+#             return Response(
+#                 {"error": f"Failed to search for courses: {str(e)}"},
+#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+#             )
 
 class SemanticCourseSearchView(APIView):
     """

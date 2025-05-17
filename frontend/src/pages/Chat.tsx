@@ -98,13 +98,24 @@ const Chat: React.FC = () => {
   const addWelcomeMessage = () => {
     if (apiConnected === false) return; // Don't show welcome if API is disconnected
 
-  setMessages([
-    {
+    setMessages([
+      {
       id: 1,
-      text: "Hi there! I'm Guideon, your learning assistant. I can answer your questions about PSF-AAI, search for a course that aligns with functional skill from PSF-AAI, or generate a learning pathway for you. How can I assist you today?",
+      text: `
+  **Hi there! I'm Guideon, your AI assistant specializing in the Philippine Skills Framework for Analytics & AI (PSF-AAI).**
+  I'm here to help learners like you understand different roles, skills, and career pathways within analytics and AI.
+  ##### What I Can Do
+  - **PSF-AAI Knowledge Queries:** I can answer questions about the framework, roles, skills, and career tracks.
+  - **Career Role Exploration:** If you're unsure about a specific role, I can introduce available roles with descriptions to help you decide which one aligns with your interests and goals.
+  - **Role-Specific Skills:** When you mention a particular role, I'll display its functional and enabling skills requirements to ensure you understand what's needed for that career path.
+  - **Course Recommendations:** If you're looking to upskill or reskill, I can provide recommendations based on the PSF-AAI framework.
+  
+  If you're interested in exploring more about PSF-AAI roles, skills, or career pathways, feel free to ask me any questions! You can also ask me to search for courses tailored to your learning needs.
+  Be specific in your queries, and I'll do my best to assist you.
+      `,
       isUser: false,
-    },
-  ]);
+      },
+    ]);
   };
 
   // Scroll to the bottom of the chat when new messages are added
@@ -186,14 +197,6 @@ const Chat: React.FC = () => {
 
     const userPrompt = inputValue;
     setInputValue("");
-
-    // Check if the message is a course search request
-    if (userPrompt.toLowerCase().includes("find courses") || 
-        userPrompt.toLowerCase().includes("search courses") ||
-        userPrompt.toLowerCase().includes("look for courses")) {
-      await handleCourseSearch(userPrompt);
-      return;
-    }
 
     try {
       // Get response from Ollama using our hook

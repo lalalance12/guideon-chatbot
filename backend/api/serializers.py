@@ -63,7 +63,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
 class ChatRequestSerializer(serializers.Serializer):
     prompt = serializers.CharField(required=True)
-    chat_id = serializers.IntegerField(required=False)
+    chat_id = serializers.UUIDField(required=False)
 
 class ChatResponseSerializer(serializers.Serializer):
     response = serializers.CharField()

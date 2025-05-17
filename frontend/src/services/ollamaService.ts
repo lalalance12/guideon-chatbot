@@ -27,7 +27,7 @@ export const checkApiConnection = async (): Promise<boolean> => {
  * @param chatId - Optional chat ID for continuing a conversation
  * @returns The response from the backend API including chat_id
  */
-export const queryOllama = async (userPrompt: string, chatId?: number): Promise<{response: string, chat_id: number, courses?: any[]}> => {
+export const queryOllama = async (userPrompt: string, chatId?: string): Promise<{response: string, chat_id: string, courses?: any[]}> => {
   try {
     console.log("Frontend: Sending request to backend API");
     const requestData = chatId 
@@ -60,7 +60,7 @@ export const queryOllama = async (userPrompt: string, chatId?: number): Promise<
     // Return a default error response
     return {
       response: "I'm having trouble connecting to my knowledge base right now. Please try again later.",
-      chat_id: -1, // Invalid chat ID to indicate error
+      chat_id: "", // Empty string to indicate error
       courses: []
     };
   }
@@ -72,7 +72,7 @@ export const queryOllama = async (userPrompt: string, chatId?: number): Promise<
 export const useOllamaQuery = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentChatId, setCurrentChatId] = useState<number | null>(null);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   
   // Initialize chat ID from local storage if available
   useEffect(() => {
@@ -81,7 +81,7 @@ export const useOllamaQuery = () => {
       if (savedChat) {
         try {
           const parsedData = JSON.parse(savedChat);
-          if (parsedData && parsedData.chatId && typeof parsedData.chatId === 'number' && parsedData.chatId > 0) {
+          if (parsedData && parsedData.chatId && typeof parsedData.chatId === 'string') {
             console.log(`Restored chat ID ${parsedData.chatId} from local storage`);
             setCurrentChatId(parsedData.chatId);
           } else {
@@ -105,7 +105,7 @@ export const useOllamaQuery = () => {
       const result = await queryOllama(prompt, currentChatId || undefined);
       
       // Store the chat ID for future requests
-      if (result.chat_id > 0) {
+      if (result.chat_id) {
         console.log(`Received and saved chat ID: ${result.chat_id}`);
         setCurrentChatId(result.chat_id);
         
