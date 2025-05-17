@@ -282,12 +282,12 @@ const Chat: React.FC = () => {
                 <p className="text-sm text-gray-500">
                   Ask me anything about learning paths and courses
                   {currentChatId && (
-                    <span className="ml-2 text-xs text-indigo-600">
+                    <span className="ml-2 text-xs text-indigo-600 font-medium">
                       Chat #{currentChatId}
                     </span>
                   )}
                   {apiConnected === false && (
-                    <span className="ml-2 text-xs text-red-600 flex items-center">
+                    <span className="ml-2 text-xs text-red-600 flex items-center font-medium">
                       <AlertTriangle size={12} className="mr-1" />
                       Backend connection error
                     </span>
@@ -297,7 +297,7 @@ const Chat: React.FC = () => {
             </div>
             <button
               onClick={startNewChat}
-              className="btn-outline flex items-center gap-1 text-sm"
+              className="btn-outline flex items-center gap-1 text-sm font-medium hover:bg-gray-100 px-3 py-2 rounded-md transition-all"
               title="Start a new conversation"
               disabled={apiConnected === false}
             >
@@ -309,12 +309,12 @@ const Chat: React.FC = () => {
       </header>
 
       {/* Chat Messages Container */}
-      <div className="flex-1 overflow-y-auto py-6 px-4">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex-1 overflow-y-auto py-6 px-4 bg-gray-50">
+        <div className="max-w-3xl mx-auto space-y-6">
           {messages.length > 0 ? (
             renderMessages()
           ) : (
-            <div className="text-center text-gray-500">Loading...</div>
+            <div className="text-center text-gray-500 py-8 font-medium">Loading...</div>
           )}
 
           {(isLoading || isSearchingCourses) && (
@@ -326,12 +326,12 @@ const Chat: React.FC = () => {
                   <Sparkles size={14} className="text-indigo-600" />
                 )}
               </div>
-              <div className="chat-bubble chat-bubble-bot">
+              <div className="chat-bubble chat-bubble-bot shadow-sm">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></div>
                   <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse delay-75"></div>
                   <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse delay-150"></div>
-                  <span className="text-gray-500 text-sm">
+                  <span className="text-gray-500 text-sm font-medium">
                     {isSearchingCourses
                       ? "Searching for courses..."
                       : "Guideon is thinking..."}
@@ -345,59 +345,61 @@ const Chat: React.FC = () => {
       </div>
 
       {/* Input Area */}
-      <div className="w-full px-32 mx-auto">
-        <div className="flex items-end space-x-2 input-area p-3 shadow-sm">
-          <textarea
-            ref={textareaRef}
-            placeholder={
-                apiConnected === false
-                  ? "Cannot connect to server"
-                  : "Ask Guideon about learning paths, courses, or any educational topic..."
-              }
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-            className="flex-1 px-3 py-2 bg-transparent outline-none resize-none min-h-[40px] max-h-[120px] focus-ring-0"
-            disabled={isLoading || isSearchingCourses || apiConnected === false}
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={
+      <div className="w-full px-4 md:px-8 lg:px-16 xl:px-32 mx-auto py-4 bg-white border-t border-gray-200">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-end space-x-2 input-area p-3 shadow-sm rounded-lg border border-gray-200 focus-within:border-indigo-300 focus-within:ring-1 focus-within:ring-indigo-200 transition-all">
+            <textarea
+              ref={textareaRef}
+              placeholder={
+                  apiConnected === false
+                    ? "Cannot connect to server"
+                    : "Ask Guideon about learning paths, courses, or any educational topic..."
+                }
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              className="flex-1 px-3 py-2 bg-transparent outline-none resize-none min-h-[40px] max-h-[120px] focus:ring-0 text-gray-700 font-normal placeholder:text-gray-400"
+              disabled={isLoading || isSearchingCourses || apiConnected === false}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={
+                  isLoading || isSearchingCourses || inputValue.trim() === "" || apiConnected === false
+                }
+              className={`btn flex items-center gap-1 py-2 px-4 rounded-md transition-all font-medium ${
                 isLoading || isSearchingCourses || inputValue.trim() === "" || apiConnected === false
-              }
-            className={`btn flex items-center gap-1 ${
-              isLoading || isSearchingCourses || inputValue.trim() === "" || apiConnected === false
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "btn-primary"
-            }`}
-          >
-            <Send size={16} />
-            <span>Send</span>
-          </button>
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"
+              }`}
+            >
+              <Send size={16} />
+              <span>Send</span>
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2 text-center">
+              {apiConnected === false ? (
+                <span className="text-red-500 font-medium">
+                  Backend server not connected. Please start the server and
+                  refresh the page.
+                </span>
+              ) : (
+                <>
+                <span className="font-medium">Powered by Ollama's llama3.2</span> model running locally on your
+                  machine
+                  {currentChatId && (
+                    <span className="ml-1">
+                      • Conversation history is being saved
+                    </span>
+                  )}
+                </>
+              )}
+          </p>
         </div>
-        <p className="text-xs text-gray-500 mt-2 text-center">
-            {apiConnected === false ? (
-              <span className="text-red-500">
-                Backend server not connected. Please start the server and
-                refresh the page.
-              </span>
-            ) : (
-              <>
-              Powered by Ollama's llama3.2 model running locally on your
-                machine
-                {currentChatId && (
-                  <span className="ml-1">
-                    • Conversation history is being saved
-                  </span>
-                )}
-              </>
-            )}
-        </p>
       </div>
     </div>
   );
