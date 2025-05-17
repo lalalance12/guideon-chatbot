@@ -68,7 +68,7 @@ opencv-python-headless==4.11.0.86
 openpyxl==3.1.5
 packaging==25.0
 pandas==2.2.3
-pdfminer.six==20250416
+pdfminer.six==20250327
 pgvector==0.4.1
 pillow==11.2.1
 pluggy==1.5.0
