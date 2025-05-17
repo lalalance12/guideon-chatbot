@@ -18,7 +18,7 @@ const CareerPathwayCard: React.FC<CareerPathwayCardProps> = ({ pathway }) => {
         <div className="flex justify-between items-start">
           <div>
             <h3 className="font-medium text-lg text-gray-900">{pathway.title}</h3>
-            <p className="text-gray-600 text-sm mt-1">{pathway.description}</p>
+            {/* <p className="text-gray-600 text-sm mt-1">{pathway.description}</p> */}
           </div>
           <Button
             variant="ghost"
@@ -41,7 +41,7 @@ const CareerPathwayCard: React.FC<CareerPathwayCardProps> = ({ pathway }) => {
 
       <div
         className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out",
+          "overflow-auto transition-all duration-300 ease-in-out",
           expanded ? "max-h-[2000px] border-t border-gray-100" : "max-h-0"
         )}
       >
@@ -63,9 +63,9 @@ const CareerPathwayCard: React.FC<CareerPathwayCardProps> = ({ pathway }) => {
                     {level.level}
                   </Badge>
                 </div>
-                {level.description && (
+                {/* {level.description && (
                   <p className="text-sm text-gray-600 mt-1">{level.description}</p>
-                )}
+                )} */}
                 <div className="mt-3">
                   <h5 className="text-sm font-medium text-gray-700 mb-2">Required Skills:</h5>
                   <div className="space-y-2">

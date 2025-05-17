@@ -340,7 +340,7 @@
           { "grade": "Senior Professional / Supervisor", "role": "Senior Applied Data/AI Researcher" },
           { 
             "grade": "Manager", 
-            "role": " Senior AI Engineer",
+            "role": " Research Manager",
             "nextGrade": "Research Manager"
           },
           { "grade": "Senior Manager", "role": "Research Manager" },
