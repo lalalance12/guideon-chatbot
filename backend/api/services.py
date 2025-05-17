@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, text
 from .agents.intent_classifier_agent import IntentClassifierAgent
 from .agents.orchestrator_agent import OrchestratorAgent
 from .agents.response_synthesizer_agent import ResponseSynthesizerAgent
-from .models import Chat
+from .models import Chat, Message
 
 logger = logging.getLogger(__name__)
 
@@ -27,55 +27,62 @@ class GuideonChatService:
     def _init_memory(self):
         """Initialize the memory system with proper error handling for AGNO v1.4.5"""
         try:
-            embedder = OllamaEmbedder()
+            embedder = OllamaEmbedder(id="bge-m3", dimensions=1024, host="http://localhost:11434")
             db_settings = settings.DATABASES['default']
-            dsn = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
+            dsn = (
+                f"postgresql://{db_settings['USER']}:"
+                f"{db_settings['PASSWORD']}@{db_settings['HOST']}:"
+                f"{db_settings['PORT']}/{db_settings['NAME']}"
+            )
             db_engine = create_engine(dsn)
+
+            # Ensure pgvector extension is enabled
+            try:
+                with db_engine.connect() as conn:
+                    conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                    logger.info("pgvector extension ensured")
+            except Exception as ext_e:
+                logger.error(f"Failed to create pgvector extension: {ext_e}")
+
+            # Initialize the AGNO memory tables and indexes
             self.agent_db = PgMemoryDb(
                 table_name="guideon_chat_memory",
                 db_engine=db_engine
             )
-            try:
-                if hasattr(self.agent_db, 'initialize'):
-                    try:
-                        self.agent_db.initialize()
-                        logger.info("Memory tables initialized")
-                    except Exception as e:
-                        logger.info(f"Memory tables already exist: {e}")
-                # Use SQLAlchemy's connection for raw SQL, not db_engine.execute()
+            if hasattr(self.agent_db, 'initialize'):
                 try:
-                    with db_engine.connect() as conn:
-                        result = conn.execute(text(f"SELECT COUNT(*) FROM {self.agent_db.table_name}")).fetchone()
-                        logger.info(f"Memory database connected successfully. Current record count: {result[0] if result else 0}")
-                except Exception as db_e:
-                    logger.warning(f"Database connection test failed: {db_e}")
-            except Exception as table_e:
-                logger.warning(f"Error during table initialization check: {table_e}")
+                    self.agent_db.initialize()
+                    logger.info("Memory tables initialized via AGNO.initialize()")
+                except Exception as init_e:
+                    logger.warning(f"AGNO.initialize() reported existing tables: {init_e}")
+
+            # Test connection and record count
             try:
-                mem_args = {'db': self.agent_db}
-                import inspect
-                if 'embedder' in inspect.signature(AgentMemory.__init__).parameters:
-                    mem_args['embedder'] = embedder
-                self.memory = AgentMemory(**mem_args)
-                logger.info("AGNO memory system initialized successfully")
-                if hasattr(self.memory, 'get_messages'):
-                    try:
-                        _ = self.memory.get_messages()
-                        logger.info("Memory.get_messages() working correctly")
-                    except Exception as e:
-                        logger.warning(f"Memory.get_messages() test failed: {e}")
-                return True
-            except Exception as mem_e:
-                logger.error(f"Failed to initialize AgentMemory: {mem_e}", exc_info=True)
-                self.memory = None
-                self.agent_db = None
-                return False
+                with db_engine.connect() as conn:
+                    result = conn.execute(
+                        text(f"SELECT COUNT(*) FROM {self.agent_db.table_name}")
+                    ).fetchone()
+                    logger.info(
+                        f"Memory database connected. Current record count: "
+                        f"{result[0] if result else 0}"
+                    )
+            except Exception as db_e:
+                logger.warning(f"Database connection test failed: {db_e}")
+
+            # Set up the AgentMemory instance with optional embedder
+            self.memory = AgentMemory(
+                db=self.agent_db,
+                create_user_memories=True,
+                create_session_summary=True
+            )
+            logger.info("AGNO memory system initialized successfully")
+            return True
+
         except Exception as e:
             logger.error(f"Failed to initialize AGNO memory: {e}", exc_info=True)
             self.memory = None
             self.agent_db = None
             return False
-
     def is_memory_ready(self):
         """Utility to check if memory is initialized and ready."""
         return self.memory is not None
@@ -84,7 +91,7 @@ class GuideonChatService:
         try:
             from agno.models.ollama import Ollama
             # AGNO v1.4.5 does not support 'temperature' in Agent or Ollama
-            llama_model = Ollama(id="llama3.1:8b-instruct-q8_0", provider="Ollama", host="http://localhost:11434")
+            llama_model = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",
                 model=llama_model,
@@ -120,11 +127,26 @@ class GuideonChatService:
         context = {'chat_id': chat_id}
         
         # Get chat history if available
+
+        # if chat_id:
+        #     try:
+        #         chat = await self._get_chat_history(chat_id)
+        #         if chat:
+        #             context['chat_history'] = chat
+        #     except Exception as e:
+        #         logger.error(f"Error retrieving chat history: {e}")
+
         if chat_id:
             try:
-                chat = await self._get_chat_history(chat_id)
-                if chat:
-                    context['chat_history'] = chat
+                chat_history = await self._get_chat_history(chat_id)
+                if chat_history:
+                    context['chat_history'] = chat_history
+                    logger.info(f"Retrieved {len(chat_history)} message(s) for chat history")
+                    # Log a sample to help debugging
+                    if len(chat_history) > 0:
+                        logger.debug(f"Last message: {chat_history[-1].get('text')[:50]}...")
+                else:
+                    logger.info("No chat history found")
             except Exception as e:
                 logger.error(f"Error retrieving chat history: {e}")
         
@@ -155,6 +177,29 @@ class GuideonChatService:
             # Extract the actual response text
             if isinstance(response_result, dict) and 'response_text' in response_result:
                 response_text = response_result['response_text']
+
+                if chat_id:
+                    try:
+                        # Get or create chat
+                        chat, created = await Chat.objects.aget_or_create(id=chat_id)
+                        
+                        # Create user message
+                        await Message.objects.acreate(
+                            chat=chat,
+                            content=user_query,
+                            role="user"
+                        )
+                        
+                        # Create assistant message
+                        await Message.objects.acreate(
+                            chat=chat,
+                            content=response_text,
+                            role="assistant"
+                        )
+                        
+                        logger.info(f"Stored messages in database for chat {chat_id}")
+                    except Exception as e:
+                        logger.error(f"Failed to store messages in database: {e}")
             else:
                 # Fallback to using the entire result as the response
                 response_text = str(response_result)
@@ -168,7 +213,7 @@ class GuideonChatService:
                 ]))
             
             return response_text
-        
+            
         except Exception as e:  
             logger.error(f"Error processing message: {e}", exc_info=True)
             return self._fallback_response(user_query)
@@ -183,6 +228,7 @@ class GuideonChatService:
                     metadata_filter={"session_id": chat_id}
                 )
                 if memory_messages:
+                    # Correctly format memory messages
                     return [{
                         "text": msg.get("content", ""),
                         "is_user": msg.get("role") == "user",
@@ -196,24 +242,23 @@ class GuideonChatService:
             try:
                 # Use Prefetch to efficiently load related messages
                 chat = await Chat.objects.filter(id=chat_id).prefetch_related(
-                    Prefetch('messages', queryset=Message.objects.order_by('created_at'))
+                    Prefetch('messages', queryset=Message.objects.order_by('timestamp'))
                 ).afirst()
                 
                 if chat:
                     return [{
-                        "text": msg.text,
-                        "is_user": msg.is_user,
-                        "timestamp": msg.created_at.isoformat()
+                        "text": msg.content,
+                        "is_user": msg.role == "user",
+                        "timestamp": msg.timestamp.isoformat()
                     } for msg in chat.messages.all()]
                 return []
             except Exception as db_error:
                 logger.error(f"Database error getting chat history: {db_error}")
                 return []
-                
         except Exception as e:
             logger.error(f"Error retrieving chat history: {e}")
             return []
-        
+
     async def _run_memory_maintenance(self, session_id):
         """Run memory maintenance tasks in the background with AGNO v1.4.5 compatibility"""
         if not self.is_memory_ready():

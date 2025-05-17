@@ -67,7 +67,7 @@ class ChatRequestSerializer(serializers.Serializer):
 
 class ChatResponseSerializer(serializers.Serializer):
     response = serializers.CharField()
-    chat_id = serializers.IntegerField()
+    chat_id = serializers.UUIDField()
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
