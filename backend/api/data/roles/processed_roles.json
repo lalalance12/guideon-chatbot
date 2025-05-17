@@ -1666,10 +1666,6 @@
         {
           "skill": "IT Standards",
           "level": "Level 4"
-        },
-        {
-          "skill": "Skills and Competencies",
-          "level": "Level 5"
         }
       ],
       "enabling_skills": [
@@ -1800,52 +1796,40 @@
       ],
       "functional_skills": [
         {
-          "skill": "Artificial Intelligence Ethics and Governance Level 5",
-          "level": "Intermediate"
+          "skill": "Artificial Intelligence Ethics and Governance",
+          "level": "Level 5"
         },
         {
-          "skill": "Audit and Compliance Level 5",
-          "level": "Intermediate"
+          "skill": "Audit and Compliance",
+          "level": "Level 5"
         },
         {
-          "skill": "Budgeting Level 5",
-          "level": "Advanced"
+          "skill": "Budgeting",
+          "level": "Level 5"
         },
         {
-          "skill": "Business Agility Level 5",
-          "level": "Advanced"
+          "skill": "Business Agility",
+          "level": "Level 5"
         },
         {
-          "skill": "Business Continuity Level 5",
-          "level": "Intermediate"
+          "skill": "Business Continuity",
+          "level": "Level 5"
         },
         {
-          "skill": "Business Performance Management Level 5",
-          "level": "Advanced"
+          "skill": "Business Performance Management",
+          "level": "Level 5"
         },
         {
-          "skill": "Business Risk Management Level 5",
-          "level": "Advanced"
+          "skill": "Business Risk Management",
+          "level": "Level 5"
         },
         {
-          "skill": "Change Management Level 5",
-          "level": "Advanced"
+          "skill": "Change Management",
+          "level": "Level 5"
         },
         {
-          "skill": "Crisis Management Level 4",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Cyber and Data Breach Incident",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Cyber Risk Management",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Data Ethics Data Governance Data Protection Management",
-          "level": "Intermediate"
+          "skill": "Crisis Management",
+          "level": "Level 4"
         },
         {
           "skill": "Data Sharing",
@@ -1868,15 +1852,92 @@
           "level": "Level 6"
         },
         {
-          "skill": "Learning and Development Manpower Planning",
+          "skill": "Cyber and Data Breach Incident Management",
           "level": "Level 5"
         },
         {
-          "skill": "Skills and Competencies",
+          "skill": "Data Ethics",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Data Governance",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Data Protection Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Learning and Development",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Manpower Planning",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Cyber Risk Management",
           "level": "Level 5"
         }
       ],
-      "enabling_skills": []
+      "enabling_skills": [
+        {
+          "skill": "Adaptability",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Building Inclusivity",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Collaboration",
+          "level": "Advanced"
+        },
+        {
+          "skill": "Communication",
+          "level": "Advanced"
+        },
+        {
+          "skill": "Creative Thinking",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Decision Making",
+          "level": "Advanced"
+        },
+        {
+          "skill": "Developing People",
+          "level": "Advanced"
+        },
+        {
+          "skill": "Digital Fluency",
+          "level": "Advanced"
+        },
+        {
+          "skill": "Global Perspective",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Influence",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Learning Agility",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Problem Solving",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Self-Management",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Transdisciplinary Thinking",
+          "level": "Intermediate"
+        }
+      ]
     },
     {
       "job_title": "Chief Data Officer",
@@ -2696,7 +2757,151 @@
       ],
       "functional_skills": [
         {
-          "skill": "Skills and Competencies",
+          "skill": "Agile Software Development",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Applications Development",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Applications Integration",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Artificial Intelligence Ethics and Governance",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Business Agility",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Business Continuity",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Business Innovation",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Business Needs Analysis",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Change Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Cloud Computing",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Configuration Tracking",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Continuous Integration and Continuous Deployment",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Data Design",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Data Engineering",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Data Ethics",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Data Migration",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Database Administration",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Design Thinking Practice",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Disaster Recovery Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Emerging Technology Synthesis",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Learning and Development",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Manpower Planning",
+          "level": "Level 4"
+        },
+        {
+          "skill": "People and Performance Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Portfolio Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Problem Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Project Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Security Architecture",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Software Configuration",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Software Design",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Software Testing",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Solution Architecture",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Stakeholder Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Strategy Planning",
+          "level": "Level 4"
+        },
+        {
+          "skill": "System Integration",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Systems Design",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Systems Thinking",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Test Planning",
           "level": "Level 4"
         }
       ],
@@ -2802,8 +3007,152 @@
       ],
       "functional_skills": [
         {
-          "skill": "Skills and Competencies",
+          "skill": "Agile Software Development",
           "level": "Level 5"
+        },
+        {
+          "skill": "Applications Development",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Applications Integration",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Artificial Intelligence Ethics and Governance",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Budgeting",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Business Agility",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Business Continuity",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Business Innovation",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Business Needs Analysis",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Change Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Cloud Computing",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Configuration Tracking",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Continuous Integration and Continuous Deployment",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Data Design",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Data Engineering",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Data Ethics",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Database Administration",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Design Thinking Practice",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Disaster Recovery Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Emerging Technology Synthesis",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Learning and Development",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Manpower Planning",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Organizational Analysis",
+          "level": "Level 5"
+        },
+        {
+          "skill": "People and Performance Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Portfolio Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Problem Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Project Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Security Architecture",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Software Design",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Software Testing",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Solution Architecture",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Stakeholder Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Strategy Planning",
+          "level": "Level 5"
+        },
+        {
+          "skill": "System Integration",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Systems Design",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Systems Thinking",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Test Planning",
+          "level": "Level 4"
         }
       ],
       "enabling_skills": [
@@ -2935,12 +3284,120 @@
       ],
       "functional_skills": [
         {
-          "skill": "Skills and",
+          "skill": "Artificial Intelligence Ethics and Governance",
           "level": "Level 6"
         },
         {
-          "skill": "Competencies",
+          "skill": "Budgeting",
           "level": "Level 6"
+        },
+        {
+          "skill": "Business Agility",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Business Continuity",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Business Innovation",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Business Performance Management",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Change Management",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Cyber and Data Breach Incident Management",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Data Ethics",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Design Thinking Practice",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Disaster Recovery Management",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Emerging Technology Synthesis",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Enterprise Architecture",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Infrastructure Strategy",
+          "level": "Level 6"
+        },
+        {
+          "skill": "IT Strategy",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Networking",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Organizational Analysis",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Organizational Design",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Performance Management",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Portfolio Management",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Project Management",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Quality Standards",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Solution Architecture",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Stakeholder Management",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Strategy Planning",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Sustainability Management",
+          "level": "Level 6"
+        },
+        {
+          "skill": "System Integration",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Systems Design",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Systems Thinking",
+          "level": "Level 5"
         }
       ],
       "enabling_skills": [
@@ -3024,8 +3481,120 @@
       ],
       "functional_skills": [
         {
-          "skill": "Skills and Competencies",
+          "skill": "Agile Software Development",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Applications Development",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Applications Integration",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Artificial Intelligence Ethics and Governance",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Business Needs Analysis",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Change Management",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Cloud Computing",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Computational Modelling",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Computer Vision Technology",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Configuration Tracking",
           "level": "Level 2"
+        },
+        {
+          "skill": "Continuous Integration and Continuous Deployment",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Cyber and Data Breach Incident Management",
+          "level": "Level 2"
+        },
+        {
+          "skill": "Data Analytics",
+          "level": "Level 2"
+        },
+        {
+          "skill": "Data Engineering",
+          "level": "Level 2"
+        },
+        {
+          "skill": "Data Ethics",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Data Visualization",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Design Thinking Practice",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Intelligent Reasoning",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Pattern Recognition Systems",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Research",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Security Architecture",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Self-Learning Systems",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Software Configuration",
+          "level": "Level 2"
+        },
+        {
+          "skill": "Software Design",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Software Testing",
+          "level": "Level 2"
+        },
+        {
+          "skill": "Stakeholder Management",
+          "level": "Level 2"
+        },
+        {
+          "skill": "System Integration",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Test Planning",
+          "level": "Level 2"
+        },
+        {
+          "skill": "Text Analytics and Processing",
+          "level": "Level 4"
         }
       ],
       "enabling_skills": [
@@ -3348,7 +3917,163 @@
       ],
       "functional_skills": [
         {
-          "skill": "Skills and Competencies",
+          "skill": "Agile Software Development",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Applications Development",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Applications Integration",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Artificial Intelligence Ethics and Governance",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Business Agility",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Business Continuity",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Business Innovation",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Business Needs Analysis",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Change Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Cloud Computing",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Computational Modelling",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Computer Vision Technology",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Configuration Tracking",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Continuous Integration and Continuous Deployment",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Data Analytics",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Data Engineering",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Data Ethics",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Design Thinking Practice",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Emerging Technology Synthesis",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Intelligent Reasoning",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Learning and Development",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Manpower Planning",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Pattern Recognition Systems",
+          "level": "Level 5"
+        },
+        {
+          "skill": "People and Performance Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Problem Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Project Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Research",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Security Architecture",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Self-Learning Systems",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Software Configuration",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Software Design",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Software Testing",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Solution Architecture",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Stakeholder Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Strategy Planning",
+          "level": "Level 4"
+        },
+        {
+          "skill": "System Integration",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Systems Design",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Systems Thinking",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Test Planning",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Text Analytics and Processing",
           "level": "Level 5"
         }
       ],
@@ -3804,10 +4529,6 @@
         },
         {
           "skill": "Infrastructure Strategy",
-          "level": "Level 6"
-        },
-        {
-          "skill": "Skills and Competencies",
           "level": "Level 6"
         }
       ],
@@ -4437,67 +5158,116 @@
       ],
       "functional_skills": [
         {
-          "skill": "Applications Development Level 5",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Applications Integration Level 5",
-          "level": "Advanced"
-        },
-        {
-          "skill": "Artificial Intelligence Ethics and Governance Level 3",
-          "level": "Advanced"
-        },
-        {
-          "skill": "Budgeting Level 5",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Business Agility Level 5",
-          "level": "Advanced"
-        },
-        {
-          "skill": "Business Continuity Level 5",
-          "level": "Advanced"
-        },
-        {
-          "skill": "Business Innovation Level 5",
-          "level": "Advanced"
-        },
-        {
-          "skill": "Business Needs Analysis Level 5",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Change Management Level 5",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Cloud Computing Level 5",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Computational Modelling Level 5",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Computer Vision Technology Level 5",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Configuration Tracking Level 4",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Skills and",
-          "level": "Level 4"
-        },
-        {
-          "skill": "Competencies",
+          "skill": "Applications Development",
           "level": "Level 5"
+        },
+        {
+          "skill": "Applications Integration",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Artificial Intelligence Ethics and Governance",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Budgeting",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Business Agility",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Business Continuity",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Business Innovation",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Business Needs Analysis",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Change Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Cloud Computing",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Computational Modelling",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Computer Vision Technology",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Configuration Tracking",
+          "level": "Level 4"
         }
       ],
-      "enabling_skills": []
+      "enabling_skills": [
+        {
+          "skill": "Adaptability",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Building Inclusivity",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Collaboration",
+          "level": "Advanced"
+        },
+        {
+          "skill": "Communication",
+          "level": "Advanced"
+        },
+        {
+          "skill": "Creative Thinking",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Decision Making",
+          "level": "Advanced"
+        },
+        {
+          "skill": "Developing People",
+          "level": "Advanced"
+        },
+        {
+          "skill": "Digital Fluency",
+          "level": "Advanced"
+        },
+        {
+          "skill": "Global Perspective",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Influence",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Learning Agility",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Problem Solving",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Self-Management",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "Transdisciplinary Thinking",
+          "level": "Intermediate"
+        }
+      ]
     },
     {
       "job_title": "Chief Technology Officer",
@@ -4963,8 +5733,96 @@
       ],
       "functional_skills": [
         {
-          "skill": "Skills and Competencies",
+          "skill": "Artificial Intelligence Ethics and Governance",
           "level": "Level 3"
+        },
+        {
+          "skill": "Business Needs Analysis",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Computer Vision Technology",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Cyber and Data Breach Incident Management",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Data Analytics",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Data Ethics",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Data Visualization",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Design Thinking Practice",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Emerging Technology Synthesis",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Intelligent Reasoning",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Learning and Development",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Pattern Recognition Systems",
+          "level": "Level 4"
+        },
+        {
+          "skill": "People and Performance Management",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Problem Management",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Project Management",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Research",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Self-Learning Systems",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Software Configuration",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Software Testing",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Stakeholder Management",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Systems Thinking",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Test Planning",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Text Analytics and Processing",
+          "level": "Level 4"
         }
       ],
       "enabling_skills": [
@@ -5075,11 +5933,95 @@
       ],
       "functional_skills": [
         {
-          "skill": "Skills and",
+          "skill": "Artificial Intelligence Ethics and Governance",
+          "level": "Level 3"
+        },
+        {
+          "skill": "Business Agility",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Business Continuity",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Business Innovation",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Business Needs Analysis",
           "level": "Level 5"
         },
         {
-          "skill": "Competencies",
+          "skill": "Computer Vision Technology",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Data Analytics",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Data Ethics",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Design Thinking Practice",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Emerging Technology Synthesis",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Intelligent Reasoning",
+          "level": "Level 5"
+        },
+        {
+          "skill": "People and Performance Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Problem Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Project Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Research",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Self-Learning Systems",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Software Configuration",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Software Testing",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Stakeholder Management",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Strategy Planning",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Systems Thinking",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Test Planning",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Text Analytics and Processing",
           "level": "Level 5"
         }
       ],
@@ -5127,14 +6069,6 @@
         {
           "skill": "Learning Agility",
           "level": "Intermediate"
-        },
-        {
-          "skill": "Problem Solving",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Self-Management",
-          "level": "Basic"
         },
         {
           "skill": "Transdisciplinary Thinking",
@@ -5195,19 +6129,91 @@
       ],
       "functional_skills": [
         {
-          "skill": "Skills and",
-          "level": "Level 3"
+          "skill": "Budgeting",
+          "level": "Level 5"
         },
         {
-          "skill": "Competencies",
+          "skill": "Business Agility",
           "level": "Level 5"
+        },
+        {
+          "skill": "Business Continuity",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Business Innovation",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Business Needs Analysis",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Computer Vision Technology",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Data Analytics",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Data Ethics",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Design Thinking Practice",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Emerging Technology Synthesis",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Learning and Development",
+          "level": "Level 6"
+        },
+        {
+          "skill": "Pattern Recognition Systems",
+          "level": "Level 5"
+        },
+        {
+          "skill": "People and Performance Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Problem Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Project Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Research",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Self-Learning Systems",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Stakeholder Management",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Strategy Planning",
+          "level": "Level 5"
+        },
+        {
+          "skill": "Systems Thinking",
+          "level": "Level 4"
+        },
+        {
+          "skill": "Text Analytics and Processing",
+          "level": "Level 6"
         }
       ],
       "enabling_skills": [
-        {
-          "skill": "Adaptability",
-          "level": "Intermediate"
-        },
         {
           "skill": "Building Inclusivity",
           "level": "Intermediate"
@@ -5246,10 +6252,6 @@
         },
         {
           "skill": "Learning Agility",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "Problem Solving",
           "level": "Intermediate"
         },
         {
