@@ -29,7 +29,9 @@ class Course(models.Model):
     title = models.CharField(max_length=255)
     provider = models.CharField(max_length=100)
     url = models.URLField()
-    metadata = models.JSONField(default=dict)
+    description = models.TextField(null=True, blank=True)
+    rating = models.FloatField(null=True, blank=True)
+    metadata = models.JSONField(default=dict)      
     learners = models.ManyToManyField(User, through='UserLearnedCourse')
     
     def __str__(self):

@@ -6,11 +6,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 sys.path.append(str(BASE_DIR))
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.backend.settings')
 
-from generate_embeddings import process_all_data
-from setup_db import setup_database
-from store_embeddings import store_embeddings_from_json
+from backend.api.utils.generate_embeddings import process_all_data
+from backend.api.utils.setup_db import setup_database
+from backend.api.utils.store_embeddings import store_embeddings_from_json
 import django
 
 django.setup()

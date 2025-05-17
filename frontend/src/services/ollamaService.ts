@@ -27,7 +27,7 @@ export const checkApiConnection = async (): Promise<boolean> => {
  * @param chatId - Optional chat ID for continuing a conversation
  * @returns The response from the backend API including chat_id
  */
-export const queryOllama = async (userPrompt: string, chatId?: number): Promise<{response: string, chat_id: number}> => {
+export const queryOllama = async (userPrompt: string, chatId?: number): Promise<{response: string, chat_id: number, courses?: any[]}> => {
   try {
     console.log("Frontend: Sending request to backend API");
     const requestData = chatId 
@@ -41,24 +41,14 @@ export const queryOllama = async (userPrompt: string, chatId?: number): Promise<
     console.log("Frontend: Received response from backend");
     console.log("Response data:", response.data);
     
-    // Extract the nested response if it exists
-    let responseText = response.data.response;
-    
-    // Handle case where response is an object with its own response property
-    if (responseText && typeof responseText === 'object' && responseText.response) {
-      console.log("Detected nested response object, extracting inner response");
-      responseText = responseText.response;
-    }
-    
-    // Ensure response is a string
-    if (typeof responseText !== 'string') {
-      console.log("Converting non-string response to string:", responseText);
-      responseText = responseText ? JSON.stringify(responseText) : "No response received";
-    }
+    // Extract the response and courses if they exist
+    const responseText = response.data.response;
+    const courses = response.data.courses;
     
     return {
       response: responseText,
-      chat_id: response.data.chat_id
+      chat_id: response.data.chat_id,
+      courses: courses
     };
   } catch (error) {
     console.error("Error querying backend:", error);
@@ -70,7 +60,8 @@ export const queryOllama = async (userPrompt: string, chatId?: number): Promise<
     // Return a default error response
     return {
       response: "I'm having trouble connecting to my knowledge base right now. Please try again later.",
-      chat_id: -1 // Invalid chat ID to indicate error
+      chat_id: -1, // Invalid chat ID to indicate error
+      courses: []
     };
   }
 };
@@ -105,7 +96,7 @@ export const useOllamaQuery = () => {
     }
   }, []);
 
-  const sendQuery = async (prompt: string): Promise<string> => {
+  const sendQuery = async (prompt: string): Promise<any> => {
     setIsLoading(true);
     setError(null);
     
@@ -126,10 +117,16 @@ export const useOllamaQuery = () => {
         }
       }
       
-      // Ensure we're returning a string
-      return typeof result.response === 'string' 
-        ? result.response 
-        : JSON.stringify(result.response);
+      // Return the full result including courses if available
+      if (result.courses && result.courses.length > 0) {
+        return {
+          response: result.response,
+          courses: result.courses
+        };
+      }
+      
+      // Otherwise just return the response string
+      return result.response;
         
     } catch (err) {
       console.error("Error in sendQuery:", err);

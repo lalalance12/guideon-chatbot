@@ -1,21 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import Message from "./Message";
+import { Course } from "../services/courseService";
 
-interface Message {
+interface ChatMessage {
   id: number;
   text: string;
-  isUser: boolean;
-}
-
-interface Course {
-  title: string;
-  provider: string;
-  rating: string;
-  url: string;
+  type: "user" | "guideon";
+  courses?: Course[];
 }
 
 const Dashboard: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -39,25 +35,43 @@ const Dashboard: React.FC = () => {
   const handleSendMessage = async () => {
     if (inputValue.trim() === "") return;
 
-    const userMessage: Message = { id: messages.length + 1, text: inputValue, isUser: true };
+    const userMessage: ChatMessage = { 
+      id: messages.length + 1, 
+      text: inputValue, 
+      type: "user" 
+    };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInputValue("");
     setLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:8000/api/search/", { query: inputValue });
-      const courses: Course[] = response.data.courses;
+      const response = await axios.post("http://localhost:8000/api/chat/", { 
+        prompt: inputValue 
+      });
 
-      const chatbotMessage: Message = {
+      console.log('API Response:', response.data);
+
+      const courses = response.data.courses || [];
+      console.log('Courses from API:', courses);
+
+      const chatbotMessage: ChatMessage = {
         id: messages.length + 2,
-        text: courses.length
-          ? courses.map((c, i) => `${i + 1}. 🎓 ${c.title}\n   🏫 ${c.provider}\n   ⭐ ${c.rating}\n   🔗 ${c.url}\n`).join("\n")
-          : "No courses found.",
-        isUser: false,
+        text: response.data.response || response.data.message,
+        type: "guideon",
+        courses: courses.length > 0 ? courses : undefined
       };
+
+      console.log('Chatbot Message:', chatbotMessage);
+      console.log('Courses in message:', chatbotMessage.courses);
+
       setMessages((prevMessages) => [...prevMessages, chatbotMessage]);
     } catch (error) {
-      setMessages((prevMessages) => [...prevMessages, { id: messages.length + 2, text: "Error fetching courses.", isUser: false }]);
+      console.error('Error:', error);
+      setMessages((prevMessages) => [...prevMessages, { 
+        id: messages.length + 2, 
+        text: "Error processing your request.", 
+        type: "guideon" 
+      }]);
     }
     setLoading(false);
   };
@@ -65,13 +79,17 @@ const Dashboard: React.FC = () => {
   return (
     <div className="flex flex-col h-screen w-screen pl-[220px] py-8">
       <div className="flex-1 overflow-y-auto p-4 px-36">
-        {messages.map((message) => (
-          <div key={message.id} className={`flex ${message.isUser ? "justify-end" : "justify-start"} mb-4`}>
-            <div className={`break-words my-4 ${message.isUser ? "bg-surface-tonal-a30 text-light-a0 p-3 rounded-lg" : "text-light-a0"}`} style={{ whiteSpace: "pre-wrap" }}>
-              {message.text}
-            </div>
-          </div>
-        ))}
+        {messages.map((message) => {
+          console.log('Rendering message:', message);
+          return (
+            <Message
+              key={message.id}
+              text={message.text}
+              type={message.type}
+              courses={message.courses}
+            />
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
@@ -79,7 +97,7 @@ const Dashboard: React.FC = () => {
         <div className="flex flex-col">
           <textarea
             ref={textareaRef}
-            placeholder="Enter a course topic..."
+            placeholder="Ask me anything..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={(e) => {
@@ -97,7 +115,7 @@ const Dashboard: React.FC = () => {
             disabled={loading}
             className="mt-2 px-6 h-12 bg-primary-a0 text-white rounded-md hover:bg-primary-a10 focus:outline-none focus:ring-2 focus:ring-indigo-200 self-end"
           >
-            {loading ? "Searching..." : "Search"}
+            {loading ? "Thinking..." : "Send"}
           </button>
         </div>
       </div>
