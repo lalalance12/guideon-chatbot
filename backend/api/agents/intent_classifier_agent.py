@@ -20,7 +20,7 @@ class IntentClassifierAgent(BaseAgent):
     def __init__(self) -> None:
         """Initialize the intent classifier with an LLM."""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
+            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0",
                               provider="Ollama", 
                               host="http://localhost:11434")
             self.agent = Agent(

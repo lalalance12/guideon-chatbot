@@ -1,0 +1,2252 @@
+[
+  {
+    "job_title": "Associate Data Analyst",
+    "functional_skills": [
+      {
+        "title": "Applications Development",
+        "description": "Develop applications based on the design specifications; encompassing coding, testing, debugging, documenting and reviewing and/or refining it across the application development stages in accordance with defined standards for development and security. The complexity of the application may range from a basic application to a context-aware and/or augmented reality application that incorporates predictive behavior analytics, geo-spatial capabilities and other appropriate algorithms. The technical skill includes the analysis and possibly the reuse, improvement, reconfiguration, addition or integration of existing and/or new application components."
+      },
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Configuration Tracking",
+        "description": "Track systematically and manage changes and revisions in software projects to ensure that all changes are accounted for and to protect assets against unauthorized change, diversion and inappropriate use"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Analytics",
+        "description": "Implementing data analytics within the organization to generate business insights and intelligence through the use of statistical and computational techniques and tools, algorithms, predictive data modeling and data visualization."
+      },
+      {
+        "title": "Data Engineering",
+        "description": "Develop and implement efficient and stable processes to collect, store, extract, transform, load and integrate data at various stages in the data pipeline. This also involves processing varying amounts of data from a variety of sources and preparing data in a structure that is easily access and analyzed according to business requirements"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      }
+    ]
+  },
+  {
+    "job_title": "Data Analyst",
+    "functional_skills": [
+      {
+        "title": "Applications Development",
+        "description": "Develop applications based on the design specifications; encompassing coding, testing, debugging, documenting and reviewing and/or refining it across the application development stages in accordance with defined standards for development and security. The complexity of the application may range from a basic application to a context-aware and/or augmented reality application that incorporates predictive behavior analytics, geo-spatial capabilities and other appropriate algorithms. The technical skill includes the analysis and possibly the reuse, improvement, reconfiguration, addition or integration of existing and/or new application components."
+      },
+      {
+        "title": "Applications Integration",
+        "description": "Integrate data or functions from one application program with that of another application program -  involves  development of an integration plan, prog amming and the identification and utilization of r appropriate middleware to optimize the connectivity and performance of disparate applications across target environments"
+      },
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Configuration Tracking",
+        "description": "Track systematically and manage changes and revisions in software projects to ensure that all changes are accounted for and to protect assets against unauthorized change, diversion and inappropriate use"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Analytics",
+        "description": "Implementing data analytics within the organization to generate business insights and intelligence through the use of statistical and computational techniques and tools, algorithms, predictive data modeling and data visualization."
+      },
+      {
+        "title": "Data Engineering",
+        "description": "Develop and implement efficient and stable processes to collect, store, extract, transform, load and integrate data at various stages in the data pipeline. This also involves processing varying amounts of data from a variety of sources and preparing data in a structure that is easily access and analyzed according to business requirements"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      }
+    ]
+  },
+  {
+    "job_title": "Business Intelligence Analyst",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Environment Analysis",
+        "description": "Analyze data pertaining to the business landscape and environment, including competitor-analysis, trends and developments in laws and regulations and the impact on the business"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      }
+    ]
+  },
+  {
+    "job_title": "Senior Business Intelligence Analyst",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Environment Analysis",
+        "description": "Analyze data pertaining to the business landscape and environment, including competitor-analysis, trends and developments in laws and regulations and the impact on the business"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Business Negotiation",
+        "description": "Conduct negotiations to establish win-win outcomes for the organization"
+      },
+      {
+        "title": "Business Performance Management",
+        "description": "Implement organizational performance systems to meet business plans and objectives by establishing performance indicators, tracking progress and addressing gaps"
+      },
+      {
+        "title": "Business Requirements Mapping",
+        "description": "Map business requirements to existing processes to identify gaps or opportunities for possible solutions and evaluate impact of solutions against requirements to propose adjustments as needed"
+      },
+      {
+        "title": "Business Risk Management",
+        "description": "Forecast and assess existing and potential IT risks which impact the operation and/or profitability to the business as well as the development and roll out company-wide strategies and processes to mitigate risks, minimize their impact or effectively manage such business risks"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Learning and Development",
+        "description": "Manage employees' learning and development activities to maximize employee' potential and capabilities to contribute to the organization"
+      },
+      {
+        "title": "Manpower Planning",
+        "description": "Estimate and fulfill manpower requirements to achieve business goals and targets"
+      },
+      {
+        "title": "Networking",
+        "description": "Identifying, evaluating and strategizing to seize new business opportunities to grow the organization's business operations."
+      },
+      {
+        "title": "Partnership Management",
+        "description": "Build cooperative partnerships with inter-organizational and external stakeholders and leveraging relations to meet organizational objectives. This includes coordination and strategizing with internal and external stakeholders through close cooperation and exchange of information to solve problems"
+      },
+      {
+        "title": "People and Performance Management",
+        "description": "Establish organization-wide performance management strategies to facilitate performance management,  including  identification  of  key  performance  indicators  and  employee performance assessment"
+      },
+      {
+        "title": "Problem Management",
+        "description": "Manage the lifecycle of problems to prevent problems and incidents from occurring, eliminate recurring incidents and minimize impact of unavoidable incidents"
+      },
+      {
+        "title": "Process Improvement and Optimization",
+        "description": "Establish systems to discover critical processes and maximize these processes to achieve maximum efficiency in accordance with organization procedures"
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      }
+    ]
+  },
+  {
+    "job_title": "Business Analytics Manager",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Budgeting",
+        "description": "Preparing organizational budgets to support short- and long-term business plans through forecasting, allocation and financial policy setting."
+      },
+      {
+        "title": "Business Agility",
+        "description": "Organize the business, work activities and people in ways that enable the organization to readily adapt to changes in its internal or external environment, whilst achieving desired outcomes and delivering value to customers"
+      },
+      {
+        "title": "Business Continuity",
+        "description": "Develop internal infrastructure to ensure organizational resilience and maintenance of the availability, stability and integrity of critical systems, processes and stakeholders that support and drive key aspects of the business. This includes the planning, designing and testing  contingency plans and setting up of internal systems and structures which are ready to respond to potential threats and maintain desired levels of continuity."
+      },
+      {
+        "title": "Business Environment Analysis",
+        "description": "Analyze data pertaining to the business landscape and environment, including competitor-analysis, trends and developments in laws and regulations and the impact on the business"
+      },
+      {
+        "title": "Business Innovation",
+        "description": "Identify and evaluate digitization and innovative business opportunities provided by new advancements in information and communication technology to establish new services or businesses to bridge the physical and digital worlds"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Business Negotiation",
+        "description": "Conduct negotiations to establish win-win outcomes for the organization"
+      },
+      {
+        "title": "Business Performance Management",
+        "description": "Implement organizational performance systems to meet business plans and objectives by establishing performance indicators, tracking progress and addressing gaps"
+      },
+      {
+        "title": "Business Requirements Mapping",
+        "description": "Map business requirements to existing processes to identify gaps or opportunities for possible solutions and evaluate impact of solutions against requirements to propose adjustments as needed"
+      },
+      {
+        "title": "Business Risk Management",
+        "description": "Forecast and assess existing and potential IT risks which impact the operation and/or profitability to the business as well as the development and roll out company-wide strategies and processes to mitigate risks, minimize their impact or effectively manage such business risks"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Data Analytics",
+        "description": "Implementing data analytics within the organization to generate business insights and intelligence through the use of statistical and computational techniques and tools, algorithms, predictive data modeling and data visualization."
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Enterprise Architecture",
+        "description": "Operationalize a business strategy on the planning and development of business structures and models to facilitate the evolution of a business to its desired future state.  This involves the review and prioritization of market trends, evaluation of alternative strategies, as well as the strategic evaluation and utilization of enterprise capability and technology to support business requirements"
+      },
+      {
+        "title": "Learning and Development",
+        "description": "Manage employees' learning and development activities to maximize employee' potential and capabilities to contribute to the organization"
+      },
+      {
+        "title": "Manpower Planning",
+        "description": "Estimate and fulfill manpower requirements to achieve business goals and targets"
+      },
+      {
+        "title": "Networking",
+        "description": "Identifying, evaluating and strategizing to seize new business opportunities to grow the organization's business operations."
+      },
+      {
+        "title": "Organizational Analysis",
+        "description": "Evaluate factors that can affect the organization's performance as well as strategically assessing the organization's own resources and potential for improvement"
+      },
+      {
+        "title": "Organizational Design",
+        "description": "Develop and facilitate the implementation of organizational design to ensure its effectiveness and alignment with stakeholders' priorities"
+      },
+      {
+        "title": "Partnership Management",
+        "description": "Build cooperative partnerships with inter-organizational and external stakeholders and leveraging relations to meet organizational objectives. This includes coordination and strategizing with internal and external stakeholders through close cooperation and exchange of information to solve problems"
+      },
+      {
+        "title": "People and Performance Management",
+        "description": "Establish organization-wide performance management strategies to facilitate performance management,  including  identification  of  key  performance  indicators  and  employee performance assessment"
+      },
+      {
+        "title": "Problem Management",
+        "description": "Manage the lifecycle of problems to prevent problems and incidents from occurring, eliminate recurring incidents and minimize impact of unavoidable incidents"
+      },
+      {
+        "title": "Process Improvement and Optimization",
+        "description": "Establish systems to discover critical processes and maximize these processes to achieve maximum efficiency in accordance with organization procedures"
+      },
+      {
+        "title": "Project Feasibility Assessment",
+        "description": "Assess the business environment and organizational capabilities to evaluate and determine the feasibility of a project"
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Solution Architecture",
+        "description": "Design or refine a solution blueprint or structure to guide the development of IT solutions in hardware, software, processes or related components, to meet current and future business needs. The solution architecture developed may lead to broad or specific changes to IT services, operating models and processes, and should provide a framework to guide the development and modification of solutions"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Strategy Implementation",
+        "description": "Execute and implement operational and tactical-level action plans in alignment with the organization's business strategies"
+      },
+      {
+        "title": "Strategy Planning",
+        "description": "Develop organizational strategies and policies by analyzing the impact of internal and external influencing factors and seeking consultation from relevant stakeholders"
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      }
+    ]
+  },
+  {
+    "job_title": "Business Analytics Director",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Budgeting",
+        "description": "Preparing organizational budgets to support short- and long-term business plans through forecasting, allocation and financial policy setting."
+      },
+      {
+        "title": "Business Agility",
+        "description": "Organize the business, work activities and people in ways that enable the organization to readily adapt to changes in its internal or external environment, whilst achieving desired outcomes and delivering value to customers"
+      },
+      {
+        "title": "Business Continuity",
+        "description": "Develop internal infrastructure to ensure organizational resilience and maintenance of the availability, stability and integrity of critical systems, processes and stakeholders that support and drive key aspects of the business. This includes the planning, designing and testing  contingency plans and setting up of internal systems and structures which are ready to respond to potential threats and maintain desired levels of continuity."
+      },
+      {
+        "title": "Business Environment Analysis",
+        "description": "Analyze data pertaining to the business landscape and environment, including competitor-analysis, trends and developments in laws and regulations and the impact on the business"
+      },
+      {
+        "title": "Business Innovation",
+        "description": "Identify and evaluate digitization and innovative business opportunities provided by new advancements in information and communication technology to establish new services or businesses to bridge the physical and digital worlds"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Business Negotiation",
+        "description": "Conduct negotiations to establish win-win outcomes for the organization"
+      },
+      {
+        "title": "Business Performance Management",
+        "description": "Implement organizational performance systems to meet business plans and objectives by establishing performance indicators, tracking progress and addressing gaps"
+      },
+      {
+        "title": "Business Requirements Mapping",
+        "description": "Map business requirements to existing processes to identify gaps or opportunities for possible solutions and evaluate impact of solutions against requirements to propose adjustments as needed"
+      },
+      {
+        "title": "Business Risk Management",
+        "description": "Forecast and assess existing and potential IT risks which impact the operation and/or profitability to the business as well as the development and roll out company-wide strategies and processes to mitigate risks, minimize their impact or effectively manage such business risks"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Data Analytics",
+        "description": "Implementing data analytics within the organization to generate business insights and intelligence through the use of statistical and computational techniques and tools, algorithms, predictive data modeling and data visualization."
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Enterprise Architecture",
+        "description": "Operationalize a business strategy on the planning and development of business structures and models to facilitate the evolution of a business to its desired future state.  This involves the review and prioritization of market trends, evaluation of alternative strategies, as well as the strategic evaluation and utilization of enterprise capability and technology to support business requirements"
+      },
+      {
+        "title": "Learning and Development",
+        "description": "Manage employees' learning and development activities to maximize employee' potential and capabilities to contribute to the organization"
+      },
+      {
+        "title": "Manpower Planning",
+        "description": "Estimate and fulfill manpower requirements to achieve business goals and targets"
+      },
+      {
+        "title": "Networking",
+        "description": "Identifying, evaluating and strategizing to seize new business opportunities to grow the organization's business operations."
+      },
+      {
+        "title": "Organizational Analysis",
+        "description": "Evaluate factors that can affect the organization's performance as well as strategically assessing the organization's own resources and potential for improvement"
+      },
+      {
+        "title": "Organizational Design",
+        "description": "Develop and facilitate the implementation of organizational design to ensure its effectiveness and alignment with stakeholders' priorities"
+      },
+      {
+        "title": "Partnership Management",
+        "description": "Build cooperative partnerships with inter-organizational and external stakeholders and leveraging relations to meet organizational objectives. This includes coordination and strategizing with internal and external stakeholders through close cooperation and exchange of information to solve problems"
+      },
+      {
+        "title": "People and Performance Management",
+        "description": "Establish organization-wide performance management strategies to facilitate performance management,  including  identification  of  key  performance  indicators  and  employee performance assessment"
+      },
+      {
+        "title": "Problem Management",
+        "description": "Manage the lifecycle of problems to prevent problems and incidents from occurring, eliminate recurring incidents and minimize impact of unavoidable incidents"
+      },
+      {
+        "title": "Process Improvement and Optimization",
+        "description": "Establish systems to discover critical processes and maximize these processes to achieve maximum efficiency in accordance with organization procedures"
+      },
+      {
+        "title": "Project Feasibility Assessment",
+        "description": "Assess the business environment and organizational capabilities to evaluate and determine the feasibility of a project"
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Solution Architecture",
+        "description": "Design or refine a solution blueprint or structure to guide the development of IT solutions in hardware, software, processes or related components, to meet current and future business needs. The solution architecture developed may lead to broad or specific changes to IT services, operating models and processes, and should provide a framework to guide the development and modification of solutions"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Strategy Implementation",
+        "description": "Execute and implement operational and tactical-level action plans in alignment with the organization's business strategies"
+      },
+      {
+        "title": "Strategy Planning",
+        "description": "Develop organizational strategies and policies by analyzing the impact of internal and external influencing factors and seeking consultation from relevant stakeholders"
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      }
+    ]
+  },
+  {
+    "job_title": "Chief [Business Function] Officer",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Budgeting",
+        "description": "Preparing organizational budgets to support short- and long-term business plans through forecasting, allocation and financial policy setting."
+      },
+      {
+        "title": "Business Agility",
+        "description": "Organize the business, work activities and people in ways that enable the organization to readily adapt to changes in its internal or external environment, whilst achieving desired outcomes and delivering value to customers"
+      },
+      {
+        "title": "Business Continuity",
+        "description": "Develop internal infrastructure to ensure organizational resilience and maintenance of the availability, stability and integrity of critical systems, processes and stakeholders that support and drive key aspects of the business. This includes the planning, designing and testing  contingency plans and setting up of internal systems and structures which are ready to respond to potential threats and maintain desired levels of continuity."
+      },
+      {
+        "title": "Business Innovation",
+        "description": "Identify and evaluate digitization and innovative business opportunities provided by new advancements in information and communication technology to establish new services or businesses to bridge the physical and digital worlds"
+      },
+      {
+        "title": "Business Negotiation",
+        "description": "Conduct negotiations to establish win-win outcomes for the organization"
+      },
+      {
+        "title": "Business Performance Management",
+        "description": "Implement organizational performance systems to meet business plans and objectives by establishing performance indicators, tracking progress and addressing gaps"
+      },
+      {
+        "title": "Business Risk Management",
+        "description": "Forecast and assess existing and potential IT risks which impact the operation and/or profitability to the business as well as the development and roll out company-wide strategies and processes to mitigate risks, minimize their impact or effectively manage such business risks"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Enterprise Architecture",
+        "description": "Operationalize a business strategy on the planning and development of business structures and models to facilitate the evolution of a business to its desired future state.  This involves the review and prioritization of market trends, evaluation of alternative strategies, as well as the strategic evaluation and utilization of enterprise capability and technology to support business requirements"
+      },
+      {
+        "title": "Infrastructure Strategy",
+        "description": "Develop a robust strategy and plan for defining and managing a future-ready IT infrastructure, optimizing its capacity, availability and synchronization to enable an organization's business operations. This involves evaluating infrastructure models and options for infrastructure components, managing infrastructure investments and facilitating the transformation toward the desired future infrastructure model"
+      },
+      {
+        "title": "IT Strategy",
+        "description": "Plan, develop and communicate effective inward- and outward-facing IT strategies, solutions and action plans, driven by environment scanning and assessment of the business' future needs and long-term strategic direction. This involves devising internal management strategies and models to support and sustain IT transformations and alignment of IT investments and programs with the strategy to optimize the business value from IT"
+      },
+      {
+        "title": "Organizational Analysis",
+        "description": "Evaluate factors that can affect the organization's performance as well as strategically assessing the organization's own resources and potential for improvement"
+      },
+      {
+        "title": "Organizational Design",
+        "description": "Develop and facilitate the implementation of organizational design to ensure its effectiveness and alignment with stakeholders' priorities"
+      },
+      {
+        "title": "Partnership Management",
+        "description": "Build cooperative partnerships with inter-organizational and external stakeholders and leveraging relations to meet organizational objectives. This includes coordination and strategizing with internal and external stakeholders through close cooperation and exchange of information to solve problems"
+      },
+      {
+        "title": "Performance Management",
+        "description": "Evaluate and optimize network, system and/or software performance against user and business requirements. This involves the introduction and utilization of new tools and mechanisms to gather, analyze and fully optimize performance data. This also includes the initiation of controls, modifications and new investments to enhance end-to-end performance of ICT components, systems and services"
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Quality Standards",
+        "description": "Develop, review and communicate clear, quality expectations and standards within an organization that are aligned to the company's values and business objectives. This encompasses the setting and implementation of quality expectations for IT products and services delivered to both internal or external clients"
+      },
+      {
+        "title": "Solution Architecture",
+        "description": "Design or refine a solution blueprint or structure to guide the development of IT solutions in hardware, software, processes or related components, to meet current and future business needs. The solution architecture developed may lead to broad or specific changes to IT services, operating models and processes, and should provide a framework to guide the development and modification of solutions"
+      },
+      {
+        "title": "Strategy Planning",
+        "description": "Develop organizational strategies and policies by analyzing the impact of internal and external influencing factors and seeking consultation from relevant stakeholders"
+      },
+      {
+        "title": "Sustainability Management",
+        "description": "Plan, develop and roll out of an organization-wide sustainability strategy. This includes the assessment of the organization's utilization and/or consumption of energy and other resources, vis-a-vis the availability and stability of supply sources and external best practices and standards in sustainability. This also includes the on-going monitoring and tracking of energy and/or resource-consumption over time, to identify impact on the organization's internal and external environment as well as potential improvements in energyor resource-efficiency."
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      },
+      {
+        "title": "Technical Sales Support",
+        "description": "Develop preliminary technical solutions, proposals or initial prototypes to address customers' needs. This includes analysis and diagnosis of customers' technical requirements, design of proof of concept, and delivery of product demonstrations and/or customization samples as part of broader end-to-end solution to customers"
+      }
+    ]
+  },
+  {
+    "job_title": "Data Quality Specialist",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Audit and Compliance",
+        "description": "Develop compliance processes and audit strategy for the organization to review adherence to statutory regulatory and standards. Assessment and enhancement of the thoroughness of compliance and/or governance processes and organization's internal controls to align with changing compliance standards. This also includes the actual conduct and/or performance of audit activities"
+      },
+      {
+        "title": "Business Risk Management",
+        "description": "Forecast and assess existing and potential IT risks which impact the operation and/or profitability to the business as well as the development and roll out company-wide strategies and processes to mitigate risks, minimize their impact or effectively manage such business risks"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Data Protection Management",
+        "description": "Develop and implement a Data Protection Management Program to comply with the Personal Data Protection Act 2012"
+      },
+      {
+        "title": "Data Sharing",
+        "description": "Assess the value of data to achieve a competitive advantage and business objectives"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Learning and Development",
+        "description": "Manage employees' learning and development activities to maximize employee' potential and capabilities to contribute to the organization"
+      },
+      {
+        "title": "Manpower Planning",
+        "description": "Estimate and fulfill manpower requirements to achieve business goals and targets"
+      },
+      {
+        "title": "People and Performance Management",
+        "description": "Establish organization-wide performance management strategies to facilitate performance management,  including  identification  of  key  performance  indicators  and  employee performance assessment"
+      },
+      {
+        "title": "Problem Management",
+        "description": "Manage the lifecycle of problems to prevent problems and incidents from occurring, eliminate recurring incidents and minimize impact of unavoidable incidents"
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      }
+    ]
+  },
+  {
+    "job_title": "Data Governance Manager",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Audit and Compliance",
+        "description": "Develop compliance processes and audit strategy for the organization to review adherence to statutory regulatory and standards. Assessment and enhancement of the thoroughness of compliance and/or governance processes and organization's internal controls to align with changing compliance standards. This also includes the actual conduct and/or performance of audit activities"
+      },
+      {
+        "title": "Business Agility",
+        "description": "Organize the business, work activities and people in ways that enable the organization to readily adapt to changes in its internal or external environment, whilst achieving desired outcomes and delivering value to customers"
+      },
+      {
+        "title": "Business Continuity",
+        "description": "Develop internal infrastructure to ensure organizational resilience and maintenance of the availability, stability and integrity of critical systems, processes and stakeholders that support and drive key aspects of the business. This includes the planning, designing and testing  contingency plans and setting up of internal systems and structures which are ready to respond to potential threats and maintain desired levels of continuity."
+      },
+      {
+        "title": "Business Negotiation",
+        "description": "Conduct negotiations to establish win-win outcomes for the organization"
+      },
+      {
+        "title": "Business Performance Management",
+        "description": "Implement organizational performance systems to meet business plans and objectives by establishing performance indicators, tracking progress and addressing gaps"
+      },
+      {
+        "title": "Business Risk Management",
+        "description": "Forecast and assess existing and potential IT risks which impact the operation and/or profitability to the business as well as the development and roll out company-wide strategies and processes to mitigate risks, minimize their impact or effectively manage such business risks"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Crisis Management",
+        "description": "Develop and implement crisis management plans for organizational preparedness of disruptive events within the broader context of business continuity management"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Cyber Risk Management",
+        "description": "Develop cyber risk assessment and treatment techniques that can effectively pre-empt and identify significant  security  loopholes  and  weaknesses,  demonstration of the business risks associated with these loopholes and provision of risk treatment and prioritization strategies to effectively address the cyber-related risks, threats and vulnerabilities identified to ensure appropriate levels of protection, confidentiality, integrity and privacy in alignment with the security framework"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Data Governance",
+        "description": "Develop and implement guidelines, laws, and regulations across the organization for the handling of data at various stages in its lifecycle as well as the provision of advice on proper data handling and resolution of data breaches in a range of complex, ambiguous or multi-faceted contexts"
+      },
+      {
+        "title": "Data Protection Management",
+        "description": "Develop and implement a Data Protection Management Program to comply with the Personal Data Protection Act 2012"
+      },
+      {
+        "title": "Data Sharing",
+        "description": "Assess the value of data to achieve a competitive advantage and business objectives"
+      },
+      {
+        "title": "Data Strategy",
+        "description": "Develop a robust and coherent data strategy and support architectures, policies, practices and procedures that enable the organization to manage and utilize data in an effective manner. This includes introduction of innovative ways of organizing, managing and integrating the data of the organization to ensure their viability and ability to drive business value. It also includes the setting of information storage, sharing, handling and usage protocols to support alignment with relevant legislation and business strategies"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Disaster Recovery Management",
+        "description": "Develop and implement internal policies, processes and arrangements to guide and enable the prompt recovery of critical IT infrastructure and systems following a crisis or disaster. This includes monitoring the efficiency and effectiveness of response to significant incidents or disruptions and reviewing the organization's disaster recovery plan and processes."
+      },
+      {
+        "title": "IT Standards",
+        "description": "Develop and review of standard operating procedures as well as service expectations for IT-related activities and processes. This includes the provision of clear guidelines for the organization to carry out IT-related tasks in a manner that is effective, efficient and consistent with the IT service standards and quality standards of the organization"
+      }
+    ]
+  },
+  {
+    "job_title": "Data Governance Officer",
+    "functional_skills": [
+      {
+        "title": "Cyber Risk Management",
+        "description": "Develop cyber risk assessment and treatment techniques that can effectively pre-empt and identify significant  security  loopholes  and  weaknesses,  demonstration of the business risks associated with these loopholes and provision of risk treatment and prioritization strategies to effectively address the cyber-related risks, threats and vulnerabilities identified to ensure appropriate levels of protection, confidentiality, integrity and privacy in alignment with the security framework"
+      },
+      {
+        "title": "Data Sharing",
+        "description": "Assess the value of data to achieve a competitive advantage and business objectives"
+      },
+      {
+        "title": "Data Strategy",
+        "description": "Develop a robust and coherent data strategy and support architectures, policies, practices and procedures that enable the organization to manage and utilize data in an effective manner. This includes introduction of innovative ways of organizing, managing and integrating the data of the organization to ensure their viability and ability to drive business value. It also includes the setting of information storage, sharing, handling and usage protocols to support alignment with relevant legislation and business strategies"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Disaster Recovery Management",
+        "description": "Develop and implement internal policies, processes and arrangements to guide and enable the prompt recovery of critical IT infrastructure and systems following a crisis or disaster. This includes monitoring the efficiency and effectiveness of response to significant incidents or disruptions and reviewing the organization's disaster recovery plan and processes."
+      },
+      {
+        "title": "IT Standards",
+        "description": "Develop and review of standard operating procedures as well as service expectations for IT-related activities and processes. This includes the provision of clear guidelines for the organization to carry out IT-related tasks in a manner that is effective, efficient and consistent with the IT service standards and quality standards of the organization"
+      }
+    ]
+  },
+  {
+    "job_title": "Chief Data Officer",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Budgeting",
+        "description": "Preparing organizational budgets to support short- and long-term business plans through forecasting, allocation and financial policy setting."
+      },
+      {
+        "title": "Business Agility",
+        "description": "Organize the business, work activities and people in ways that enable the organization to readily adapt to changes in its internal or external environment, whilst achieving desired outcomes and delivering value to customers"
+      },
+      {
+        "title": "Business Continuity",
+        "description": "Develop internal infrastructure to ensure organizational resilience and maintenance of the availability, stability and integrity of critical systems, processes and stakeholders that support and drive key aspects of the business. This includes the planning, designing and testing  contingency plans and setting up of internal systems and structures which are ready to respond to potential threats and maintain desired levels of continuity."
+      },
+      {
+        "title": "Business Risk Management",
+        "description": "Forecast and assess existing and potential IT risks which impact the operation and/or profitability to the business as well as the development and roll out company-wide strategies and processes to mitigate risks, minimize their impact or effectively manage such business risks"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Crisis Management",
+        "description": "Develop and implement crisis management plans for organizational preparedness of disruptive events within the broader context of business continuity management"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Cyber Risk Management",
+        "description": "Develop cyber risk assessment and treatment techniques that can effectively pre-empt and identify significant  security  loopholes  and  weaknesses,  demonstration of the business risks associated with these loopholes and provision of risk treatment and prioritization strategies to effectively address the cyber-related risks, threats and vulnerabilities identified to ensure appropriate levels of protection, confidentiality, integrity and privacy in alignment with the security framework"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Data Governance",
+        "description": "Develop and implement guidelines, laws, and regulations across the organization for the handling of data at various stages in its lifecycle as well as the provision of advice on proper data handling and resolution of data breaches in a range of complex, ambiguous or multi-faceted contexts"
+      },
+      {
+        "title": "Data Protection Management",
+        "description": "Develop and implement a Data Protection Management Program to comply with the Personal Data Protection Act 2012"
+      },
+      {
+        "title": "Data Sharing",
+        "description": "Assess the value of data to achieve a competitive advantage and business objectives"
+      },
+      {
+        "title": "Data Strategy",
+        "description": "Develop a robust and coherent data strategy and support architectures, policies, practices and procedures that enable the organization to manage and utilize data in an effective manner. This includes introduction of innovative ways of organizing, managing and integrating the data of the organization to ensure their viability and ability to drive business value. It also includes the setting of information storage, sharing, handling and usage protocols to support alignment with relevant legislation and business strategies"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Disaster Recovery Management",
+        "description": "Develop and implement internal policies, processes and arrangements to guide and enable the prompt recovery of critical IT infrastructure and systems following a crisis or disaster. This includes monitoring the efficiency and effectiveness of response to significant incidents or disruptions and reviewing the organization's disaster recovery plan and processes."
+      },
+      {
+        "title": "Enterprise Architecture",
+        "description": "Operationalize a business strategy on the planning and development of business structures and models to facilitate the evolution of a business to its desired future state.  This involves the review and prioritization of market trends, evaluation of alternative strategies, as well as the strategic evaluation and utilization of enterprise capability and technology to support business requirements"
+      },
+      {
+        "title": "Infrastructure Strategy",
+        "description": "Develop a robust strategy and plan for defining and managing a future-ready IT infrastructure, optimizing its capacity, availability and synchronization to enable an organization's business operations. This involves evaluating infrastructure models and options for infrastructure components, managing infrastructure investments and facilitating the transformation toward the desired future infrastructure model"
+      },
+      {
+        "title": "IT Governance",
+        "description": "Set and monitor IT infrastructure, information, digital services and associated technology. This involves developing policies and practices to govern the organization's approach toward handling and using IT products and services in order to ensure conformance with regulations and accountability in decision making in alignment with the business strategic plans and service standards"
+      },
+      {
+        "title": "IT Standards",
+        "description": "Develop and review of standard operating procedures as well as service expectations for IT-related activities and processes. This includes the provision of clear guidelines for the organization to carry out IT-related tasks in a manner that is effective, efficient and consistent with the IT service standards and quality standards of the organization"
+      },
+      {
+        "title": "IT Strategy",
+        "description": "Plan, develop and communicate effective inward- and outward-facing IT strategies, solutions and action plans, driven by environment scanning and assessment of the business' future needs and long-term strategic direction. This involves devising internal management strategies and models to support and sustain IT transformations and alignment of IT investments and programs with the strategy to optimize the business value from IT"
+      },
+      {
+        "title": "Organizational Analysis",
+        "description": "Evaluate factors that can affect the organization's performance as well as strategically assessing the organization's own resources and potential for improvement"
+      },
+      {
+        "title": "Organizational Design",
+        "description": "Develop and facilitate the implementation of organizational design to ensure its effectiveness and alignment with stakeholders' priorities"
+      },
+      {
+        "title": "Partnership Management",
+        "description": "Build cooperative partnerships with inter-organizational and external stakeholders and leveraging relations to meet organizational objectives. This includes coordination and strategizing with internal and external stakeholders through close cooperation and exchange of information to solve problems"
+      },
+      {
+        "title": "Performance Management",
+        "description": "Evaluate and optimize network, system and/or software performance against user and business requirements. This involves the introduction and utilization of new tools and mechanisms to gather, analyze and fully optimize performance data. This also includes the initiation of controls, modifications and new investments to enhance end-to-end performance of ICT components, systems and services"
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Quality Standards",
+        "description": "Develop, review and communicate clear, quality expectations and standards within an organization that are aligned to the company's values and business objectives. This encompasses the setting and implementation of quality expectations for IT products and services delivered to both internal or external clients"
+      },
+      {
+        "title": "Research",
+        "description": "Research on a concept or idea to provide inputs for content development"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Strategy Planning",
+        "description": "Develop organizational strategies and policies by analyzing the impact of internal and external influencing factors and seeking consultation from relevant stakeholders"
+      },
+      {
+        "title": "Sustainability Management",
+        "description": "Plan, develop and roll out of an organization-wide sustainability strategy. This includes the assessment of the organization's utilization and/or consumption of energy and other resources, vis-a-vis the availability and stability of supply sources and external best practices and standards in sustainability. This also includes the on-going monitoring and tracking of energy and/or resource-consumption over time, to identify impact on the organization's internal and external environment as well as potential improvements in energyor resource-efficiency."
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      }
+    ]
+  },
+  {
+    "job_title": "Associate Data Engineer",
+    "functional_skills": [
+      {
+        "title": "Applications Development",
+        "description": "Develop applications based on the design specifications; encompassing coding, testing, debugging, documenting and reviewing and/or refining it across the application development stages in accordance with defined standards for development and security. The complexity of the application may range from a basic application to a context-aware and/or augmented reality application that incorporates predictive behavior analytics, geo-spatial capabilities and other appropriate algorithms. The technical skill includes the analysis and possibly the reuse, improvement, reconfiguration, addition or integration of existing and/or new application components."
+      },
+      {
+        "title": "Applications Integration",
+        "description": "Integrate data or functions from one application program with that of another application program -  involves  development of an integration plan, prog amming and the identification and utilization of r appropriate middleware to optimize the connectivity and performance of disparate applications across target environments"
+      },
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Cloud Computing",
+        "description": "Implement cloud solutions to enhance business performance and security of IT systems"
+      },
+      {
+        "title": "Configuration Tracking",
+        "description": "Track systematically and manage changes and revisions in software projects to ensure that all changes are accounted for and to protect assets against unauthorized change, diversion and inappropriate use"
+      },
+      {
+        "title": "Continuous Integration and Continuous Deployment",
+        "description": "Manage the planning, building, testing and integration of codes, and deployment of software changes and updates into a live environment"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Design",
+        "description": "Specify and create a data structure or database model, including the setting of various parameters or fields that can be modified to suit different structured or unstructured data requirements, the design of data flow, as well as the development of mechanisms for maintenance, storage and retrieval of data based on the business requirements"
+      },
+      {
+        "title": "Data Engineering",
+        "description": "Develop and implement efficient and stable processes to collect, store, extract, transform, load and integrate data at various stages in the data pipeline. This also involves processing varying amounts of data from a variety of sources and preparing data in a structure that is easily access and analyzed according to business requirements"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Data Migration",
+        "description": "Plan and perform activities to migrate data between computer storage types or file formats"
+      },
+      {
+        "title": "Database Administration",
+        "description": "Perform Installation, coordination and upgrading of databases and database servers, performance monitoring and troubleshooting. This includes monitoring user access to database and optimization of database performance, planning for backup and recovery, archived data maintenance and reporting"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Software Configuration",
+        "description": "Configure software products and apply scripts and automation tools to integrate and deploy software releases to various platforms and operating environments. This includes subsequent modifications to software configuration, based on outcomes of systems and/or configuration tests"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "System Integration",
+        "description": "Develop and implement a roadmap and specific integration solutions to facilitate integration of various ICT components and optimize interoperability of systems and their interfaces. This includes the integration of various architectural components such as networks, servers, system platforms and their interfaces"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      }
+    ]
+  },
+  {
+    "job_title": "Data Engineer",
+    "functional_skills": [
+      {
+        "title": "Agile Software Development",
+        "description": "Plan and implement Agile methodology and the use of adaptive and iterative methods and techniques in the software development lifecycle to account for continuous evolution, development, and deployment to enable seamless delivery of the application to the end user"
+      },
+      {
+        "title": "Applications Development",
+        "description": "Develop applications based on the design specifications; encompassing coding, testing, debugging, documenting and reviewing and/or refining it across the application development stages in accordance with defined standards for development and security. The complexity of the application may range from a basic application to a context-aware and/or augmented reality application that incorporates predictive behavior analytics, geo-spatial capabilities and other appropriate algorithms. The technical skill includes the analysis and possibly the reuse, improvement, reconfiguration, addition or integration of existing and/or new application components."
+      },
+      {
+        "title": "Applications Integration",
+        "description": "Integrate data or functions from one application program with that of another application program -  involves  development of an integration plan, prog amming and the identification and utilization of r appropriate middleware to optimize the connectivity and performance of disparate applications across target environments"
+      },
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Cloud Computing",
+        "description": "Implement cloud solutions to enhance business performance and security of IT systems"
+      },
+      {
+        "title": "Configuration Tracking",
+        "description": "Track systematically and manage changes and revisions in software projects to ensure that all changes are accounted for and to protect assets against unauthorized change, diversion and inappropriate use"
+      },
+      {
+        "title": "Continuous Integration and Continuous Deployment",
+        "description": "Manage the planning, building, testing and integration of codes, and deployment of software changes and updates into a live environment"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Design",
+        "description": "Specify and create a data structure or database model, including the setting of various parameters or fields that can be modified to suit different structured or unstructured data requirements, the design of data flow, as well as the development of mechanisms for maintenance, storage and retrieval of data based on the business requirements"
+      },
+      {
+        "title": "Data Engineering",
+        "description": "Develop and implement efficient and stable processes to collect, store, extract, transform, load and integrate data at various stages in the data pipeline. This also involves processing varying amounts of data from a variety of sources and preparing data in a structure that is easily access and analyzed according to business requirements"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Data Migration",
+        "description": "Plan and perform activities to migrate data between computer storage types or file formats"
+      },
+      {
+        "title": "Database Administration",
+        "description": "Perform Installation, coordination and upgrading of databases and database servers, performance monitoring and troubleshooting. This includes monitoring user access to database and optimization of database performance, planning for backup and recovery, archived data maintenance and reporting"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Security Architecture",
+        "description": "Design security architectures and controls; either embedding of security principles into the design of architectures to mitigate the risks posed by new technologies and business practices, or the actual design and specification of implementable security components, along with the accompanying control measures, to meet defined business security needs"
+      },
+      {
+        "title": "Software Configuration",
+        "description": "Configure software products and apply scripts and automation tools to integrate and deploy software releases to various platforms and operating environments. This includes subsequent modifications to software configuration, based on outcomes of systems and/or configuration tests"
+      },
+      {
+        "title": "Software Design",
+        "description": "Create and refine the overall plan for the design of software, including the design of functional specifications starting from the defined business requirements as well as the consideration and incorporation of various controls, functionality and interoperability of different elements into a design blueprint or model which describes the overall architecture in hardware, software, databases, and third party frameworks that the software will use or interact with"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "System Integration",
+        "description": "Develop and implement a roadmap and specific integration solutions to facilitate integration of various ICT components and optimize interoperability of systems and their interfaces. This includes the integration of various architectural components such as networks, servers, system platforms and their interfaces"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      }
+    ]
+  },
+  {
+    "job_title": "Senior Data Engineer",
+    "functional_skills": [
+      {
+        "title": "Agile Software Development",
+        "description": "Plan and implement Agile methodology and the use of adaptive and iterative methods and techniques in the software development lifecycle to account for continuous evolution, development, and deployment to enable seamless delivery of the application to the end user"
+      },
+      {
+        "title": "Applications Development",
+        "description": "Develop applications based on the design specifications; encompassing coding, testing, debugging, documenting and reviewing and/or refining it across the application development stages in accordance with defined standards for development and security. The complexity of the application may range from a basic application to a context-aware and/or augmented reality application that incorporates predictive behavior analytics, geo-spatial capabilities and other appropriate algorithms. The technical skill includes the analysis and possibly the reuse, improvement, reconfiguration, addition or integration of existing and/or new application components."
+      },
+      {
+        "title": "Applications Integration",
+        "description": "Integrate data or functions from one application program with that of another application program -  involves  development of an integration plan, prog amming and the identification and utilization of r appropriate middleware to optimize the connectivity and performance of disparate applications across target environments"
+      },
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Cloud Computing",
+        "description": "Implement cloud solutions to enhance business performance and security of IT systems"
+      },
+      {
+        "title": "Configuration Tracking",
+        "description": "Track systematically and manage changes and revisions in software projects to ensure that all changes are accounted for and to protect assets against unauthorized change, diversion and inappropriate use"
+      },
+      {
+        "title": "Continuous Integration and Continuous Deployment",
+        "description": "Manage the planning, building, testing and integration of codes, and deployment of software changes and updates into a live environment"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Design",
+        "description": "Specify and create a data structure or database model, including the setting of various parameters or fields that can be modified to suit different structured or unstructured data requirements, the design of data flow, as well as the development of mechanisms for maintenance, storage and retrieval of data based on the business requirements"
+      },
+      {
+        "title": "Data Engineering",
+        "description": "Develop and implement efficient and stable processes to collect, store, extract, transform, load and integrate data at various stages in the data pipeline. This also involves processing varying amounts of data from a variety of sources and preparing data in a structure that is easily access and analyzed according to business requirements"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Data Migration",
+        "description": "Plan and perform activities to migrate data between computer storage types or file formats"
+      },
+      {
+        "title": "Database Administration",
+        "description": "Perform Installation, coordination and upgrading of databases and database servers, performance monitoring and troubleshooting. This includes monitoring user access to database and optimization of database performance, planning for backup and recovery, archived data maintenance and reporting"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Learning and Development",
+        "description": "Manage employees' learning and development activities to maximize employee' potential and capabilities to contribute to the organization"
+      },
+      {
+        "title": "Manpower Planning",
+        "description": "Estimate and fulfill manpower requirements to achieve business goals and targets"
+      },
+      {
+        "title": "People and Performance Management",
+        "description": "Establish organization-wide performance management strategies to facilitate performance management,  including  identification  of  key  performance  indicators  and  employee performance assessment"
+      },
+      {
+        "title": "Problem Management",
+        "description": "Manage the lifecycle of problems to prevent problems and incidents from occurring, eliminate recurring incidents and minimize impact of unavoidable incidents"
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Security Architecture",
+        "description": "Design security architectures and controls; either embedding of security principles into the design of architectures to mitigate the risks posed by new technologies and business practices, or the actual design and specification of implementable security components, along with the accompanying control measures, to meet defined business security needs"
+      },
+      {
+        "title": "Software Configuration",
+        "description": "Configure software products and apply scripts and automation tools to integrate and deploy software releases to various platforms and operating environments. This includes subsequent modifications to software configuration, based on outcomes of systems and/or configuration tests"
+      },
+      {
+        "title": "Software Design",
+        "description": "Create and refine the overall plan for the design of software, including the design of functional specifications starting from the defined business requirements as well as the consideration and incorporation of various controls, functionality and interoperability of different elements into a design blueprint or model which describes the overall architecture in hardware, software, databases, and third party frameworks that the software will use or interact with"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "System Integration",
+        "description": "Develop and implement a roadmap and specific integration solutions to facilitate integration of various ICT components and optimize interoperability of systems and their interfaces. This includes the integration of various architectural components such as networks, servers, system platforms and their interfaces"
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      }
+    ]
+  },
+  {
+    "job_title": "Data Architect",
+    "functional_skills": []
+  },
+  {
+    "job_title": "Chief Data Architect",
+    "functional_skills": []
+  },
+  {
+    "job_title": "Chief Information Officer",
+    "functional_skills": []
+  },
+  {
+    "job_title": "Machine Learning Engineer",
+    "functional_skills": []
+  },
+  {
+    "job_title": "Data Scientist",
+    "functional_skills": [
+      {
+        "title": "Agile Software Development",
+        "description": "Plan and implement Agile methodology and the use of adaptive and iterative methods and techniques in the software development lifecycle to account for continuous evolution, development, and deployment to enable seamless delivery of the application to the end user"
+      },
+      {
+        "title": "Applications Development",
+        "description": "Develop applications based on the design specifications; encompassing coding, testing, debugging, documenting and reviewing and/or refining it across the application development stages in accordance with defined standards for development and security. The complexity of the application may range from a basic application to a context-aware and/or augmented reality application that incorporates predictive behavior analytics, geo-spatial capabilities and other appropriate algorithms. The technical skill includes the analysis and possibly the reuse, improvement, reconfiguration, addition or integration of existing and/or new application components."
+      },
+      {
+        "title": "Applications Integration",
+        "description": "Integrate data or functions from one application program with that of another application program -  involves  development of an integration plan, prog amming and the identification and utilization of r appropriate middleware to optimize the connectivity and performance of disparate applications across target environments"
+      },
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Cloud Computing",
+        "description": "Implement cloud solutions to enhance business performance and security of IT systems"
+      },
+      {
+        "title": "Computer Vision Technology",
+        "description": "Develop and deploy vision analytics algorithm and spatial sensing and/or reasoning systems"
+      },
+      {
+        "title": "Configuration Tracking",
+        "description": "Track systematically and manage changes and revisions in software projects to ensure that all changes are accounted for and to protect assets against unauthorized change, diversion and inappropriate use"
+      },
+      {
+        "title": "Continuous Integration and Continuous Deployment",
+        "description": "Manage the planning, building, testing and integration of codes, and deployment of software changes and updates into a live environment"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Analytics",
+        "description": "Implementing data analytics within the organization to generate business insights and intelligence through the use of statistical and computational techniques and tools, algorithms, predictive data modeling and data visualization."
+      },
+      {
+        "title": "Data Engineering",
+        "description": "Develop and implement efficient and stable processes to collect, store, extract, transform, load and integrate data at various stages in the data pipeline. This also involves processing varying amounts of data from a variety of sources and preparing data in a structure that is easily access and analyzed according to business requirements"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Intelligent Reasoning",
+        "description": "Design and build intelligent machine reasoning systems that can integrate, make sense of, and act upon heterogeneous sensory information sources, using domain knowledge accumulated in respective industries"
+      },
+      {
+        "title": "Learning and Development",
+        "description": "Manage employees' learning and development activities to maximize employee' potential and capabilities to contribute to the organization"
+      },
+      {
+        "title": "Manpower Planning",
+        "description": "Estimate and fulfill manpower requirements to achieve business goals and targets"
+      },
+      {
+        "title": "Pattern Recognition Systems",
+        "description": "Develop and apply intelligent pattern recognition systems and techniques to analyze data and derive useful hidden patterns to solve problems"
+      },
+      {
+        "title": "People and Performance Management",
+        "description": "Establish organization-wide performance management strategies to facilitate performance management,  including  identification  of  key  performance  indicators  and  employee performance assessment"
+      },
+      {
+        "title": "Problem Management",
+        "description": "Manage the lifecycle of problems to prevent problems and incidents from occurring, eliminate recurring incidents and minimize impact of unavoidable incidents"
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Research",
+        "description": "Research on a concept or idea to provide inputs for content development"
+      },
+      {
+        "title": "Security Architecture",
+        "description": "Design security architectures and controls; either embedding of security principles into the design of architectures to mitigate the risks posed by new technologies and business practices, or the actual design and specification of implementable security components, along with the accompanying control measures, to meet defined business security needs"
+      },
+      {
+        "title": "Self-Learning Systems",
+        "description": "Design and develop self-learning systems using reinforcement learning and evolutionary learning techniques"
+      },
+      {
+        "title": "Software Configuration",
+        "description": "Configure software products and apply scripts and automation tools to integrate and deploy software releases to various platforms and operating environments. This includes subsequent modifications to software configuration, based on outcomes of systems and/or configuration tests"
+      },
+      {
+        "title": "Software Design",
+        "description": "Create and refine the overall plan for the design of software, including the design of functional specifications starting from the defined business requirements as well as the consideration and incorporation of various controls, functionality and interoperability of different elements into a design blueprint or model which describes the overall architecture in hardware, software, databases, and third party frameworks that the software will use or interact with"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "System Integration",
+        "description": "Develop and implement a roadmap and specific integration solutions to facilitate integration of various ICT components and optimize interoperability of systems and their interfaces. This includes the integration of various architectural components such as networks, servers, system platforms and their interfaces"
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      },
+      {
+        "title": "Text Analytics and Processing",
+        "description": "Identify, extract and analyze text data using text analytics solutions to discover themes, patterns and trends"
+      }
+    ]
+  },
+  {
+    "job_title": "Senior Data Scientist",
+    "functional_skills": []
+  },
+  {
+    "job_title": "Chief Data Scientist",
+    "functional_skills": [
+      {
+        "title": "Agile Software Development",
+        "description": "Plan and implement Agile methodology and the use of adaptive and iterative methods and techniques in the software development lifecycle to account for continuous evolution, development, and deployment to enable seamless delivery of the application to the end user"
+      },
+      {
+        "title": "Applications Development",
+        "description": "Develop applications based on the design specifications; encompassing coding, testing, debugging, documenting and reviewing and/or refining it across the application development stages in accordance with defined standards for development and security. The complexity of the application may range from a basic application to a context-aware and/or augmented reality application that incorporates predictive behavior analytics, geo-spatial capabilities and other appropriate algorithms. The technical skill includes the analysis and possibly the reuse, improvement, reconfiguration, addition or integration of existing and/or new application components."
+      },
+      {
+        "title": "Applications Integration",
+        "description": "Integrate data or functions from one application program with that of another application program -  involves  development of an integration plan, prog amming and the identification and utilization of r appropriate middleware to optimize the connectivity and performance of disparate applications across target environments"
+      },
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Budgeting",
+        "description": "Preparing organizational budgets to support short- and long-term business plans through forecasting, allocation and financial policy setting."
+      },
+      {
+        "title": "Business Agility",
+        "description": "Organize the business, work activities and people in ways that enable the organization to readily adapt to changes in its internal or external environment, whilst achieving desired outcomes and delivering value to customers"
+      },
+      {
+        "title": "Business Continuity",
+        "description": "Develop internal infrastructure to ensure organizational resilience and maintenance of the availability, stability and integrity of critical systems, processes and stakeholders that support and drive key aspects of the business. This includes the planning, designing and testing  contingency plans and setting up of internal systems and structures which are ready to respond to potential threats and maintain desired levels of continuity."
+      },
+      {
+        "title": "Business Innovation",
+        "description": "Identify and evaluate digitization and innovative business opportunities provided by new advancements in information and communication technology to establish new services or businesses to bridge the physical and digital worlds"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Cloud Computing",
+        "description": "Implement cloud solutions to enhance business performance and security of IT systems"
+      },
+      {
+        "title": "Computer Vision Technology",
+        "description": "Develop and deploy vision analytics algorithm and spatial sensing and/or reasoning systems"
+      },
+      {
+        "title": "Configuration Tracking",
+        "description": "Track systematically and manage changes and revisions in software projects to ensure that all changes are accounted for and to protect assets against unauthorized change, diversion and inappropriate use"
+      },
+      {
+        "title": "Continuous Integration and Continuous Deployment",
+        "description": "Manage the planning, building, testing and integration of codes, and deployment of software changes and updates into a live environment"
+      },
+      {
+        "title": "Data Analytics",
+        "description": "Implementing data analytics within the organization to generate business insights and intelligence through the use of statistical and computational techniques and tools, algorithms, predictive data modeling and data visualization."
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Intelligent Reasoning",
+        "description": "Design and build intelligent machine reasoning systems that can integrate, make sense of, and act upon heterogeneous sensory information sources, using domain knowledge accumulated in respective industries"
+      },
+      {
+        "title": "Learning and Development",
+        "description": "Manage employees' learning and development activities to maximize employee' potential and capabilities to contribute to the organization"
+      },
+      {
+        "title": "Manpower Planning",
+        "description": "Estimate and fulfill manpower requirements to achieve business goals and targets"
+      },
+      {
+        "title": "Organizational Analysis",
+        "description": "Evaluate factors that can affect the organization's performance as well as strategically assessing the organization's own resources and potential for improvement"
+      },
+      {
+        "title": "Pattern Recognition Systems",
+        "description": "Develop and apply intelligent pattern recognition systems and techniques to analyze data and derive useful hidden patterns to solve problems"
+      },
+      {
+        "title": "People and Performance Management",
+        "description": "Establish organization-wide performance management strategies to facilitate performance management,  including  identification  of  key  performance  indicators  and  employee performance assessment"
+      },
+      {
+        "title": "Performance Management",
+        "description": "Evaluate and optimize network, system and/or software performance against user and business requirements. This involves the introduction and utilization of new tools and mechanisms to gather, analyze and fully optimize performance data. This also includes the initiation of controls, modifications and new investments to enhance end-to-end performance of ICT components, systems and services"
+      },
+      {
+        "title": "Problem Management",
+        "description": "Manage the lifecycle of problems to prevent problems and incidents from occurring, eliminate recurring incidents and minimize impact of unavoidable incidents"
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Research",
+        "description": "Research on a concept or idea to provide inputs for content development"
+      },
+      {
+        "title": "Security Architecture",
+        "description": "Design security architectures and controls; either embedding of security principles into the design of architectures to mitigate the risks posed by new technologies and business practices, or the actual design and specification of implementable security components, along with the accompanying control measures, to meet defined business security needs"
+      },
+      {
+        "title": "Self-Learning Systems",
+        "description": "Design and develop self-learning systems using reinforcement learning and evolutionary learning techniques"
+      },
+      {
+        "title": "Software Design",
+        "description": "Create and refine the overall plan for the design of software, including the design of functional specifications starting from the defined business requirements as well as the consideration and incorporation of various controls, functionality and interoperability of different elements into a design blueprint or model which describes the overall architecture in hardware, software, databases, and third party frameworks that the software will use or interact with"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Solution Architecture",
+        "description": "Design or refine a solution blueprint or structure to guide the development of IT solutions in hardware, software, processes or related components, to meet current and future business needs. The solution architecture developed may lead to broad or specific changes to IT services, operating models and processes, and should provide a framework to guide the development and modification of solutions"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Strategy Planning",
+        "description": "Develop organizational strategies and policies by analyzing the impact of internal and external influencing factors and seeking consultation from relevant stakeholders"
+      },
+      {
+        "title": "System Integration",
+        "description": "Develop and implement a roadmap and specific integration solutions to facilitate integration of various ICT components and optimize interoperability of systems and their interfaces. This includes the integration of various architectural components such as networks, servers, system platforms and their interfaces"
+      },
+      {
+        "title": "Systems Design",
+        "description": "Design systems to meet specified business and user requirements that are compatible with established system architectures, as well as organizational and performance standards"
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      },
+      {
+        "title": "Text Analytics and Processing",
+        "description": "Identify, extract and analyze text data using text analytics solutions to discover themes, patterns and trends"
+      }
+    ]
+  },
+  {
+    "job_title": "Chief Analytics Officer",
+    "functional_skills": [
+      {
+        "title": "Budgeting",
+        "description": "Preparing organizational budgets to support short- and long-term business plans through forecasting, allocation and financial policy setting."
+      },
+      {
+        "title": "Business Agility",
+        "description": "Organize the business, work activities and people in ways that enable the organization to readily adapt to changes in its internal or external environment, whilst achieving desired outcomes and delivering value to customers"
+      },
+      {
+        "title": "Business Continuity",
+        "description": "Develop internal infrastructure to ensure organizational resilience and maintenance of the availability, stability and integrity of critical systems, processes and stakeholders that support and drive key aspects of the business. This includes the planning, designing and testing  contingency plans and setting up of internal systems and structures which are ready to respond to potential threats and maintain desired levels of continuity."
+      },
+      {
+        "title": "Business Innovation",
+        "description": "Identify and evaluate digitization and innovative business opportunities provided by new advancements in information and communication technology to establish new services or businesses to bridge the physical and digital worlds"
+      },
+      {
+        "title": "Business Performance Management",
+        "description": "Implement organizational performance systems to meet business plans and objectives by establishing performance indicators, tracking progress and addressing gaps"
+      },
+      {
+        "title": "Business Risk Management",
+        "description": "Forecast and assess existing and potential IT risks which impact the operation and/or profitability to the business as well as the development and roll out company-wide strategies and processes to mitigate risks, minimize their impact or effectively manage such business risks"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Enterprise Architecture",
+        "description": "Operationalize a business strategy on the planning and development of business structures and models to facilitate the evolution of a business to its desired future state.  This involves the review and prioritization of market trends, evaluation of alternative strategies, as well as the strategic evaluation and utilization of enterprise capability and technology to support business requirements"
+      },
+      {
+        "title": "Infrastructure Strategy",
+        "description": "Develop a robust strategy and plan for defining and managing a future-ready IT infrastructure, optimizing its capacity, availability and synchronization to enable an organization's business operations. This involves evaluating infrastructure models and options for infrastructure components, managing infrastructure investments and facilitating the transformation toward the desired future infrastructure model"
+      }
+    ]
+  },
+  {
+    "job_title": "AI Engineer",
+    "functional_skills": [
+      {
+        "title": "Agile Software Development",
+        "description": "Plan and implement Agile methodology and the use of adaptive and iterative methods and techniques in the software development lifecycle to account for continuous evolution, development, and deployment to enable seamless delivery of the application to the end user"
+      },
+      {
+        "title": "Applications Development",
+        "description": "Develop applications based on the design specifications; encompassing coding, testing, debugging, documenting and reviewing and/or refining it across the application development stages in accordance with defined standards for development and security. The complexity of the application may range from a basic application to a context-aware and/or augmented reality application that incorporates predictive behavior analytics, geo-spatial capabilities and other appropriate algorithms. The technical skill includes the analysis and possibly the reuse, improvement, reconfiguration, addition or integration of existing and/or new application components."
+      },
+      {
+        "title": "Applications Integration",
+        "description": "Integrate data or functions from one application program with that of another application program -  involves  development of an integration plan, prog amming and the identification and utilization of r appropriate middleware to optimize the connectivity and performance of disparate applications across target environments"
+      },
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Cloud Computing",
+        "description": "Implement cloud solutions to enhance business performance and security of IT systems"
+      },
+      {
+        "title": "Computer Vision Technology",
+        "description": "Develop and deploy vision analytics algorithm and spatial sensing and/or reasoning systems"
+      },
+      {
+        "title": "Configuration Tracking",
+        "description": "Track systematically and manage changes and revisions in software projects to ensure that all changes are accounted for and to protect assets against unauthorized change, diversion and inappropriate use"
+      },
+      {
+        "title": "Continuous Integration and Continuous Deployment",
+        "description": "Manage the planning, building, testing and integration of codes, and deployment of software changes and updates into a live environment"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Analytics",
+        "description": "Implementing data analytics within the organization to generate business insights and intelligence through the use of statistical and computational techniques and tools, algorithms, predictive data modeling and data visualization."
+      },
+      {
+        "title": "Data Engineering",
+        "description": "Develop and implement efficient and stable processes to collect, store, extract, transform, load and integrate data at various stages in the data pipeline. This also involves processing varying amounts of data from a variety of sources and preparing data in a structure that is easily access and analyzed according to business requirements"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Intelligent Reasoning",
+        "description": "Design and build intelligent machine reasoning systems that can integrate, make sense of, and act upon heterogeneous sensory information sources, using domain knowledge accumulated in respective industries"
+      },
+      {
+        "title": "Learning and Development",
+        "description": "Manage employees' learning and development activities to maximize employee' potential and capabilities to contribute to the organization"
+      },
+      {
+        "title": "Manpower Planning",
+        "description": "Estimate and fulfill manpower requirements to achieve business goals and targets"
+      },
+      {
+        "title": "Pattern Recognition Systems",
+        "description": "Develop and apply intelligent pattern recognition systems and techniques to analyze data and derive useful hidden patterns to solve problems"
+      },
+      {
+        "title": "People and Performance Management",
+        "description": "Establish organization-wide performance management strategies to facilitate performance management,  including  identification  of  key  performance  indicators  and  employee performance assessment"
+      },
+      {
+        "title": "Problem Management",
+        "description": "Manage the lifecycle of problems to prevent problems and incidents from occurring, eliminate recurring incidents and minimize impact of unavoidable incidents"
+      },
+      {
+        "title": "Product Management",
+        "description": "Create and manage a product roadmap, involving the ideating, planning, forecasting, marketing and management of a product or a suite of products throughout stages of its lifecycle, from its conceptualization to market entrance and eventual phasing-out. This includes the creation of a new product idea or concept and definition of the product strategy based on a projection of its potential benefits to the customer as well as the review of product performance against milestones and targets set."
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Research",
+        "description": "Research on a concept or idea to provide inputs for content development"
+      },
+      {
+        "title": "Security Architecture",
+        "description": "Design security architectures and controls; either embedding of security principles into the design of architectures to mitigate the risks posed by new technologies and business practices, or the actual design and specification of implementable security components, along with the accompanying control measures, to meet defined business security needs"
+      },
+      {
+        "title": "Self-Learning Systems",
+        "description": "Design and develop self-learning systems using reinforcement learning and evolutionary learning techniques"
+      },
+      {
+        "title": "Software Configuration",
+        "description": "Configure software products and apply scripts and automation tools to integrate and deploy software releases to various platforms and operating environments. This includes subsequent modifications to software configuration, based on outcomes of systems and/or configuration tests"
+      },
+      {
+        "title": "Software Design",
+        "description": "Create and refine the overall plan for the design of software, including the design of functional specifications starting from the defined business requirements as well as the consideration and incorporation of various controls, functionality and interoperability of different elements into a design blueprint or model which describes the overall architecture in hardware, software, databases, and third party frameworks that the software will use or interact with"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "System Integration",
+        "description": "Develop and implement a roadmap and specific integration solutions to facilitate integration of various ICT components and optimize interoperability of systems and their interfaces. This includes the integration of various architectural components such as networks, servers, system platforms and their interfaces"
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      },
+      {
+        "title": "Text Analytics and Processing",
+        "description": "Identify, extract and analyze text data using text analytics solutions to discover themes, patterns and trends"
+      }
+    ]
+  },
+  {
+    "job_title": "Senior AI Engineer",
+    "functional_skills": [
+      {
+        "title": "Agile Software Development",
+        "description": "Plan and implement Agile methodology and the use of adaptive and iterative methods and techniques in the software development lifecycle to account for continuous evolution, development, and deployment to enable seamless delivery of the application to the end user"
+      },
+      {
+        "title": "Applications Development",
+        "description": "Develop applications based on the design specifications; encompassing coding, testing, debugging, documenting and reviewing and/or refining it across the application development stages in accordance with defined standards for development and security. The complexity of the application may range from a basic application to a context-aware and/or augmented reality application that incorporates predictive behavior analytics, geo-spatial capabilities and other appropriate algorithms. The technical skill includes the analysis and possibly the reuse, improvement, reconfiguration, addition or integration of existing and/or new application components."
+      },
+      {
+        "title": "Applications Integration",
+        "description": "Integrate data or functions from one application program with that of another application program -  involves  development of an integration plan, prog amming and the identification and utilization of r appropriate middleware to optimize the connectivity and performance of disparate applications across target environments"
+      },
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Agility",
+        "description": "Organize the business, work activities and people in ways that enable the organization to readily adapt to changes in its internal or external environment, whilst achieving desired outcomes and delivering value to customers"
+      },
+      {
+        "title": "Business Continuity",
+        "description": "Develop internal infrastructure to ensure organizational resilience and maintenance of the availability, stability and integrity of critical systems, processes and stakeholders that support and drive key aspects of the business. This includes the planning, designing and testing  contingency plans and setting up of internal systems and structures which are ready to respond to potential threats and maintain desired levels of continuity."
+      },
+      {
+        "title": "Business Innovation",
+        "description": "Identify and evaluate digitization and innovative business opportunities provided by new advancements in information and communication technology to establish new services or businesses to bridge the physical and digital worlds"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Cloud Computing",
+        "description": "Implement cloud solutions to enhance business performance and security of IT systems"
+      },
+      {
+        "title": "Computer Vision Technology",
+        "description": "Develop and deploy vision analytics algorithm and spatial sensing and/or reasoning systems"
+      },
+      {
+        "title": "Configuration Tracking",
+        "description": "Track systematically and manage changes and revisions in software projects to ensure that all changes are accounted for and to protect assets against unauthorized change, diversion and inappropriate use"
+      },
+      {
+        "title": "Continuous Integration and Continuous Deployment",
+        "description": "Manage the planning, building, testing and integration of codes, and deployment of software changes and updates into a live environment"
+      },
+      {
+        "title": "Data Analytics",
+        "description": "Implementing data analytics within the organization to generate business insights and intelligence through the use of statistical and computational techniques and tools, algorithms, predictive data modeling and data visualization."
+      },
+      {
+        "title": "Data Engineering",
+        "description": "Develop and implement efficient and stable processes to collect, store, extract, transform, load and integrate data at various stages in the data pipeline. This also involves processing varying amounts of data from a variety of sources and preparing data in a structure that is easily access and analyzed according to business requirements"
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Intelligent Reasoning",
+        "description": "Design and build intelligent machine reasoning systems that can integrate, make sense of, and act upon heterogeneous sensory information sources, using domain knowledge accumulated in respective industries"
+      },
+      {
+        "title": "Learning and Development",
+        "description": "Manage employees' learning and development activities to maximize employee' potential and capabilities to contribute to the organization"
+      },
+      {
+        "title": "Manpower Planning",
+        "description": "Estimate and fulfill manpower requirements to achieve business goals and targets"
+      },
+      {
+        "title": "Pattern Recognition Systems",
+        "description": "Develop and apply intelligent pattern recognition systems and techniques to analyze data and derive useful hidden patterns to solve problems"
+      },
+      {
+        "title": "People and Performance Management",
+        "description": "Establish organization-wide performance management strategies to facilitate performance management,  including  identification  of  key  performance  indicators  and  employee performance assessment"
+      },
+      {
+        "title": "Portfolio Management",
+        "description": "Manage systematically the IT investments, projects, services and activities within a company, in line with business objectives and priorities. This involves the development of a framework to evaluate potential costs and benefits and make key decisions about IT investments, internal allocation and utilization of IT resources and/or assets and any changes to IT processes or services offered"
+      },
+      {
+        "title": "Problem Management",
+        "description": "Manage the lifecycle of problems to prevent problems and incidents from occurring, eliminate recurring incidents and minimize impact of unavoidable incidents"
+      },
+      {
+        "title": "Product Management",
+        "description": "Create and manage a product roadmap, involving the ideating, planning, forecasting, marketing and management of a product or a suite of products throughout stages of its lifecycle, from its conceptualization to market entrance and eventual phasing-out. This includes the creation of a new product idea or concept and definition of the product strategy based on a projection of its potential benefits to the customer as well as the review of product performance against milestones and targets set."
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Research",
+        "description": "Research on a concept or idea to provide inputs for content development"
+      },
+      {
+        "title": "Security Architecture",
+        "description": "Design security architectures and controls; either embedding of security principles into the design of architectures to mitigate the risks posed by new technologies and business practices, or the actual design and specification of implementable security components, along with the accompanying control measures, to meet defined business security needs"
+      },
+      {
+        "title": "Self-Learning Systems",
+        "description": "Design and develop self-learning systems using reinforcement learning and evolutionary learning techniques"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Solution Architecture",
+        "description": "Design or refine a solution blueprint or structure to guide the development of IT solutions in hardware, software, processes or related components, to meet current and future business needs. The solution architecture developed may lead to broad or specific changes to IT services, operating models and processes, and should provide a framework to guide the development and modification of solutions"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Strategy Planning",
+        "description": "Develop organizational strategies and policies by analyzing the impact of internal and external influencing factors and seeking consultation from relevant stakeholders"
+      },
+      {
+        "title": "System Integration",
+        "description": "Develop and implement a roadmap and specific integration solutions to facilitate integration of various ICT components and optimize interoperability of systems and their interfaces. This includes the integration of various architectural components such as networks, servers, system platforms and their interfaces"
+      },
+      {
+        "title": "Systems Design",
+        "description": "Design systems to meet specified business and user requirements that are compatible with established system architectures, as well as organizational and performance standards"
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      },
+      {
+        "title": "Text Analytics and Processing",
+        "description": "Identify, extract and analyze text data using text analytics solutions to discover themes, patterns and trends"
+      }
+    ]
+  },
+  {
+    "job_title": "Chief AI Engineer",
+    "functional_skills": []
+  },
+  {
+    "job_title": "Chief Technology Officer",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Budgeting",
+        "description": "Preparing organizational budgets to support short- and long-term business plans through forecasting, allocation and financial policy setting."
+      },
+      {
+        "title": "Business Agility",
+        "description": "Organize the business, work activities and people in ways that enable the organization to readily adapt to changes in its internal or external environment, whilst achieving desired outcomes and delivering value to customers"
+      },
+      {
+        "title": "Business Continuity",
+        "description": "Develop internal infrastructure to ensure organizational resilience and maintenance of the availability, stability and integrity of critical systems, processes and stakeholders that support and drive key aspects of the business. This includes the planning, designing and testing  contingency plans and setting up of internal systems and structures which are ready to respond to potential threats and maintain desired levels of continuity."
+      },
+      {
+        "title": "Business Innovation",
+        "description": "Identify and evaluate digitization and innovative business opportunities provided by new advancements in information and communication technology to establish new services or businesses to bridge the physical and digital worlds"
+      },
+      {
+        "title": "Business Performance Management",
+        "description": "Implement organizational performance systems to meet business plans and objectives by establishing performance indicators, tracking progress and addressing gaps"
+      },
+      {
+        "title": "Business Risk Management",
+        "description": "Forecast and assess existing and potential IT risks which impact the operation and/or profitability to the business as well as the development and roll out company-wide strategies and processes to mitigate risks, minimize their impact or effectively manage such business risks"
+      },
+      {
+        "title": "Change Management",
+        "description": "Plan and systematic execution of processes to facilitate the transition of individuals, teams and organizations to a desired end state in a manner that is seamless, sustainable and aligned with business objectives. This includes the redirection of resources, business processes, finances and operating models, as well as stakeholder engagement to facilitate implementation and maximize adoption."
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Enterprise Architecture",
+        "description": "Operationalize a business strategy on the planning and development of business structures and models to facilitate the evolution of a business to its desired future state.  This involves the review and prioritization of market trends, evaluation of alternative strategies, as well as the strategic evaluation and utilization of enterprise capability and technology to support business requirements"
+      },
+      {
+        "title": "Infrastructure Strategy",
+        "description": "Develop a robust strategy and plan for defining and managing a future-ready IT infrastructure, optimizing its capacity, availability and synchronization to enable an organization's business operations. This involves evaluating infrastructure models and options for infrastructure components, managing infrastructure investments and facilitating the transformation toward the desired future infrastructure model"
+      },
+      {
+        "title": "IT Governance",
+        "description": "Set and monitor IT infrastructure, information, digital services and associated technology. This involves developing policies and practices to govern the organization's approach toward handling and using IT products and services in order to ensure conformance with regulations and accountability in decision making in alignment with the business strategic plans and service standards"
+      },
+      {
+        "title": "IT Standards",
+        "description": "Develop and review of standard operating procedures as well as service expectations for IT-related activities and processes. This includes the provision of clear guidelines for the organization to carry out IT-related tasks in a manner that is effective, efficient and consistent with the IT service standards and quality standards of the organization"
+      },
+      {
+        "title": "IT Strategy",
+        "description": "Plan, develop and communicate effective inward- and outward-facing IT strategies, solutions and action plans, driven by environment scanning and assessment of the business' future needs and long-term strategic direction. This involves devising internal management strategies and models to support and sustain IT transformations and alignment of IT investments and programs with the strategy to optimize the business value from IT"
+      },
+      {
+        "title": "Networking",
+        "description": "Identifying, evaluating and strategizing to seize new business opportunities to grow the organization's business operations."
+      },
+      {
+        "title": "Organizational Analysis",
+        "description": "Evaluate factors that can affect the organization's performance as well as strategically assessing the organization's own resources and potential for improvement"
+      },
+      {
+        "title": "Organizational Design",
+        "description": "Develop and facilitate the implementation of organizational design to ensure its effectiveness and alignment with stakeholders' priorities"
+      },
+      {
+        "title": "Partnership Management",
+        "description": "Build cooperative partnerships with inter-organizational and external stakeholders and leveraging relations to meet organizational objectives. This includes coordination and strategizing with internal and external stakeholders through close cooperation and exchange of information to solve problems"
+      },
+      {
+        "title": "Performance Management",
+        "description": "Evaluate and optimize network, system and/or software performance against user and business requirements. This involves the introduction and utilization of new tools and mechanisms to gather, analyze and fully optimize performance data. This also includes the initiation of controls, modifications and new investments to enhance end-to-end performance of ICT components, systems and services"
+      },
+      {
+        "title": "Portfolio Management",
+        "description": "Manage systematically the IT investments, projects, services and activities within a company, in line with business objectives and priorities. This involves the development of a framework to evaluate potential costs and benefits and make key decisions about IT investments, internal allocation and utilization of IT resources and/or assets and any changes to IT processes or services offered"
+      },
+      {
+        "title": "Product Management",
+        "description": "Create and manage a product roadmap, involving the ideating, planning, forecasting, marketing and management of a product or a suite of products throughout stages of its lifecycle, from its conceptualization to market entrance and eventual phasing-out. This includes the creation of a new product idea or concept and definition of the product strategy based on a projection of its potential benefits to the customer as well as the review of product performance against milestones and targets set."
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Quality Standards",
+        "description": "Develop, review and communicate clear, quality expectations and standards within an organization that are aligned to the company's values and business objectives. This encompasses the setting and implementation of quality expectations for IT products and services delivered to both internal or external clients"
+      },
+      {
+        "title": "Solution Architecture",
+        "description": "Design or refine a solution blueprint or structure to guide the development of IT solutions in hardware, software, processes or related components, to meet current and future business needs. The solution architecture developed may lead to broad or specific changes to IT services, operating models and processes, and should provide a framework to guide the development and modification of solutions"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Strategy Planning",
+        "description": "Develop organizational strategies and policies by analyzing the impact of internal and external influencing factors and seeking consultation from relevant stakeholders"
+      },
+      {
+        "title": "Sustainability Management",
+        "description": "Plan, develop and roll out of an organization-wide sustainability strategy. This includes the assessment of the organization's utilization and/or consumption of energy and other resources, vis-a-vis the availability and stability of supply sources and external best practices and standards in sustainability. This also includes the on-going monitoring and tracking of energy and/or resource-consumption over time, to identify impact on the organization's internal and external environment as well as potential improvements in energyor resource-efficiency."
+      },
+      {
+        "title": "System Integration",
+        "description": "Develop and implement a roadmap and specific integration solutions to facilitate integration of various ICT components and optimize interoperability of systems and their interfaces. This includes the integration of various architectural components such as networks, servers, system platforms and their interfaces"
+      },
+      {
+        "title": "Systems Design",
+        "description": "Design systems to meet specified business and user requirements that are compatible with established system architectures, as well as organizational and performance standards"
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      }
+    ]
+  },
+  {
+    "job_title": "Applied Data/AI Researcher",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Business Needs Analysis",
+        "description": "Identify and scope business requirements and priorities through rigorous information gathering and analysis  as  well  as  clarification  of  the  solutions,  initiatives  and  programs  to  enable  effective  delivery. This also involves the development of a compelling and defensible business case and the articulation of the potential impact of the solution to the business"
+      },
+      {
+        "title": "Computer Vision Technology",
+        "description": "Develop and deploy vision analytics algorithm and spatial sensing and/or reasoning systems"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Analytics",
+        "description": "Implementing data analytics within the organization to generate business insights and intelligence through the use of statistical and computational techniques and tools, algorithms, predictive data modeling and data visualization."
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Intelligent Reasoning",
+        "description": "Design and build intelligent machine reasoning systems that can integrate, make sense of, and act upon heterogeneous sensory information sources, using domain knowledge accumulated in respective industries"
+      },
+      {
+        "title": "Pattern Recognition Systems",
+        "description": "Develop and apply intelligent pattern recognition systems and techniques to analyze data and derive useful hidden patterns to solve problems"
+      },
+      {
+        "title": "Research",
+        "description": "Research on a concept or idea to provide inputs for content development"
+      },
+      {
+        "title": "Self-Learning Systems",
+        "description": "Design and develop self-learning systems using reinforcement learning and evolutionary learning techniques"
+      },
+      {
+        "title": "Software Configuration",
+        "description": "Configure software products and apply scripts and automation tools to integrate and deploy software releases to various platforms and operating environments. This includes subsequent modifications to software configuration, based on outcomes of systems and/or configuration tests"
+      },
+      {
+        "title": "Software Testing",
+        "description": "Assess and test the overall effectiveness and performance of an application, involving the setting up of suitable testing conditions, definition of test cases and/or technical criteria"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Test Planning",
+        "description": "Develop a test strategy and systematic test procedures to verify and ensure that a product, system or technical solution meets its design specifications as well as the performance, load and volume levels set out. This includes the ability to define when different requirements will be verified across the product life stages, the tools used to perform the test, the data and/or resources needed to conduct the tests and testware in test cases, test scripts, test reports and test plans required"
+      },
+      {
+        "title": "Text Analytics and Processing",
+        "description": "Identify, extract and analyze text data using text analytics solutions to discover themes, patterns and trends"
+      }
+    ]
+  },
+  {
+    "job_title": "Senior Applied Data/AI Researcher",
+    "functional_skills": []
+  },
+  {
+    "job_title": "Research Manager",
+    "functional_skills": []
+  },
+  {
+    "job_title": "Director of Research",
+    "functional_skills": []
+  },
+  {
+    "job_title": "Chief Scientific Officer",
+    "functional_skills": [
+      {
+        "title": "Artificial Intelligence Ethics and Governance",
+        "description": "Establish and drive Artificial Intelligence Ethics and Governance frameworks to ensure compliance, manage risks and commercial benefits in product design"
+      },
+      {
+        "title": "Budgeting",
+        "description": "Preparing organizational budgets to support short- and long-term business plans through forecasting, allocation and financial policy setting."
+      },
+      {
+        "title": "Business Agility",
+        "description": "Organize the business, work activities and people in ways that enable the organization to readily adapt to changes in its internal or external environment, whilst achieving desired outcomes and delivering value to customers"
+      },
+      {
+        "title": "Business Continuity",
+        "description": "Develop internal infrastructure to ensure organizational resilience and maintenance of the availability, stability and integrity of critical systems, processes and stakeholders that support and drive key aspects of the business. This includes the planning, designing and testing  contingency plans and setting up of internal systems and structures which are ready to respond to potential threats and maintain desired levels of continuity."
+      },
+      {
+        "title": "Business Innovation",
+        "description": "Identify and evaluate digitization and innovative business opportunities provided by new advancements in information and communication technology to establish new services or businesses to bridge the physical and digital worlds"
+      },
+      {
+        "title": "Business Performance Management",
+        "description": "Implement organizational performance systems to meet business plans and objectives by establishing performance indicators, tracking progress and addressing gaps"
+      },
+      {
+        "title": "Cyber and Data Breach Incident Management",
+        "description": "Detect and report cyber and data-related incidents, identify affected systems and user groups, trigger alerts and announcements to relevant stakeholders and efficient resolution of the situation."
+      },
+      {
+        "title": "Data Ethics",
+        "description": "Apply legal and ethical principles in the collection, use, storage and disposal of data"
+      },
+      {
+        "title": "Design Thinking Practice",
+        "description": "Manage design thinking methodologies and processes to solve specific challenges for the organization, and guide stakeholders through the phases of inspiration, empathy, ideation and implementation"
+      },
+      {
+        "title": "Emerging Technology Synthesis",
+        "description": "Monitor and integrate emerging technology trends and developments, structured data gathering for the  identification  of  new  and  emerging  technological  products,  services  and  techniques.  In  addition, the performance of cost-benefit analysis and evaluation of their relevance, viability, sustainability and potential value add to the business"
+      },
+      {
+        "title": "Enterprise Architecture",
+        "description": "Operationalize a business strategy on the planning and development of business structures and models to facilitate the evolution of a business to its desired future state.  This involves the review and prioritization of market trends, evaluation of alternative strategies, as well as the strategic evaluation and utilization of enterprise capability and technology to support business requirements"
+      },
+      {
+        "title": "Infrastructure Strategy",
+        "description": "Develop a robust strategy and plan for defining and managing a future-ready IT infrastructure, optimizing its capacity, availability and synchronization to enable an organization's business operations. This involves evaluating infrastructure models and options for infrastructure components, managing infrastructure investments and facilitating the transformation toward the desired future infrastructure model"
+      },
+      {
+        "title": "IT Strategy",
+        "description": "Plan, develop and communicate effective inward- and outward-facing IT strategies, solutions and action plans, driven by environment scanning and assessment of the business' future needs and long-term strategic direction. This involves devising internal management strategies and models to support and sustain IT transformations and alignment of IT investments and programs with the strategy to optimize the business value from IT"
+      },
+      {
+        "title": "Organizational Analysis",
+        "description": "Evaluate factors that can affect the organization's performance as well as strategically assessing the organization's own resources and potential for improvement"
+      },
+      {
+        "title": "Organizational Design",
+        "description": "Develop and facilitate the implementation of organizational design to ensure its effectiveness and alignment with stakeholders' priorities"
+      },
+      {
+        "title": "Project Management",
+        "description": "Perform planning, organization, monitoring and control of all aspects of an IT program and the strategic utilization of resources to achieve the objectives within the agreed timelines, costs and performance expectations. In addition, the identification, coordination and management of project interdependencies, ensuring alignment with and achievement of business objectives"
+      },
+      {
+        "title": "Quality Standards",
+        "description": "Develop, review and communicate clear, quality expectations and standards within an organization that are aligned to the company's values and business objectives. This encompasses the setting and implementation of quality expectations for IT products and services delivered to both internal or external clients"
+      },
+      {
+        "title": "Research",
+        "description": "Research on a concept or idea to provide inputs for content development"
+      },
+      {
+        "title": "Stakeholder Management",
+        "description": "Manage stakeholder expectations and needs by aligning those with requirements and objectives of the organization. This involves planning of actions to effectively communicate with, negotiate with and influence stakeholders"
+      },
+      {
+        "title": "Strategy Planning",
+        "description": "Develop organizational strategies and policies by analyzing the impact of internal and external influencing factors and seeking consultation from relevant stakeholders"
+      },
+      {
+        "title": "Sustainability Management",
+        "description": "Plan, develop and roll out of an organization-wide sustainability strategy. This includes the assessment of the organization's utilization and/or consumption of energy and other resources, vis-a-vis the availability and stability of supply sources and external best practices and standards in sustainability. This also includes the on-going monitoring and tracking of energy and/or resource-consumption over time, to identify impact on the organization's internal and external environment as well as potential improvements in energyor resource-efficiency."
+      },
+      {
+        "title": "Systems Thinking",
+        "description": "Understand complexity of cause-and-effect relationships of systems and processes across the organization, as well as evaluate systems based on the value-creation and contribution to specific issues"
+      }
+    ]
+  },
+  {
+    "job_title": "The Career Path in Data/AI Education",
+    "functional_skills": []
+  }
+]

@@ -21,6 +21,16 @@ class Migration(migrations.Migration):
             model_name='course',
             name='pathways',
         ),
+        migrations.AddField(
+            model_name='course',
+            name='description',
+            field=models.TextField(blank=True, null=True),
+        ),
+        migrations.AddField(
+            model_name='course',
+            name='rating',
+            field=models.FloatField(blank=True, null=True),
+        ),
         migrations.AlterField(
             model_name='chat',
             name='title',

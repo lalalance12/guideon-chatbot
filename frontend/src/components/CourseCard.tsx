@@ -27,17 +27,27 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
     ]
   };
 
+  // Determine if the course is free
+  const isFree = course.price.toLowerCase() === 'free';
+
+  console.log('Course data:', course); // Debug log
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-4 border border-gray-200">
-      <h3 className="text-xl font-semibold mb-2">
+      <div className="flex gap-8 items-start">
+      <h1 className="text-lg font-semibold">
         <a href={course.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800">
           {course.title}
         </a>
-      </h3>
+      </h1>
+      <span className={`px-3 py-1 rounded-full text-white text-sm font-medium ${isFree ? 'bg-green-500' : 'bg-orange-500'}`}>
+          {course.price}
+        </span>
+      </div>
       <p className="text-gray-600 mb-2">Provider: {course.provider}</p>
-      <p className="text-gray-600 mb-4">Rating: {course.rating}/5</p>
+      <p className="text-gray-600">Rating: {course.rating.toFixed(1)}/5</p>
       <p className="text-gray-700 mb-4">{course.description}</p>
-
+      
       {!showFeedback && (
         <div className="flex gap-4">
           <button

@@ -10,7 +10,7 @@ EMBEDDING_MODEL = "bge-m3"
 logger = logging.getLogger(__name__)
 
 # Path to your precomputed skill embeddings (update if needed)
-SKILL_EMBEDDINGS_PATH = os.path.join(os.path.dirname(__file__), '../data/roles/sample_role_skill_embeddings_bge_m3.json')
+SKILL_EMBEDDINGS_PATH = os.path.join(os.path.dirname(__file__), '../data/courses/role_skill_knowledge_embeddings.json')
 
 # Load skill embeddings once at module load
 def load_skill_embeddings():
@@ -37,14 +37,14 @@ def get_embedding_for_text(text):
         return []
 
 def cosine_similarity(vec1, vec2):
-    logger.debug(f"Calculating cosine similarity.")
+    #logger.debug(f"Calculating cosine similarity.")
     v1 = np.array(vec1)
     v2 = np.array(vec2)
     if v1.shape != v2.shape or v1.size == 0:
         logger.warning("Vectors have mismatched shapes or are empty.")
         return 0.0
     sim = float(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
-    logger.debug(f"Cosine similarity: {sim}")
+    #logger.debug(f"Cosine similarity: {sim}")
     return sim
 
 def match_course_to_skills(course_text, top_n=5):
