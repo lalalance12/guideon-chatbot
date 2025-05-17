@@ -144,9 +144,25 @@ def scrape_class_central(course_url: str, retries: int = 3) -> Optional[Dict[str
             else:
                 price = -1
 
-            # parse stars
-            full = rating_span.find_all('i', class_='icon-star') if rating_span else []
-            half = rating_span.find_all('i', class_='icon-star-half') if rating_span else []
+            # Alternative approach - Just check if the string representation contains certain patterns
+            if rating_span:
+                all_icons = rating_span.find_all('i')
+                logger.debug(f"Found {len(all_icons)} icons in rating span")
+                
+                full = []
+                half = []
+                
+                for icon in all_icons:
+                    icon_str = str(icon)
+                    if 'icon-star' in icon_str and 'half' not in icon_str:
+                        full.append(icon)
+                    elif 'star-half' in icon_str or 'icon-star-half' in icon_str:
+                        half.append(icon)
+                
+                logger.debug(f"Counted {len(full)} full stars and {len(half)} half stars")
+            else:
+                full = []
+                half = []
 
             description_tag = soup.select_one(
                 'div.wysiwyg.text-1.line-wide, div.truncatable-area.wysiwyg.text-1.line-wide'
