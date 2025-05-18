@@ -6,17 +6,16 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-# Updated serializer imports
 from .serializers import (UserSerializer, ChatRequestSerializer, ChatResponseSerializer, ChatSerializer, MessageSerializer, PathwayQuerySerializer, ContextResponseSerializer, 
     CourseSerializer, CourseSearchSerializer, LearningPathwaySerializer,
-    KnowledgeSourceSerializer, KnowledgeChunkSerializer)
+    KnowledgeSourceSerializer, KnowledgeChunkSerializer, UserPreferenceSerializer)
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
 import asyncio
 from .agents.course_search_agent import CourseSearchAgent
 logger = logging.getLogger(__name__)
 from .services import query_ollama
-from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk
+from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk, UserPreference
 from api.utils.intent_classifier import QueryIntent, classify_intent
 
 # Create logger
@@ -414,3 +413,61 @@ class KnowledgeChunkView(generics.ListCreateAPIView):
     queryset = KnowledgeChunk.objects.all()
     serializer_class = KnowledgeChunkSerializer
     permission_classes = [AllowAny]
+
+class UserPreferenceView(APIView):
+    """
+    API endpoint for getting and updating user preferences
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Get the current user's preferences"""
+        try:
+            # Get or create preferences for the user
+            preferences, created = UserPreference.objects.get_or_create(user=request.user)
+            serializer = UserPreferenceSerializer(preferences)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error retrieving user preferences: {str(e)}", exc_info=True)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def post(self, request):
+        """Create or update user preferences"""
+        try:
+            # Get or create preferences
+            preferences, created = UserPreference.objects.get_or_create(user=request.user)
+            
+            # Update with request data
+            serializer = UserPreferenceSerializer(preferences, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error updating user preferences: {str(e)}", exc_info=True)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class FirstLoginCheckView(APIView):
+    """
+    API endpoint to check if a user has set their preferences after first login
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Check if the user has completed their preferences setup"""
+        try:
+            # Check if preferences exist for this user
+            has_preferences = UserPreference.objects.filter(user=request.user).exists()
+            return Response({"has_preferences": has_preferences})
+        except Exception as e:
+            logger.error(f"Error checking first login status: {str(e)}", exc_info=True)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

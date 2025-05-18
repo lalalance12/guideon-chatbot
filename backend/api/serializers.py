@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk, PathwayCourse, PathwayKnowledge, UserLearnedCourse
+from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk, PathwayCourse, PathwayKnowledge, UserLearnedCourse, UserPreference
 
 class UserSerializer(serializers.ModelSerializer):
     fullName = serializers.CharField(source='first_name', required=True)
@@ -98,3 +98,19 @@ class UserLearnedCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserLearnedCourse
         fields = ['id', 'user', 'course', 'learned_at', 'skill_text']
+
+class UserPreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserPreference
+        fields = ['id', 'user', 'course_level', 'programming_languages', 'development_areas', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at']
+    
+    def validate_programming_languages(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Programming languages must be a list")
+        return value
+    
+    def validate_development_areas(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Development areas must be a list")
+        return value

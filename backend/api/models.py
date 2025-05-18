@@ -113,3 +113,19 @@ class UserLearnedCourse(models.Model):
     
     def __str__(self):
         return f"{self.user.username} learned {self.course.title}"
+    
+class UserPreference(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
+    course_level = models.CharField(max_length=20, choices=[
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+        ('all', 'All Levels')
+    ], default='all')
+    programming_languages = models.JSONField(default=list, help_text="List of preferred programming languages")
+    development_areas = models.JSONField(default=list, help_text="List of preferred development areas (web, mobile, desktop)")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Preferences for {self.user.username}"
