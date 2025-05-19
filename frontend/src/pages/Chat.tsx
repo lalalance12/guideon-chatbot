@@ -240,14 +240,17 @@ const Chat: React.FC = () => {
   // Clear current conversation and start a new one
   const startNewChat = () => {
     if (window.confirm("Are you sure you want to start a new conversation?")) {
+      // First remove from localStorage to ensure clean slate
       localStorage.removeItem(STORAGE_KEY);
+      
+      // Clear state variables
       setMessages([]);
-      addWelcomeMessage();
-      // Refresh page to reset hook state
-      window.location.reload();
+      
+      // This is more reliable than page refresh
+      // It ensures the hook resets without triggering localStorage saves
+      window.location.href = window.location.pathname;
     }
   };
-
   // Group messages by sender to show avatars only for the first message in a group
   const renderMessages = () => {
     return messages.map((message, index) => {
