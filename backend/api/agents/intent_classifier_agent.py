@@ -20,11 +20,11 @@ class IntentClassifierAgent(BaseAgent):
     def __init__(self) -> None:
         """Initialize the intent classifier with an LLM."""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0",
+            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
                               provider="Ollama", 
                               host="http://localhost:11434")
             self.agent = Agent(
-                name="Synthesizer", 
+                name="IntentClassifier", 
                 model=self.llm,
                 system_message="You are an intent classification assistant that analyzes user queries."
             )
@@ -50,7 +50,7 @@ class IntentClassifierAgent(BaseAgent):
         
         # Prepare conversation history if available
         chat_history = self._format_chat_history(context.get("chat_history", []))
-        
+        print(f"{chat_history}, this is chat history" )
         # Construct the classification prompt
         prompt = self._construct_prompt(query, chat_history)
             

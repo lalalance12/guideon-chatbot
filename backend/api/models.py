@@ -18,6 +18,7 @@ class Message(models.Model):
     role = models.CharField(max_length=50)  # 'user', 'assistant', 'system'
     timestamp = models.DateTimeField(auto_now_add=True)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
+    embedding = VectorField(dimensions=1024, null=True)
     
     class Meta:
         ordering = ['timestamp']
