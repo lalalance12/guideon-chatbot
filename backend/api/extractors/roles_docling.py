@@ -6,7 +6,7 @@ from collections import defaultdict
 from docling.document_converter import DocumentConverter
 
 # --- ollama_generate function (no changes) ---
-def ollama_generate(prompt: str, model: str = "llama3.1:8b-instruct-q8_0") -> str:
+def ollama_generate(prompt: str, model: str = "llama3.1:8b-instruct-q4_1") -> str:
     """
     Sends a prompt to Ollama and returns the response text.
     """
@@ -397,7 +397,7 @@ def convert_pdf_to_structured_json(pdf_path: str, force_reprocess_markdown: bool
         """
 
         try:
-            ai_response_text = ollama_generate(single_role_prompt, model="llama3.1:8b-instruct-q8_0")
+            ai_response_text = ollama_generate(single_role_prompt, model="llama3.1:8b-instruct-q4_1")
             
             if not ai_response_text or not ai_response_text.strip():
                  print(f"Warning: Received empty response for chunk {i+1} ({role_title_for_log}).")
