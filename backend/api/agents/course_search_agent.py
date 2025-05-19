@@ -227,7 +227,7 @@ class CourseSearchAgent(BaseAgent):
     """Agent responsible for finding relevant courses based on user query."""
 
     # Minimum similarity threshold for considering a course relevant
-    SIMILARITY_THRESHOLD = 0.5
+    SIMILARITY_THRESHOLD = 0.58
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
