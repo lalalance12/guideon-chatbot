@@ -110,8 +110,7 @@ const Chat: React.FC = () => {
   - **Role-Specific Skills:** When you mention a particular role, I'll display its functional and enabling skills requirements to ensure you understand what's needed for that career path.
   - **Course Recommendations:** If you're looking to upskill or reskill, I can provide recommendations based on the PSF-AAI framework.
   
-  If you're interested in exploring more about PSF-AAI roles, skills, or career pathways, feel free to ask me any questions! You can also ask me to search for courses tailored to your learning needs.
-  Be specific in your queries, and I'll do my best to assist you.
+  If you're unsure where to start, just ask me about the roles available in the PSF-AAI framework, and I'll guide you through the options.
       `,
       isUser: false,
       },

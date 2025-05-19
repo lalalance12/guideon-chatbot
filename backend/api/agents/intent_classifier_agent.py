@@ -20,7 +20,7 @@ class IntentClassifierAgent(BaseAgent):
     def __init__(self) -> None:
         """Initialize the intent classifier with an LLM."""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
+            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0",
                               provider="Ollama", 
                               host="http://localhost:11434")
             self.agent = Agent(
@@ -97,9 +97,9 @@ class IntentClassifierAgent(BaseAgent):
     def _construct_prompt(self, query: str, chat_history: str = "") -> str:
         """Build a prompt for the LLM to classify the intent."""
         intent_descriptions = {
-            QueryIntent.KNOWLEDGE_BASE_QUERY: "Questions about PSF-AAI framework, including roles, skills, career paths, proficiency levels, or any information contained in the PSF-AAI knowledge base",
-            QueryIntent.LEARNING_PATHWAY: "Questions about career roles, progression paths, or how to develop skills for specific roles within the PSF-AAI framework",
-            QueryIntent.COURSE_SEARCH: "Questions about specific courses, training, or education resources to learn particular skills",
+            QueryIntent.KNOWLEDGE_BASE_QUERY: "Questions about PSF-AAI framework, including roles, skills, career paths, proficiency levels, or any information contained in the PSF-AAI knowledge base. Questions about career roles, progression paths, or how to develop skills for specific roles within the PSF-AAI framework" ,
+            # QueryIntent.LEARNING_PATHWAY: "Questions about career roles, progression paths, or how to develop skills for specific roles within the PSF-AAI framework",
+            QueryIntent.COURSE_SEARCH: "Questions about asking for specific courses even if they have levels (eg. Applications Development(Level 3)), training, or education resources to learn particular skills",
             QueryIntent.GENERAL_CONVERSATION: "General conversation or topics unrelated to PSF-AAI or professional development",
         }
         

@@ -63,7 +63,7 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
 """
         try:
             # Initialize the LLM agent
-            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", # type: ignore
+            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0", # type: ignore
                               provider="Ollama",
                               host="http://localhost:11434")
             self.agent = Agent(
@@ -124,39 +124,23 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
         except Exception as e:
             logger.error(f"Error in response synthesis: {e}")
             return self._fallback_response(query, context)
-            
-    def _format_chat_history(self, chat_history: List[Dict[str, Any]], max_entries: int = 3) -> str:
-        """
-        Format chat history in a consistent way for all prompt types.
-        
-        Args:
-            chat_history: List of chat messages
-            max_entries: Maximum number of history entries to include
-            
-        Returns:
-            Formatted chat history as a string
-        """
-        if not chat_history:
-            return ""
-            
-        # Log the chat history for debugging
-        logger.debug(f"Processing chat history with {len(chat_history)} messages")
-        
-        history_text = "\n## Conversation History:\n"
-        # Take only the most recent messages up to max_entries
-        for msg in chat_history[-max_entries:]:
-            # Convert boolean to capitalized role name
-            role = "User" if msg.get("is_user") else "Assistant"
-            # Get message text, handling potential None values
-            text = msg.get("text", "").replace("\n", " ") if msg.get("text") else ""
-            history_text += f"{role}: {text}\n"
-                
-        return history_text
 
     def _build_standard_prompt(self, query: str, context: Dict[str, Any]) -> str:
         """Build a standard prompt for general conversational responses."""
-        # Format chat history using the helper method
-        history_text = self._format_chat_history(context.get("chat_history", []))
+        chat_history = context.get("chat_history", [])
+        history_text = ""
+        # Log the chat history for debugging
+        logger.debug(f"Chat history: {chat_history}")
+        if chat_history:
+            history_text = "\n## Conversation History:\n"
+            for msg in chat_history[-3:]:
+                # This is the key line - convert boolean to capitalized role name
+                role = "User" if msg.get("is_user") else "Assistant"
+                text = msg.get("text", "").replace("\n", " ")
+                if msg.get("summarized"):
+                    history_text += f"{role} (summarized): {text}\n"
+                else:
+                    history_text += f"{role}: {text}\n"
                 
         agent_responses = context.get("agent_responses", {})
         knowledge_parts = []
@@ -192,8 +176,20 @@ End your response with a simple encouragement like: "Feel free to ask more quest
 
     def _build_structured_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for structured educational responses."""
-        # Format chat history using the helper method
-        history_text = self._format_chat_history(context.get("chat_history", []))
+        chat_history = context.get("chat_history", [])
+        history_text = ""
+            # Log the chat history for debugging
+        logger.debug(f"Chat history: {chat_history}")
+        if chat_history:
+            history_text = "\n## Conversation History:\n"
+            for msg in chat_history[-3:]:
+                # This is the key line - convert boolean to capitalized role name
+                role = "User" if msg.get("is_user") else "Assistant"
+                text = msg.get("text", "").replace("\n", " ")
+                if msg.get("summarized"):
+                    history_text += f"{role} (summarized): {text}\n"
+                else:
+                    history_text += f"{role}: {text}\n"
 
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_base", {})
@@ -232,8 +228,22 @@ End with a simple encouragement like: "Want to dive deeper into other PSF-AAI to
 
     def _build_role_profile_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for role profile responses."""
-        # Format chat history using the helper method
-        history_text = self._format_chat_history(context.get("chat_history", []))
+
+
+        chat_history = context.get("chat_history", [])
+        history_text = ""
+            # Log the chat history for debugging
+        logger.debug(f"Chat history: {chat_history}")
+        if chat_history:
+            history_text = "\n## Conversation History:\n"
+            for msg in chat_history[-3:]:
+                # This is the key line - convert boolean to capitalized role name
+                role = "User" if msg.get("is_user") else "Assistant"
+                text = msg.get("text", "").replace("\n", " ")
+                if msg.get("summarized"):
+                    history_text += f"{role} (summarized): {text}\n"
+                else:
+                    history_text += f"{role}: {text}\n"
 
         agent_responses = context.get("agent_responses", {})
         flow_context = context.get("flow", {})
@@ -277,9 +287,6 @@ Conclude with a simple encouragement like: "Interested in courses for these skil
 
     def _build_learning_pathway_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for learning pathway responses."""
-        # Format chat history using the helper method
-        history_text = self._format_chat_history(context.get("chat_history", []))
-        
         agent_responses = context.get("agent_responses", {})
         flow_context = context.get("flow", {})
         role = flow_context.get("role", "the targeted role")
@@ -294,8 +301,6 @@ Conclude with a simple encouragement like: "Interested in courses for these skil
 
 ## User Query:
 "{query}"
-
-{history_text}
 
 ## Target Role:
 {role}
@@ -324,9 +329,6 @@ End with a simple encouragement like: "Ready to find courses for these skills or
 
     def _build_course_list_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for course list responses."""
-        # Format chat history using the helper method
-        history_text = self._format_chat_history(context.get("chat_history", []))
-        
         agent_responses = context.get("agent_responses", {})
         flow_context = context.get("flow", {})
         topic = flow_context.get("topic", "the requested topic")
@@ -347,8 +349,6 @@ End with a simple encouragement like: "Ready to find courses for these skills or
 
 ## User Query:
 "{query}"
-
-{history_text}
 
 ## Topic:
 {topic}
@@ -377,9 +377,6 @@ Conclude with a simple encouragement like: "Need more course options or want to 
 
     def _build_role_skills_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for displaying role skills."""
-        # Format chat history using the helper method
-        history_text = self._format_chat_history(context.get("chat_history", []))
-        
         agent_responses = context.get("agent_responses", {})
         flow_context = context.get("flow", {})
         role = flow_context.get("role", "the role")
@@ -402,8 +399,6 @@ Conclude with a simple encouragement like: "Need more course options or want to 
 
 ## User Query:
 "{query}"
-
-{history_text}
 
 ## Role:
 {role}
@@ -436,9 +431,6 @@ End with a simple encouragement like: "Want to find courses for these skills or 
 
     def _build_role_listing_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for displaying available roles."""
-        # Format chat history using the helper method
-        history_text = self._format_chat_history(context.get("chat_history", []))
-        
         agent_responses = context.get("agent_responses", {})
         roles = []
         if "learning_path" in agent_responses:
@@ -455,8 +447,6 @@ End with a simple encouragement like: "Want to find courses for these skills or 
 
 ## User Query:
 "{query}"
-
-{history_text}
 
 ## Available Roles:
 {roles_text}
@@ -480,8 +470,21 @@ End with a simple encouragement like: "Curious about a specific PSF-AAI role, th
 
     def _build_career_map_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for career map visualization responses."""
-        # Format chat history using the helper method
-        history_text = self._format_chat_history(context.get("chat_history", []))
+
+        chat_history = context.get("chat_history", [])
+        history_text = ""
+            # Log the chat history for debugging
+        logger.debug(f"Chat history: {chat_history}")
+        if chat_history:
+            history_text = "\n## Conversation History:\n"
+            for msg in chat_history[-3:]:
+                # This is the key line - convert boolean to capitalized role name
+                role = "User" if msg.get("is_user") else "Assistant"
+                text = msg.get("text", "").replace("\n", " ")
+                if msg.get("summarized"):
+                    history_text += f"{role} (summarized): {text}\n"
+                else:
+                    history_text += f"{role}: {text}\n"
 
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_base", {})

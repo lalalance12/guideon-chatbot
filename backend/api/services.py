@@ -22,7 +22,7 @@ class GuideonChatService:
 
     def _init_agent(self):
         try:
-            llama_model = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
+            llama_model = Ollama(id="llama3.1:8b-instruct-q8_0", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",
                 model=llama_model,
@@ -130,44 +130,21 @@ class GuideonChatService:
             logger.error(f"Error processing message: {e}", exc_info=True)
             return self._fallback_response(user_query)
 
-    
 
-    # Then replace the _get_chat_history method:
     async def _get_chat_history(self, chat_id, user_query=None):
         """Retrieve chat history for context building from database"""
         try:
             if not chat_id:
                 return []
                 
-            if user_query:
-                # Use the hybrid approach when we have a query
-                chat_history = await ChatHistoryManager.get_hybrid_history(
-                    chat_id=chat_id, 
-                    query=user_query,
-                    k=9  # Adjust based on your context window needs
-                )
-                logger.info(f"Retrieved {len(chat_history)} messages using hybrid history approach")
-                return chat_history
-            else:
-                # Fallback to chronological if no query provided
-                from django.db.models import Prefetch
-                
-                # Use Prefetch to efficiently load related messages
-                chat = await Chat.objects.filter(id=chat_id).prefetch_related(
-                    Prefetch('messages', queryset=Message.objects.order_by('timestamp'))
-                ).afirst()
-                
-                if chat:
-                    return [{
-                        "text": msg.content,
-                        "is_user": msg.role == "user",
-                        "timestamp": msg.timestamp.isoformat() if msg.timestamp else ""
-                    } for msg in chat.messages.all()]
-                return []
+            # Use simple history approach instead of semantic/hybrid
+            chat_history = await ChatHistoryManager.get_simple_history(chat_id=chat_id)
+            logger.info(f"Retrieved {len(chat_history)} messages using simple history approach")
+            return chat_history
+            
         except Exception as e:
             logger.error(f"Error retrieving chat history: {e}")
-            return []
-
+            return []           
     def _extract_entities(self, text):
         entities = []
         if "level" in text.lower():

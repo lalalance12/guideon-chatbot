@@ -1,15 +1,31 @@
 import logging
+import numpy as np
 from asgiref.sync import sync_to_async
 from django.db.models import F
-import numpy as np
 from pgvector.django import CosineDistance
 from ..models import Message, Chat
 from .embeddings import generate_embedding
+from agno.agent import Agent
+from agno.models.ollama import Ollama
 
 logger = logging.getLogger(__name__)
 
 class ChatHistoryManager:
     """Manages retrieval of chat history using various strategies."""
+    
+    # Initialize LLM for summarization
+    @staticmethod
+    async def _get_summarization_agent():
+        try:
+            llama_model = Ollama(id="llama3.1:8b-instruct-q8_0", provider="Ollama", host="http://localhost:11434")
+            agent = Agent(
+                name="SummarizationAgent",
+                model=llama_model,
+            )
+            return agent
+        except Exception as e:
+            logger.error(f"Failed to initialize summarization agent: {e}")
+            return None
     
     @staticmethod
     async def get_last_assistant_message(chat_id):
@@ -21,9 +37,23 @@ class ChatHistoryManager:
             ).order_by('-timestamp').values('content', 'timestamp').afirst()
             
             if last:
-                logger.debug(f"Found last assistant message: {last['content'][:50]}...")
+                content = last['content']
+                logger.debug(f"Found last assistant message: {content[:50]}...")
+                
+                # Check if message exceeds 500 characters and needs summarization
+                if len(content) > 500:
+                    logger.info(f"Message length ({len(content)}) exceeds 500 chars, summarizing...")
+                    # Use LLM to summarize the message
+                    summarized = await ChatHistoryManager.summarize_message(content)
+                    return {
+                        "text": summarized,
+                        "is_user": False,
+                        "timestamp": last['timestamp'].isoformat() if last['timestamp'] else "",
+                        "summarized": True  # Flag to indicate this is a summary
+                    }
+                
                 return {
-                    "text": last['content'],
+                    "text": content,
                     "is_user": False,
                     "timestamp": last['timestamp'].isoformat() if last['timestamp'] else ""
                 }
@@ -34,60 +64,98 @@ class ChatHistoryManager:
             return None
     
     @staticmethod
-    async def get_semantic_history(chat_id, query, k=5):
-        """Retrieve semantically similar messages from chat history."""
+    async def summarize_message(content):
+        """Summarize a message using an LLM to capture its essence."""
         try:
-            # Get query embedding
-            query_embedding = await generate_embedding(query)
-            if not query_embedding:
-                logger.warning("Could not generate embedding for query")
-                return []
+            # Get the summarization agent
+            agent = await ChatHistoryManager._get_summarization_agent()
+            
+            if not agent:
+                # Fallback to simple truncation if agent initialization fails
+                return content[:497] + "..."
+            
+            # Create a summarization prompt
+            system_prompt = """You are an expert summarizer. Your task is to capture the essence of a message 
+            while staying under 500 characters. Preserve key information, main points, and the original tone.
+            Include critical details and maintain any structured format if present."""
+            
+            user_prompt = f"""Summarize the following message in under 500 characters while capturing its essence:
+
+{content}
+
+Your summary:"""
+            
+            # Get response from the LLM
+            response = await agent.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                max_tokens=250  # Limiting tokens to ensure we stay under character limit
+            )
+            
+            summary = response.choices[0].message.content.strip()
+            
+            # Double-check length and truncate if still too long
+            if len(summary) > 500:
+                summary = summary[:497] + "..."
                 
-            # Convert to numpy array for vector operations
-            query_embedding_vector = np.array(query_embedding)
-            
-            # Define the query function to be wrapped with sync_to_async
-            @sync_to_async
-            def get_similar_messages():
-                # Find semantically similar messages using cosine distance
-                return list(Message.objects.filter(
-                    chat_id=chat_id, 
-                    embedding__isnull=False  # Only include messages with embeddings
-                ).annotate(
-                    similarity=CosineDistance('embedding', query_embedding_vector)
-                ).order_by('similarity')[:k].values('content', 'role', 'timestamp'))
-            
-            # Execute the query asynchronously
-            similar_messages = await get_similar_messages()
-            
-            # Convert to the expected format
-            return [{
-                "text": msg['content'],
-                "is_user": msg['role'] == "user",
-                "timestamp": msg['timestamp'].isoformat() if msg['timestamp'] else ""
-            } for msg in similar_messages]
-            
+            return summary
         except Exception as e:
-            logger.error(f"Error in semantic history retrieval: {e}")
-            return []
+            logger.error(f"Error using LLM for summarization: {e}")
+            # Return truncated original as fallback
+            return content[:497] + "..."
     
     @staticmethod
-    async def get_hybrid_history(chat_id, query, k=9):
-        """
-        Get hybrid chat history that combines:
-        1. The last assistant message (for continuity)
-        2. Top-k semantically similar messages (for relevance)
-        """
-        # 1) Get last assistant turn
-        last = await ChatHistoryManager.get_last_assistant_message(chat_id)
-        base = [last] if last else []
+    async def get_last_user_message(chat_id):
+        """Get the last user message before the last assistant message."""
+        try:
+            # First get the timestamp of the last assistant message
+            last_assistant = await Message.objects.filter(
+                chat_id=chat_id,
+                role="assistant"
+            ).order_by('-timestamp').values('timestamp').afirst()
+            
+            # If no assistant message found, just get the last user message
+            if not last_assistant:
+                last_user = await Message.objects.filter(
+                    chat_id=chat_id,
+                    role="user"
+                ).order_by('-timestamp').values('content', 'timestamp').afirst()
+            else:
+                # Get the most recent user message that came before the last assistant message
+                last_user = await Message.objects.filter(
+                    chat_id=chat_id,
+                    role="user",
+                    timestamp__lt=last_assistant['timestamp']
+                ).order_by('-timestamp').values('content', 'timestamp').afirst()
+            
+            if last_user:
+                logger.debug(f"Found last user message: {last_user['content'][:50]}...")
+                return {
+                    "text": last_user['content'],
+                    "is_user": True,
+                    "timestamp": last_user['timestamp'].isoformat() if last_user['timestamp'] else ""
+                }
+            logger.debug("No last user message found")
+            return None
+        except Exception as e:
+            logger.error(f"Error getting last user message: {e}")
+            return None
+    
+    @staticmethod
+    async def get_simple_history(chat_id):
+        """Get a simple chat history with just the last user and assistant messages."""
+        # Get the last user and assistant messages
+        last_user = await ChatHistoryManager.get_last_user_message(chat_id)
+        last_assistant = await ChatHistoryManager.get_last_assistant_message(chat_id)
         
-        # 2) Get top-k semantically similar messages
-        sem = await ChatHistoryManager.get_semantic_history(chat_id, query, k=k)
-        
-        # 3) Merge, preserving the last-turn first and deduplicating
-        seen = {m["text"] for m in base}
-        result = base + [m for m in sem if m["text"] not in seen]
-        
-        logger.info(f"Hybrid history retrieved {len(result)} messages: 1 last + {len(sem)} semantic - {len(seen)} duplicates")
+        # Combine them in chronological order
+        result = []
+        if last_user:
+            result.append(last_user)
+        if last_assistant:
+            result.append(last_assistant)
+            
+        logger.info(f"Simple history retrieved {len(result)} messages")
         return result

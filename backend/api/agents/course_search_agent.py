@@ -54,10 +54,12 @@ async def get_topic_from_query(query: str) -> str:
 
 
 def match_query_to_skills_and_get_underpinning_knowledge(query: str):
-    """Find the skill that has a skill_title that exactly matches the query and return its underpinning knowledge"""
+    """Find the skill that has a skill_title that matches the query (case-insensitive) and return its underpinning knowledge"""
+    query_lower = query.lower() # Convert query to lowercase
     for item in SKILL_EMBEDDINGS:
         metadata = item.get("metadata", {})
-        if metadata.get("skill_title", "") == query:
+        skill_title_lower = metadata.get("skill_title", "").lower() # Convert skill_title to lowercase
+        if skill_title_lower == query_lower: # Compare lowercase versions
             # Extract underpinning knowledge if available
             knowledge = metadata.get("knowledge", [])
             return {
@@ -162,8 +164,9 @@ def scrape_class_central(course_url: str, retries: int = 3) -> Optional[Dict[str
                 full = []
                 half = []
                 
-                for icon in all_icons:
-                    icon_str = str(icon)
+            for icon in all_icons:
+                icon_str = str(icon)
+                if 'icon-star-empty' not in icon_str:  # Skip empty stars
                     if 'icon-star' in icon_str and 'half' not in icon_str:
                         full.append(icon)
                     elif 'star-half' in icon_str or 'icon-star-half' in icon_str:
@@ -231,21 +234,34 @@ class CourseSearchAgent(BaseAgent):
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
+            current_similarity_threshold = self.SIMILARITY_THRESHOLD # Initialize with default
+
     #        Check if we're receiving an extracted topic from the orchestrator
-            extracted_topic = context.get("extracted_topic")
+            extracted_topic_from_context = context.get("extracted_topic") # Renamed for clarity
+            topic = "" # Initialize topic
             
-            if extracted_topic and extracted_topic != query:
-                logger.info(f"Using extracted topic from orchestrator: '{extracted_topic}' (original query: '{query}')")
-                topic = extracted_topic
+            if extracted_topic_from_context and extracted_topic_from_context != query:
+                logger.info(f"Using extracted topic from orchestrator: '{extracted_topic_from_context}' (original query: '{query}')")
+                topic = extracted_topic_from_context
             else:
                 # Fall back to extracting the topic ourselves
-                logger.info(f"No extracted topic in context, extracting from query: '{query}'")
+                logger.info(f"No pre-extracted topic in context or it matches query, extracting from query: '{query}'")
                 topic_extractor = TopicExtractor()
                 topic = await topic_extractor.extract_topic(query)
-                logger.info(f"Extracted topic: '{topic}'")
+                # The TopicExtractor now returns "" if it's generic or unextractable.
+            
+            logger.info(f"Effective topic for course search: '{topic}' (from query: '{query}')")
+
+            if not topic:  # Check if the topic is empty (signaling a generic/unclear request)
+                logger.info(f"No specific topic extracted for query '{query}'. Clarification needed.")
+                return {
+                    'found': False,
+                    'reason': 'clarification_needed',
+                    'message': "It looks like you're asking for courses, but I need a bit more information. What specific topic are you interested in learning about?"
+                }
             
             # Log the processing of the query with the extracted topic
-            logger.info(f"Processing query: '{query}' with topic: '{topic}'")
+            logger.info(f"Processing query: '{query}' with specific topic: '{topic}'")
             
             # First, find the matching skill and its underpinning knowledge
             # Use the topic for matching instead of the raw query
@@ -255,8 +271,10 @@ class CourseSearchAgent(BaseAgent):
             if has_skill_match:
                 logger.info(f"Found matching skill: {skill_match.get('skill_title')}")
                 logger.debug(f"Underpinning knowledge items: {len(skill_match.get('underpinning_knowledge', []))}")
+                current_similarity_threshold = 0.5 # Change threshold if skill match is found
+                logger.info(f"Skill match found. Similarity threshold set to: {current_similarity_threshold}")
             else:
-                logger.info(f"No matching skill found for topic '{topic}', will use direct title comparison")
+                logger.info(f"No matching skill found for topic '{topic}', will use direct title comparison. Threshold remains: {current_similarity_threshold}")
             
             # If skill match is found, use underpinning knowledge for comparison
             # Otherwise, we'll directly compare with the query
@@ -266,13 +284,13 @@ class CourseSearchAgent(BaseAgent):
             
             # Now search for relevant courses
             logger.info(f"Searching Class Central for courses about '{topic}'...")
-            urls = search_class_central(topic)
+            urls = search_class_central(topic) # This function should use the 'topic'
             if not urls:
                 logger.warning("No course URLs found from Class Central")
                 return {
                     'found': False,
                     'reason': 'no_courses',
-                    'message': 'No relevant courses found for this query.'
+                    'message': f"I couldn't find any courses related to '{topic}' on Class Central."
                 }
             
             logger.info(f"Found {len(urls)} course URLs to process")
@@ -285,6 +303,7 @@ class CourseSearchAgent(BaseAgent):
                 info = scrape_class_central(url)
                 if info:
                     logger.debug(f"Scraped course: {info.get('title')}")
+                    similarity = 0.0 # Initialize similarity
                     
                     # If we have a skill match, compare course description with underpinning knowledge
                     if has_skill_match and underpinning_knowledge:
@@ -292,42 +311,43 @@ class CourseSearchAgent(BaseAgent):
                         similarity = match_course_description_to_underpinning_knowledge(
                             info['description'], underpinning_knowledge
                         )
-                        info['matched_skill'] = skill_match
+                        info['matched_skill'] = skill_match # Keep skill_match info
                     else:
-                        # Fallback: If no skill match, compare query with course title
-                        logger.debug("Calculating direct similarity with course title")
-                        query_embedding = get_embedding_for_text(query)
+                        # Fallback: If no skill match, compare query (or topic) with course title
+                        logger.debug(f"Calculating direct similarity between topic '{topic}' and course title '{info['title']}'")
+                        # Use topic for embedding comparison if no skill match
+                        topic_embedding = get_embedding_for_text(topic) 
                         title_embedding = get_embedding_for_text(info['title'])
                         
-                        if query_embedding and title_embedding:
-                            similarity = cosine_similarity(query_embedding, title_embedding)
+                        if topic_embedding and title_embedding:
+                            similarity = cosine_similarity(topic_embedding, title_embedding)
                             logger.debug(f"Title similarity score: {similarity:.4f}")
                         else:
-                            logger.warning("Failed to generate embeddings for similarity comparison")
-                            similarity = 0
+                            logger.warning("Failed to generate embeddings for title similarity comparison")
+                            similarity = 0.0 # Ensure similarity is float
                     
                     # Add similarity score to the course
                     info['similarity_score'] = similarity
-                    if similarity >= self.SIMILARITY_THRESHOLD:
+                    if similarity >= current_similarity_threshold: # Use the dynamic threshold
                         all_courses.append(info)
-                        logger.debug(f"Course meets similarity threshold ({similarity:.4f} >= {self.SIMILARITY_THRESHOLD})")
+                        logger.debug(f"Course '{info.get('title')}' meets similarity threshold ({similarity:.4f} >= {current_similarity_threshold})")
                     else:
-                        logger.debug(f"Course below similarity threshold ({similarity:.4f} < {self.SIMILARITY_THRESHOLD})")
+                        logger.debug(f"Course '{info.get('title')}' below similarity threshold ({similarity:.4f} < {current_similarity_threshold})")
                 else:
                     logger.warning(f"Failed to scrape course from URL: {url}")
             
             logger.info(f"Successfully processed {len(all_courses)} courses above threshold")
             
             # Sort courses by similarity score (highest first)
-            sorted_courses = sorted(all_courses, key=lambda x: x.get('similarity_score', 0), reverse=True)
+            sorted_courses = sorted(all_courses, key=lambda x: x.get('similarity_score', 0.0), reverse=True)
             
             # Return top 3 courses (or fewer if less than 3 are found)
             top_courses = sorted_courses[:3]
             
             if top_courses:
                 logger.info(f"Returning top {len(top_courses)} courses")
-                for i, course in enumerate(top_courses, 1):
-                    logger.debug(f"Top {i} course: {course.get('title')} (score: {course.get('similarity_score'):.4f})")
+                for i_course, course in enumerate(top_courses, 1): # Renamed loop variable
+                    logger.debug(f"Top {i_course} course: {course.get('title')} (score: {course.get('similarity_score'):.4f})")
                 
                 result = {
                     'found': True,
@@ -336,18 +356,24 @@ class CourseSearchAgent(BaseAgent):
                 }
                 
                 if has_skill_match:
-                    result['matched_skill'] = skill_match
+                    result['matched_skill_title'] = skill_match.get('skill_title') if skill_match else "N/A"
+                    result['message'] = f"Found courses related to the skill: '{result['matched_skill_title']}'."
                 else:
-                    result['direct_query_match'] = True
-                    result['message'] = 'No skill match found. Courses ranked by title similarity to query.'
+                    result['direct_topic_match'] = True # Changed from direct_query_match
+                    result['message'] = f"Found courses by comparing their titles to the topic: '{topic}'."
                 
                 return result
 
-            logger.warning("No courses met the relevance threshold")
+            logger.warning(f"No courses met the relevance threshold of {current_similarity_threshold} for topic '{topic}'")
+            # Provide a more informative message if no courses meet the threshold
+            reason_message = f"I found some courses related to '{topic}', but none seemed relevant enough after detailed review."
+            if not urls: # This case is handled earlier, but as a safeguard
+                reason_message = f"I couldn't find any courses related to '{topic}'."
+
             return {
                 'found': False,
-                'reason': 'no_matching_courses',
-                'message': 'Found courses but none were relevant to the query.'
+                'reason': 'no_matching_courses_above_threshold', # More specific reason
+                'message': reason_message
             }
 
         except Exception as e:
@@ -355,5 +381,5 @@ class CourseSearchAgent(BaseAgent):
             return {
                 'found': False,
                 'reason': 'exception',
-                'message': f'Error finding courses: {e}'
+                'message': f'An error occurred while trying to find courses: {str(e)}'
             }
