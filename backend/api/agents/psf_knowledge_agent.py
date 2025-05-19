@@ -1,9 +1,16 @@
 from __future__ import annotations
-import asyncio, logging
+import logging
 from typing import Dict, Any, Set, List
 
 from .base_agent import BaseAgent
-from ..utils.query_vectors import search_similar_content
+from ..utils.query_vectors import (
+    search_similar_content_async, 
+    get_related_content_by_id,
+    get_skill_levels,
+    get_career_progression,
+    comprehensive_search,
+    create_fallback_content
+)
 from ..utils.intent_classifier import QueryIntent
 
 logger = logging.getLogger(__name__)
@@ -13,200 +20,463 @@ class PSFKnowledgeAgent(BaseAgent):
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         intent = context.get("intent")
-        extracted_level = context.get("extracted_level")
+        extracted_entities = context.get("extracted_entities", {})
+        extracted_level = extracted_entities.get("extracted_level") or context.get("extracted_level")
+        extracted_role = extracted_entities.get("extracted_role")
+        extracted_skill = extracted_entities.get("extracted_skill") or extracted_entities.get("skill")
         limit = 5
 
         # Handle flow-specific context if available
         flow_context = context.get("flow", {})
         flow_action = flow_context.get("flow_action")
         
-        logger.debug("KB search: %s | intent=%s level=%s flow_action=%s",
-                     query, getattr(intent, "value", intent), extracted_level, flow_action)
+        logger.debug("KB search: %s | intent=%s level=%s role=%s skill=%s flow_action=%s",
+                     query, getattr(intent, "value", intent), extracted_level, 
+                     extracted_role, extracted_skill, flow_action)
 
-        # Adjust search based on flow action
+        # Determine search strategy based on flow action
         if flow_action == "retrieve_career_map":
+            logger.info("Using career map search strategy")
             search_query = "career map domains job grades vertical tracks horizontal levels psf-aai"
-            search_limit = limit * 2
-        elif flow_action == "role_information" and "role" in flow_context:
-            role = flow_context.get("role")
-            search_query = f"{role} role description responsibilities career path"
-            search_limit = limit * 2
-        elif flow_action == "generate_pathway" and "role" in flow_context:
-            role = flow_context.get("role")
-            search_query = f"{role} career progression learning pathway skills development"
-            search_limit = limit * 2
-        elif flow_action == "retrieve_knowledge" and "sections" in flow_context:
-            sections = flow_context.get("sections", [])
-            section_str = " ".join(sections)
-            search_query = f"{query} {section_str}"
-            search_limit = limit
-        else:
-            # Use the standard intent-based search query builder
-            search_query, search_limit = self._build_search_query(intent, query, extracted_level, limit, context)
-
-        try:
-            # Run blocking vector search in a worker thread
-            results = await asyncio.to_thread(search_similar_content, search_query, int(search_limit))
+            results = await search_similar_content_async(search_query, entity_type="career_map", limit=limit)
+        
+        elif flow_action == "role_skills" and "role" in flow_context:
+            logger.info(f"Looking up skills for role: {flow_context['role']}")
+            # First find the role
+            role_results = await search_similar_content_async(
+                flow_context["role"], 
+                entity_type="job_role", 
+                limit=1
+            )
             
-            # If we don't get any results, try using the async version which might handle Django ORM better
-            if not results or (isinstance(results, dict) and "error" in results):
-                logger.info("Trying async search method as fallback")
-                from ..utils.query_vectors import search_similar_content_async
-                results = await search_similar_content_async(search_query, int(search_limit))
-        except Exception as exc:
-            logger.error("Search error: %s", exc)
-            return self._fail("exception", f"Error accessing knowledge base: {exc}")
+            if role_results and len(role_results) > 0:
+                role_id = role_results[0].get("metadata", {}).get("id")
+                if role_id:
+                    # Get skills required for this role
+                    skill_results = await get_related_content_by_id(role_id, relation_type="skills")
+                    # Combine role info with skills
+                    results = role_results + skill_results
+                else:
+                    results = role_results
+            else:
+                # If role not found by exact match, try broader search
+                results = await comprehensive_search(
+                    f"{flow_context['role']} skills requirements", 
+                    limit=limit
+                )
+        
+        elif flow_action == "list_available_roles":
+            logger.info("Listing available roles")
+            results = await search_similar_content_async(
+                "all roles job positions psf-aai", 
+                entity_type="job_role",
+                limit=10
+            )
+            
+        elif flow_action == "generate_pathway" and "role" in flow_context:
+            logger.info(f"Generating learning pathway for role: {flow_context['role']}")
+            # First find the role
+            role_results = await search_similar_content_async(
+                flow_context["role"], 
+                entity_type="job_role", 
+                limit=1
+            )
+            
+            if role_results and len(role_results) > 0:
+                role_id = role_results[0].get("metadata", {}).get("id")
+                if role_id:
+                    # Get skills required for this role
+                    skill_results = await get_related_content_by_id(role_id, relation_type="skills")
+                    # Get career progression information
+                    career_results = await get_career_progression(role_id)
+                    # Combine all information
+                    results = role_results + skill_results + career_results
+                else:
+                    results = role_results
+            else:
+                # If role not found by exact match, try broader search
+                results = await comprehensive_search(
+                    f"{flow_context['role']} career pathway progression", 
+                    limit=limit
+                )
+                
+        elif flow_action == "course_search" and "topic" in flow_context:
+            logger.info(f"Searching for courses related to: {flow_context['topic']}")
+            # For course search, we primarily want skill information
+            skill_query = flow_context["topic"]
+            
+            # First try to find as a skill
+            skill_results = await search_similar_content_async(
+                skill_query, 
+                section="functional_skills",
+                limit=3
+            )
+            
+            # If no functional skills, try enabling skills
+            if not skill_results:
+                skill_results = await search_similar_content_async(
+                    skill_query, 
+                    section="enabling_skills",
+                    limit=3
+                )
+                
+            # If no specific skills found, do a general search
+            if not skill_results:
+                results = await comprehensive_search(
+                    f"{skill_query} skill learning resources courses", 
+                    limit=limit
+                )
+            else:
+                results = skill_results
+                
+        # Default flow or intent-based search
+        elif intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
+            # Check if we have specific entities to search for
+            if extracted_role:
+                logger.info(f"Knowledge query about role: {extracted_role}")
+                results = await self._build_role_response(
+                    extracted_role, 
+                    extracted_level, 
+                    limit
+                )
+            elif extracted_skill:
+                logger.info(f"Knowledge query about skill: {extracted_skill}")
+                results = await self._build_skill_response(
+                    extracted_skill, 
+                    extracted_level, 
+                    limit
+                )
+            else:
+                # General knowledge query
+                logger.info(f"General knowledge query: {query}")
+                results = await comprehensive_search(query, limit=limit)
+                
+        elif intent == QueryIntent.LEARNING_PATHWAY:
+            if extracted_role:
+                logger.info(f"Learning pathway for role: {extracted_role}")
+                results = await self._build_learning_pathway_response(
+                    extracted_role, 
+                    limit
+                )
+            else:
+                logger.info(f"General learning pathway query: {query}")
+                results = await comprehensive_search(
+                    f"{query} career path progression learning pathway", 
+                    limit=limit
+                )
+                
+        elif intent == QueryIntent.COURSE_SEARCH:
+            logger.info(f"Course search query: {query}")
+            # For course search, focus on skills
+            if extracted_skill:
+                results = await search_similar_content_async(
+                    f"{extracted_skill} skill competency learning", 
+                    limit=limit
+                )
+            else:
+                results = await comprehensive_search(
+                    f"{query} skill learning resources courses", 
+                    limit=limit
+                )
+        
+        else:
+            # Fallback to general search
+            logger.info(f"Fallback to general search: {query}")
+            results = await comprehensive_search(query, limit=limit)
 
         if isinstance(results, dict) and "error" in results:
             return self._fail("search_error", f"Error searching knowledge base: {results['error']}")
+            
         if not results:
+            # Try fallback content
+            fallback_results = create_fallback_content(query)
+            if fallback_results:
+                logger.info("Using fallback content for query")
+                return {
+                    "found": True,
+                    "items": fallback_results,
+                    "metadata": {
+                        "query_intent": getattr(intent, "value", intent),
+                        "result_count": len(fallback_results),
+                        "result_types": ["fallback"],
+                        "fallback": True,
+                        "search_query": query
+                    },
+                    "count": len(fallback_results),
+                }
             return self._fail("no_results", "No information found for this query.")
 
-        formatted, types = self._filter_results(intent, extracted_level, results)
-        if not formatted:
+        filtered, types = self._filter_results(intent, extracted_level, results)
+        if not filtered:
             return self._fail("low_relevance", "Information found but not relevant enough.")
 
         # Add flow-specific metadata to the response
         return {
             "found": True,
-            "items": formatted[:limit],
+            "items": filtered[:limit],
             "metadata": {
                 "query_intent": getattr(intent, "value", intent),
                 "extracted_level": extracted_level,
-                "result_count": len(formatted),
+                "extracted_role": extracted_role, 
+                "extracted_skill": extracted_skill,
+                "result_count": len(filtered),
                 "result_types": list(types),
-                "flow_action": flow_action,
-                "search_query": search_query
+                "flow_action": flow_action
             },
-            "count": len(formatted[:limit]),
+            "count": len(filtered[:limit]),
         }
 
-    def _build_search_query(self, intent, query, lvl, limit, context=None):
-        search_query = query
+    async def _build_role_response(self, role_name: str, level: str, limit: int) -> List[Dict]:
+        """Build a comprehensive response about a specific role."""
+        # First search for the role
+        role_results = await search_similar_content_async(
+            role_name, 
+            entity_type="job_role",
+            limit=1
+        )
         
-        # Handle different intent types with specific search optimizations
-        if intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
-            # Extract entities to help focus the search
-            extracted_entities = context.get("extracted_entities", {}) if context else {}
-            role = extracted_entities.get("extracted_role")
-            level = extracted_entities.get("extracted_level") or lvl
+        if not role_results:
+            return await comprehensive_search(f"{role_name} role job position", limit=limit)
             
-            # Detect sub-intent from query keywords
-            query_lower = query.lower()
+        role_id = role_results[0].get("metadata", {}).get("id")
+        if not role_id:
+            return role_results
             
-            # Check for role-related queries
-            if any(term in query_lower for term in ["career map", "career path", "job progression", 
-                                            "domains", "vertical tracks", "horizontal levels",
-                                            "job grades", "career domains"]):
-                search_query = f"{query} career map domain job grades progression psf-aai framework"
-                limit *= 2
+        # Get skills required for this role
+        skill_results = await get_related_content_by_id(
+            role_id, 
+            relation_type="skills",
+            limit=limit
+        )
+        
+        # Get career progression information
+        career_results = await get_career_progression(role_id)
+        
+        # Combine all results with separators
+        combined_results = role_results.copy()
+        
+        if skill_results:
+            # Add a separator
+            combined_results.append({
+                "text": "--- Skills Required ---",
+                "metadata": {"type": "separator"},
+                "is_separator": True
+            })
+            combined_results.extend(skill_results)
+        
+        if career_results:
+            # Add a separator
+            combined_results.append({
+                "text": "--- Career Path ---",
+                "metadata": {"type": "separator"},
+                "is_separator": True
+            })
+            combined_results.extend(career_results)
             
-            # Rest of conditions remain the same
-            elif role or any(kw in query_lower for kw in ["role", "job", "position", "responsibilities"]):
-                if role:
-                    search_query = f"{role} role description responsibilities tasks requirements"
-                else:
-                    search_query = f"{query} role description responsibilities tasks"
-                limit *= 1.5
+        return combined_results
+
+    async def _build_skill_response(self, skill_name: str, level: str, limit: int) -> List[Dict]:
+        """Build a comprehensive response about a specific skill."""
+        # First try functional skills
+        skill_results = await search_similar_content_async(
+            skill_name,
+            section="functional_skills",
+            limit=1
+        )
+        
+        # If not found, try enabling skills
+        if not skill_results:
+            skill_results = await search_similar_content_async(
+                skill_name,
+                section="enabling_skills",
+                limit=1
+            )
             
-            # Check for skill-level specific queries
-            elif level and any(kw in query_lower for kw in ["level", "proficiency", "competency"]):
-                search_query = f"{query} level {level} proficiency competency"
-                limit *= 1.5
+        # If still not found, do a general search
+        if not skill_results:
+            return await comprehensive_search(f"{skill_name} skill competency", limit=limit)
             
-            # Check for skill progression queries
-            elif any(kw in query_lower for kw in ["progression", "advance", "improve", "develop"]):
-                search_query = f"{query} progression levels path development improvement"
-                limit *= 1.5
+        skill_id = skill_results[0].get("metadata", {}).get("id")
+        if not skill_id:
+            return skill_results
             
-            # General knowledge queries
+        # If a level was specified, get that specific level
+        if level:
+            parent_id = skill_results[0].get("metadata", {}).get("parent_skill_id", skill_id)
+            level_results = await get_skill_levels(parent_id)
+            
+            # Filter for the specific level
+            matching_levels = [l for l in level_results if 
+                              str(l.get("metadata", {}).get("level")) == str(level)]
+                            
+            if matching_levels:
+                combined_results = skill_results + matching_levels
             else:
-                search_query = f"{query} psf-aai framework knowledge description definition"
-                    
-        elif intent == QueryIntent.LEARNING_PATHWAY:
-            # Extract role if available
-            extracted_entities = context.get("extracted_entities", {}) if context else {}
-            role = extracted_entities.get("extracted_role")
-            
-            if role:
-                search_query = f"{role} career progression learning pathway skills requirements"
-                limit *= 2
-            else:
-                search_query = f"{query} career pathway progression job roles"
-                limit *= 1.5
-                    
-        elif intent == QueryIntent.COURSE_SEARCH:
-            # For course searches, focus on skills and learning
-            search_query = f"{query} skill development learning training education"
-            limit *= 1.2
-            
-        # Default case - just use the query as is with a small context hint
+                combined_results = skill_results + level_results
         else:
-            search_query = f"{query} psf-aai information"
+            # Get all levels
+            parent_id = skill_results[0].get("metadata", {}).get("parent_skill_id", skill_id)
+            level_results = await get_skill_levels(parent_id)
             
-        return search_query, limit
+            # Get roles that require this skill
+            role_results = await get_related_content_by_id(
+                skill_id, 
+                relation_type="roles",
+                limit=3
+            )
+            
+            # Combine all results with separators
+            combined_results = skill_results.copy()
+            
+            if level_results:
+                # Add a separator
+                combined_results.append({
+                    "text": "--- Proficiency Levels ---",
+                    "metadata": {"type": "separator"},
+                    "is_separator": True
+                })
+                combined_results.extend(level_results)
+            
+            if role_results:
+                # Add a separator
+                combined_results.append({
+                    "text": "--- Roles Requiring This Skill ---",
+                    "metadata": {"type": "separator"},
+                    "is_separator": True
+                })
+                combined_results.extend(role_results)
+                
+        return combined_results
+
+    async def _build_learning_pathway_response(self, role_name: str, limit: int) -> List[Dict]:
+        """Build a comprehensive learning pathway response for a role."""
+        # Similar to _build_role_response but with an emphasis on learning pathway
+        role_results = await search_similar_content_async(
+            role_name, 
+            entity_type="job_role",
+            limit=1
+        )
+        
+        if not role_results:
+            return await comprehensive_search(f"{role_name} career path learning progression", limit=limit)
+            
+        # Get the role ID
+        role_id = role_results[0].get("metadata", {}).get("id")
+        if not role_id:
+            return role_results
+            
+        # Get skills required for this role (with more emphasis on details)
+        skill_results = await get_related_content_by_id(
+            role_id, 
+            relation_type="skills",
+            limit=limit
+        )
+        
+        # For each skill, get its levels too
+        enhanced_skill_results = []
+        if skill_results:
+            for skill_result in skill_results[:3]:  # Limit to top 3 skills to avoid too much info
+                skill_id = skill_result.get("metadata", {}).get("id")
+                if skill_id:
+                    # Get levels for this skill
+                    level_results = await get_skill_levels(skill_id, limit=3)
+                    if level_results:
+                        enhanced_skill_results.append(skill_result)
+                        enhanced_skill_results.append({
+                            "text": f"--- {skill_result.get('metadata', {}).get('title', 'Skill')} Levels ---",
+                            "metadata": {"type": "separator"},
+                            "is_separator": True
+                        })
+                        enhanced_skill_results.extend(level_results)
+        
+        # Get career progression information
+        career_results = await get_career_progression(role_id)
+        
+        # Combine all results with separators
+        combined_results = role_results.copy()
+        
+        if enhanced_skill_results:
+            # Add a separator
+            combined_results.append({
+                "text": "--- Skills Required (with Proficiency Levels) ---",
+                "metadata": {"type": "separator"},
+                "is_separator": True
+            })
+            combined_results.extend(enhanced_skill_results)
+        elif skill_results:
+            # Fallback if enhanced skill results couldn't be generated
+            combined_results.append({
+                "text": "--- Skills Required ---",
+                "metadata": {"type": "separator"},
+                "is_separator": True
+            })
+            combined_results.extend(skill_results)
+        
+        if career_results:
+            # Add a separator
+            combined_results.append({
+                "text": "--- Career Progression Path ---",
+                "metadata": {"type": "separator"},
+                "is_separator": True
+            })
+            combined_results.extend(career_results)
+            
+        return combined_results
     
     def _filter_results(self, intent, lvl, raw):
-        filtered: List[Dict[str, str]] = []
-        types: Set[str] = set()
+        filtered = []
+        types = set()
 
-        # Determine sub-intent for KNOWLEDGE_BASE_QUERY to prioritize results
-        sub_intent = None
-        if intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
-            # Analyze first few results to guess sub-intent
-            top_types = {}
-            for item in raw[:3]:
-                item_type = item.get("metadata", {}).get("type", "")
-                if item_type:
-                    top_types[item_type] = top_types.get(item_type, 0) + 1
-            
-            # Use most common type as sub-intent
-            if top_types:
-                sub_intent = max(top_types, key=top_types.get)
-                logger.debug(f"Detected sub-intent: {sub_intent}")
+        # Check if results contain separator markers
+        has_separators = any(item.get("is_separator", False) for item in raw)
 
         for item in raw:
+            # If this is a separator marker, keep it as is
+            if item.get("is_separator", False):
+                filtered.append(item)
+                continue
+                
             meta = item.get("metadata", {})
             item_type = meta.get("type", "")
+            entity_type = meta.get("entity_type", "")
+            relation_type = item.get("relation_type", "")
             distance = item.get("distance", 1.0)
             lvl_match = meta.get("level")
 
             if item_type:
                 types.add(item_type)
+            if entity_type:
+                types.add(entity_type)
+            if relation_type:
+                types.add(relation_type)
                 
-            # Adjust threshold based on intent
-            threshold = 0.75
-            if intent == QueryIntent.LEARNING_PATHWAY:
-                # More lenient for learning pathways as we need broader context
-                threshold = 0.8
-            elif intent == QueryIntent.KNOWLEDGE_BASE_QUERY and sub_intent:
-                # More lenient if we have a specific sub-intent detected
-                threshold = 0.78
-            
-            if distance >= threshold:
+            # If the item came from relationship traversal, include it without distance filtering
+            if relation_type or has_separators:
+                result = {
+                    "title": meta.get("title", "Related Information"),
+                    "type": item_type or entity_type or relation_type,
+                    "text": item.get("text", ""),
+                    "content": item.get("text", ""),
+                    "metadata": meta,
+                }
+                filtered.append(result)
+                continue
+                
+            # Filter based on similarity threshold
+            if distance >= 0.78:  # Higher threshold = more relevant
                 continue
                 
             result = {
                 "title": meta.get("title", "Information"),
-                "type": item_type,
+                "type": item_type or entity_type,
                 "text": item.get("text", ""),
                 "content": item.get("text", ""),
                 "relevance": f"{(1 - distance) * 100:.1f}%",
                 "metadata": meta,
             }
             
-            # Prioritization logic based on detected intent and sub-intent
-            if intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
-                if lvl is not None and str(lvl_match) == str(lvl):
-                    # Prioritize exact level matches
-                    filtered.insert(0, result)
-                elif sub_intent and item_type == sub_intent:
-                    # Prioritize matches for detected sub-intent
-                    filtered.insert(0, result)
-                else:
-                    filtered.append(result)
-            elif intent == QueryIntent.LEARNING_PATHWAY and item_type == "role":
-                # Prioritize role information for career queries
+            # Prioritize level matches if level was specified
+            if lvl is not None and str(lvl_match) == str(lvl):
                 filtered.insert(0, result)
             else:
                 filtered.append(result)

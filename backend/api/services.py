@@ -137,14 +137,42 @@ class GuideonChatService:
             if not chat_id:
                 return []
                 
-            # Use simple history approach instead of semantic/hybrid
+            # First, check for previous messages
             chat_history = await ChatHistoryManager.get_simple_history(chat_id=chat_id)
-            logger.info(f"Retrieved {len(chat_history)} messages using simple history approach")
+            
+            # Log retrieved message content for debugging
+            for msg in chat_history:
+                logger.debug(f"Retrieved message: {msg.get('is_user', '?')} | {msg.get('text', '')[:50]}...")
+            
+            # Filter out any empty messages
+            chat_history = [msg for msg in chat_history if msg.get('text')]
+            
+            logger.info(f"Retrieved {len(chat_history)} non-empty messages using simple history approach")
+            
+            # If we still have empty history but user_query contains a reference to "that"
+            if len(chat_history) == 0 and user_query and any(word in user_query.lower() for word in ["that", "it", "this"]):
+                # Try to find a few more messages from further back
+                logger.info("Reference detected but no recent history - expanding search")
+                
+                # Get the 3 most recent messages regardless of age
+                async for message in Message.objects.filter(chat_id=chat_id).order_by('-timestamp')[:3]:
+                    if message.content:  # Only add non-empty messages
+                        chat_history.append({
+                            "is_user": message.role == 'user',
+                            "text": message.content,
+                            "timestamp": message.timestamp.isoformat(),
+                            "previous_topic": ChatHistoryManager._extract_topic_from_text(message.content) 
+                                             if message.role == 'assistant' else None
+                        })
+                
+                logger.info(f"Expanded search found {len(chat_history)} messages")
+            
             return chat_history
             
         except Exception as e:
             logger.error(f"Error retrieving chat history: {e}")
             return []           
+
     def _extract_entities(self, text):
         entities = []
         if "level" in text.lower():

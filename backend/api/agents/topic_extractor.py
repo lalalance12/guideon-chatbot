@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional
 import logging
-import asyncio
+import asyncio, re
 
 from agno.agent import Agent
 from agno.models.ollama import Ollama
@@ -31,71 +31,99 @@ class TopicExtractor:
             self.agent = None
             logger.warning("Will fall back to rule-based topic extraction")
 
-    async def extract_topic(self, query: str) -> str:
-        """
-        Extract the specific learning topic from a user query.
+    async def extract_topic(self, query: str, context=None) -> str:
+        """Extract the main topic from a search query with context handling."""
+        # Check for context references ("that", "it", etc.)
+        query_lower = query.lower()
+        has_context_reference = any(word in query_lower for word in ["that", "it", "this", "those", "them"])
         
-        Args:
-            query: The raw user query (e.g., "I want to learn about python programming")
+        # If we have context references and context is provided, try to find previous topic
+        previous_topic = None
+        if has_context_reference and context and "chat_history" in context:
+            logger.debug("Detected context reference. Searching chat history for previous topic.")
+            chat_history = context.get("chat_history", [])
             
-        Returns:
-            The extracted topic (e.g., "python programming") or an empty string if too generic or unextractable.
-        """
-        llm_extracted_topic = "" # Store LLM's direct output
-
-        if self.agent:
-            prompt = self._create_extraction_prompt(query)
-            try:
-                if hasattr(self.agent, "arun"):
-                    run_response = await self.agent.arun(prompt)
-                else:
-                    run_response = await asyncio.to_thread(self.agent.run, prompt)
+            # Look for previous conversation about skills or topics
+            for i, msg in enumerate(chat_history):
+                # Skip the current query
+                if i == 0 and msg.get("is_user", False):
+                    continue
+                    
+                msg_text = msg.get("text", "")
                 
-                response_text = getattr(run_response, "content", str(run_response))
+                # Skip empty messages
+                if not msg_text:
+                    continue
+                    
+                logger.debug(f"Examining message: {msg_text[:50]}...")
                 
-                # Clean up the response
-                llm_extracted_topic = response_text.strip()
-                if ":" in llm_extracted_topic:
-                    llm_extracted_topic = llm_extracted_topic.split(":", 1)[1].strip()
-                if "\n" in llm_extracted_topic:
-                    llm_extracted_topic = llm_extracted_topic.split("\n", 1)[0].strip()
-                llm_extracted_topic = llm_extracted_topic.strip('"\'')
+                # Check for skill names in assistant messages
+                if not msg.get("is_user", True):
+                    # Look for mentions of skills in the assistant's messages
+                    skill_mentions = re.findall(r'(data\s+science|machine\s+learning|ai|programming|python|statistics|visualization|analytics|communication|problem\s+solving)', msg_text.lower())
+                    if skill_mentions:
+                        previous_topic = skill_mentions[0]
+                        logger.info(f"Found previous topic in assistant message: {previous_topic}")
+                        break
+                    
+                    # Look for "about X" patterns in assistant response
+                    about_match = re.search(r'about\s+([a-z\s]+skill|[a-z\s]+course|[a-z\s]+programming|[a-z\s]+analytics)', msg_text.lower())
+                    if about_match:
+                        previous_topic = about_match.group(1)
+                        logger.info(f"Found previous topic in assistant message: {previous_topic}")
+                        break
                 
-                logger.debug(f"LLM topic extraction candidate: '{llm_extracted_topic}' from query: '{query}'")
-
-                # If LLM explicitly returns empty, it likely means the query was generic as per prompt instructions.
-                if not llm_extracted_topic:
-                    logger.info(f"LLM returned empty string for query '{query}', indicating a generic request. Returning empty for clarification.")
-                    return "" # Trust LLM's empty output for generic queries
-
-            except Exception as e:
-                logger.exception(f"Error during LLM topic extraction: {e}")
-                # llm_extracted_topic will remain empty, allowing fallback
+                # Look for skill mention in user messages
+                skill_mentions = re.findall(r'(data\s+science|machine\s+learning|ai|programming|python|statistics|visualization|analytics|communication|problem\s+solving)', msg_text.lower())
+                if skill_mentions:
+                    previous_topic = skill_mentions[0]
+                    logger.info(f"Found previous topic in user message: {previous_topic}")
+                    break
         
-        # If LLM extraction resulted in a topic, use it after validation
-        if llm_extracted_topic:
-            topic_candidate = llm_extracted_topic
-        else: # Fallback to rule-based if LLM failed or wasn't used
-            topic_candidate = self._rule_based_extraction(query)
-            logger.debug(f"Rule-based topic extraction candidate: '{topic_candidate}'")
-
-        # Final validation for the chosen candidate (either from LLM or rule-based)
-        cleaned_topic_candidate = topic_candidate.lower().strip()
+        # If found previous topic, return it
+        if previous_topic:
+            logger.info(f"Using previously discussed topic: {previous_topic}")
+            return previous_topic.strip()
         
-        # More robust check for generic queries, especially if they are very similar to the original query
-        # when the original query itself was generic.
-        generic_phrases = ["course", "courses", "some courses", "any courses", "give me courses", "find courses"]
-        is_generic_phrase = any(phrase == cleaned_topic_candidate for phrase in generic_phrases)
-        
-        # Check if the cleaned topic is one of the generic phrases or too short (e.g., less than 3 chars like "AI", "SQL" are okay)
-        if is_generic_phrase or \
-           cleaned_topic_candidate == "" or \
-           (len(cleaned_topic_candidate) > 0 and len(cleaned_topic_candidate) < 3 and cleaned_topic_candidate not in ['ai', 'r', 'go', 'c#', 'c++']): # Allow specific short topics
-            logger.info(f"Final topic candidate '{topic_candidate}' (cleaned: '{cleaned_topic_candidate}') is generic or too short. Returning empty string for clarification.")
+        # Proceed with standard LLM topic extraction
+        try:
+            # Set up system prompt
+            system_prompt = """You are a topic extraction tool. Your task is to identify the main subject
+            or skill the user is interested in learning about. Return ONLY the topic name, nothing else.
+            If the query doesn't specify a clear topic, return an empty string."""
+            
+            # Create user prompt
+            user_prompt = f"""Extract the main topic from this course search query: "{query}"
+            
+            Return ONLY the topic name (1-5 words max). If no clear topic is specified, return an empty string.
+            """
+            
+            # Initialize agent if needed
+            if not self.agent:
+                self.agent = await self._initialize_agent(system_prompt)
+                
+            if not self.agent:
+                logger.error("Failed to initialize LLM for topic extraction")
+                return ""
+            
+            # Get topic from LLM
+            response = await self.agent.arun(user_prompt)
+            
+            # Extract and clean response
+            extracted_topic = response.content if hasattr(response, 'content') else str(response)
+            extracted_topic = extracted_topic.strip().strip('"\'').strip()
+            
+            logger.debug(f"LLM topic extraction candidate: '{extracted_topic}' from query: '{query}'")
+            
+            # If empty or invalid, return empty string
+            if not extracted_topic or extracted_topic.lower() in ["none", "unclear", "not specified", "n/a"]:
+                logger.info(f"LLM returned empty string for query '{query}', indicating a generic request. Returning empty for clarification.")
+                return ""
+            
+            return extracted_topic
+        except Exception as e:
+            logger.error(f"Error extracting topic: {e}")
             return ""
-                
-        logger.info(f"Successfully extracted topic: '{topic_candidate}' from query: '{query}'")
-        return topic_candidate.strip()
 
     def _create_extraction_prompt(self, query: str) -> str:
         """Create a prompt for topic extraction."""

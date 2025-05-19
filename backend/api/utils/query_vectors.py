@@ -6,12 +6,14 @@ import json
 import logging
 import time
 from asgiref.sync import sync_to_async
+from typing import List, Dict, Any, Optional
 
 # Setup logger
 logger = logging.getLogger(__name__)
 
 from api.models import KnowledgeChunk, KnowledgeSource
 from pgvector.django import CosineDistance
+from django.db.models import Q
 
 # --- Configuration ---
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
@@ -53,7 +55,7 @@ def generate_embedding(text):
         logger.error(f"An unexpected error occurred during query embedding generation: {e}")
         return None
 
-def search_similar_content(query_text, limit=5, section=None):
+def search_similar_content(query_text, limit=5, section=None, entity_type=None):
     """
     Searches for similar content in the database using vector similarity.
 
@@ -61,10 +63,13 @@ def search_similar_content(query_text, limit=5, section=None):
         query_text: The text to search for
         limit: Maximum number of results to return
         section: Optional section filter (e.g., "functional_skills", "enabling_skills")
+        entity_type: Optional entity type filter (e.g., "job_role", "functional_skill")
     """
     logger.info(f"Searching for content similar to: '{query_text}'")
     if section:
         logger.info(f"Filtering by section: {section}")
+    if entity_type:
+        logger.info(f"Filtering by entity type: {entity_type}")
         
     start_time = time.time()
     query_embedding = generate_embedding(query_text)
@@ -80,17 +85,20 @@ def search_similar_content(query_text, limit=5, section=None):
         # Start with a broader search to ensure we get enough results
         initial_limit = min(limit * 3, 25)  # Get more results initially for filtering
 
-        # Filter by section if provided
+        # Build query with filters
+        query = KnowledgeChunk.objects.all()
+        
+        # Apply filters if provided
         if section:
-            results = KnowledgeChunk.objects.filter(
-                metadata__psf_section=section
-            ).annotate(
-                distance=CosineDistance('embedding', query_embedding_vector)
-            ).order_by('distance')[:initial_limit]
-        else:
-            results = KnowledgeChunk.objects.annotate(
-                distance=CosineDistance('embedding', query_embedding_vector)
-            ).order_by('distance')[:initial_limit]
+            query = query.filter(metadata__psf_section=section)
+        
+        if entity_type:
+            query = query.filter(metadata__entity_type=entity_type)
+        
+        # Execute the vector search
+        results = query.annotate(
+            distance=CosineDistance('embedding', query_embedding_vector)
+        ).order_by('distance')[:initial_limit]
 
         formatted_results = []
         for result in results:
@@ -109,8 +117,8 @@ def search_similar_content(query_text, limit=5, section=None):
         logger.error(f"Error during the search process: {e}")
         return {"error": f"An error occurred during search: {e}"}
 
-# New async version of the search function
-async def search_similar_content_async(query_text, limit=5, section=None):
+# Async version of the search function
+async def search_similar_content_async(query_text, limit=5, section=None, entity_type=None):
     """
     Async version of search_similar_content that properly handles async context.
 
@@ -118,10 +126,13 @@ async def search_similar_content_async(query_text, limit=5, section=None):
         query_text: The text to search for
         limit: Maximum number of results to return
         section: Optional section filter (e.g., "functional_skills", "enabling_skills")
+        entity_type: Optional entity type filter (e.g., "job_role", "functional_skill")
     """
     logger.info(f"Async searching for content similar to: '{query_text}'")
     if section:
         logger.info(f"Filtering by section: {section}")
+    if entity_type:
+        logger.info(f"Filtering by entity type: {entity_type}")
         
     start_time = time.time()
     query_embedding = generate_embedding(query_text)
@@ -139,16 +150,19 @@ async def search_similar_content_async(query_text, limit=5, section=None):
 
         # Define the query function to be wrapped with sync_to_async
         def perform_vector_search():
+            query = KnowledgeChunk.objects.all()
+            
+            # Apply filters if provided
             if section:
-                return list(KnowledgeChunk.objects.filter(
-                    metadata__psf_section=section
-                ).annotate(
-                    distance=CosineDistance('embedding', query_embedding_vector)
-                ).order_by('distance')[:initial_limit])
-            else:
-                return list(KnowledgeChunk.objects.annotate(
-                    distance=CosineDistance('embedding', query_embedding_vector)
-                ).order_by('distance')[:initial_limit])
+                query = query.filter(metadata__psf_section=section)
+            
+            if entity_type:
+                query = query.filter(metadata__entity_type=entity_type)
+            
+            # Execute the vector search
+            return list(query.annotate(
+                distance=CosineDistance('embedding', query_embedding_vector)
+            ).order_by('distance')[:initial_limit])
 
         # Execute the query asynchronously
         results = await sync_to_async(perform_vector_search)()
@@ -170,9 +184,211 @@ async def search_similar_content_async(query_text, limit=5, section=None):
         logger.error(f"Error during the search process: {e}")
         return {"error": f"An error occurred during search: {e}"}
 
+async def get_related_content_by_id(content_id, relation_type='all', limit=5):
+    """
+    Retrieves content related to a specific item by ID through explicit relationships.
+    
+    Args:
+        content_id: The ID of the content item to find relations for
+        relation_type: Type of relationship to follow ('skills', 'roles', 'all')
+        limit: Maximum number of results to return
+    """
+    try:
+        # Define the query function to be wrapped with sync_to_async
+        def get_source_item():
+            return list(KnowledgeChunk.objects.filter(
+                metadata__id=content_id
+            ))
+            
+        # Execute query asynchronously
+        source_item = await sync_to_async(get_source_item)()
+        
+        if not source_item:
+            logger.warning(f"No item found with ID: {content_id}")
+            return []
+            
+        source_metadata = source_item[0].metadata
+        source_type = source_metadata.get('type', '')
+        source_entity_type = source_metadata.get('entity_type', '')
+        
+        related_ids = []
+        
+        # Extract related IDs based on relationship type
+        if (source_type == 'whole_role' or source_entity_type == 'job_role') and relation_type in ['skills', 'all']:
+            # Get IDs of skills required for this role
+            for skill in source_metadata.get('functional_skills', []):
+                related_ids.append(skill.get('id'))
+            for skill in source_metadata.get('enabling_skills', []):
+                related_ids.append(skill.get('id'))
+                
+        elif (source_type in ['fs_complete_overview', 'esc_complete_overview'] or 
+              source_entity_type in ['functional_skill', 'enabling_skill']) and relation_type in ['roles', 'all']:
+            # Get IDs of roles that require this skill
+            for role in source_metadata.get('required_by_roles', []):
+                related_ids.append(role.get('id'))
+        
+        # Filter out None values
+        related_ids = [rid for rid in related_ids if rid]
+        
+        if not related_ids:
+            logger.info(f"No related items found for ID: {content_id}")
+            return []
+            
+        # Get the related items
+        def get_related_items():
+            return list(KnowledgeChunk.objects.filter(
+                metadata__id__in=related_ids
+            ).values('text', 'metadata')[:limit])
+            
+        related_items = await sync_to_async(get_related_items)()
+        
+        # Format results
+        formatted_results = []
+        for item in related_items:
+            formatted_results.append({
+                "text": item['text'],
+                "metadata": item['metadata'],
+                "relation_type": "related_by_explicit_reference"
+            })
+            
+        return formatted_results
+            
+    except Exception as e:
+        logger.error(f"Error retrieving related content: {e}")
+        return []
+
+async def get_skill_levels(skill_id, limit=6):
+    """
+    Retrieves all proficiency levels for a given skill.
+    
+    Args:
+        skill_id: The ID of the skill to find levels for
+        limit: Maximum number of levels to return
+    """
+    try:
+        def get_levels():
+            return list(KnowledgeChunk.objects.filter(
+                Q(metadata__parent_skill_id=skill_id) &
+                (Q(metadata__type='fs_complete_level') | Q(metadata__type='esc_complete_level'))
+            ).order_by('metadata__level').values('text', 'metadata')[:limit])
+            
+        level_items = await sync_to_async(get_levels)()
+        
+        if not level_items:
+            logger.info(f"No skill levels found for skill ID: {skill_id}")
+            return []
+            
+        # Format results
+        formatted_results = []
+        for item in level_items:
+            formatted_results.append({
+                "text": item['text'],
+                "metadata": item['metadata'],
+                "relation_type": "skill_level"
+            })
+            
+        return formatted_results
+            
+    except Exception as e:
+        logger.error(f"Error retrieving skill levels: {e}")
+        return []
+
+async def get_career_progression(role_id):
+    """
+    Retrieves career progression paths for a given role.
+    
+    Args:
+        role_id: The ID of the role to find career paths for
+    """
+    try:
+        # First find the role to get its details
+        def get_role():
+            return list(KnowledgeChunk.objects.filter(
+                metadata__id=role_id,
+                metadata__entity_type='job_role'
+            ).values('text', 'metadata'))
+            
+        role_items = await sync_to_async(get_role)()
+        
+        if not role_items:
+            logger.warning(f"No role found with ID: {role_id}")
+            return []
+            
+        role_title = role_items[0]['metadata'].get('title', '')
+        
+        # Then find career map domains that include this role
+        def get_domains():
+            return list(KnowledgeChunk.objects.filter(
+                metadata__type='career_map_domain',
+                metadata__roles__contains=[{"name": role_title}]  # This is a simplification, may need adjustment
+            ).values('text', 'metadata'))
+            
+        domain_items = await sync_to_async(get_domains)()
+        
+        if not domain_items:
+            logger.info(f"No career domains found for role: {role_title}")
+            return []
+            
+        # Format results
+        formatted_results = []
+        for item in domain_items:
+            formatted_results.append({
+                "text": item['text'],
+                "metadata": item['metadata'],
+                "relation_type": "career_path"
+            })
+            
+        return formatted_results
+            
+    except Exception as e:
+        logger.error(f"Error retrieving career progression: {e}")
+        return []
+
+async def comprehensive_search(query_text, include_related=True, limit=5):
+    """
+    Performs a comprehensive search that includes both vector similarity and relationship traversal.
+    
+    Args:
+        query_text: The text to search for
+        include_related: Whether to include related items through relationships
+        limit: Maximum number of initial results to return
+    """
+    try:
+        # First do a regular vector search
+        vector_results = await search_similar_content_async(query_text, limit)
+        
+        if not vector_results or not include_related:
+            return vector_results
+            
+        # Extract the first result's ID to find related content
+        if isinstance(vector_results, list) and len(vector_results) > 0:
+            primary_result = vector_results[0]
+            primary_id = primary_result.get('metadata', {}).get('id')
+            
+            if primary_id:
+                # Get related content based on first result's ID
+                related_results = await get_related_content_by_id(primary_id, limit=3)
+                
+                if related_results:
+                    # Add a separator to distinguish vector results from related content
+                    vector_results.append({
+                        "text": "--- Related Content ---",
+                        "metadata": {"type": "separator"},
+                        "is_separator": True
+                    })
+                    
+                    # Add related content
+                    vector_results.extend(related_results)
+        
+        return vector_results
+        
+    except Exception as e:
+        logger.error(f"Error during comprehensive search: {e}")
+        return []
+
 def create_fallback_content(query_text):
     """Provides generic fallback content if vector search fails or yields no results."""
-    logger.warning("Providing fallback content for query: {query_text}")
+    logger.warning(f"Providing fallback content for query: {query_text}")
     if any(term in query_text.lower() for term in ["ai", "machine learning", "artificial intelligence", "ml"]):
         return [
             {

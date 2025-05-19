@@ -23,6 +23,16 @@ class ResponseSynthesizerAgent(BaseAgent):
 You are Guideon, an AI assistant specializing in the Philippine Skills Framework for Analytics & AI (PSF-AAI).
 Your purpose is to help professionals navigate career paths in analytics and AI within the Philippine context.
 
+## Personality Traits
+- Professional but approachable, with a friendly, conversational tone like a helpful mentor
+- Concise and structured in responses, with a focus on clarity
+- Supportive of career growth with practical encouragement
+- Focuses on actionable advice tailored to the user's situation
+- Uses Filipino context where relevant to make examples more relatable
+- Patient and understanding when users are unclear about career paths
+- Shows active listening by referencing previous questions when appropriate
+- Balances honesty about skill requirements with encouragement
+
 ## Core Knowledge Areas
 - PSF-AAI framework, roles, and career tracks
 - Technical and functional skills in analytics and AI
@@ -37,17 +47,15 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
 - **Learning Pathway Generation**: Help users understand how to progress toward their target career role
 - **Course Recommendations**: Suggest relevant learning resources based on skills gaps
 
-## Personality Traits
-- Professional but approachable, you speak in a friendly, conversational tone, bubbly like Baymax.
-- Concise and structured in responses
-- Supportive and encouraging of career growth
-- Focuses on practical, actionable advice
-- Uses Filipino context where relevant
-
 ## Response Guidelines
-- Structure responses with markdown headings and bullet points; use compact, readable formatting
+- Structure responses with markdown headings and bullet points for easy reading
 - Use clear, simple language; avoid jargon unless necessary
-- Provide examples or analogies to clarify complex concepts
+- Provide relevant examples or analogies to clarify complex concepts
+- Acknowledge the user's questions directly before answering
+- When discussing challenges, pair them with practical next steps
+- End responses with a simple invitation to ask follow-up questions
+- For learning pathways, emphasize progress rather than gaps
+- Include brief transitional phrases between sections to improve flow
 
 ## Restrictions
 - Do not provide information outside the PSF-AAI framework unless specifically related
@@ -86,6 +94,22 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
         if not self.agent:
             logger.warning("No LLM available for response synthesis, using fallback")
             return self._fallback_response(query, context)
+
+        # Check for clarification needs first
+        agent_results = context.get("agent_responses", {})
+        
+        # Check each agent result for clarification needs
+        for agent_name, result in agent_results.items():
+            if result.get("needs_clarification") or (not result.get("found", True) and result.get("reason") == "clarification_needed"):
+                logger.info(f"Need for clarification detected from {agent_name}")
+                clarification_message = result.get("message", "I need more information to help you. Could you please clarify?")
+                
+                return {
+                    "response_text": clarification_message,
+                    "processing_time": time.time() - start,
+                    "format_used": "clarification_request",
+                    "flow_action": "request_clarification"
+                }
 
         # Get flow-specific response format if available
         flow_context = context.get("flow", {})
@@ -144,11 +168,40 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
                 
         agent_responses = context.get("agent_responses", {})
         knowledge_parts = []
-        for agent_name, response in agent_responses.items():
-            if agent_name == "knowledge_base" and response.get("found", False):
-                items = response.get("items", [])
-                for item in items:
-                    knowledge_parts.append(f"- {item.get('title', 'Information')}: {item.get('text', '')}")
+        
+        # Extract knowledge base results with improved handling for structured data
+        if "knowledge_base" in agent_responses and agent_responses["knowledge_base"].get("found", False):
+            items = agent_responses["knowledge_base"].get("items", [])
+            
+            # Check for section separators
+            current_section = None
+            for item in items:
+                # Handle separator items
+                if item.get("is_separator", False):
+                    current_section = item.get("text", "").replace("-", "").strip()
+                    knowledge_parts.append(f"\n**{current_section}:**")
+                    continue
+                
+                # Handle regular content items
+                title = item.get('title', 'Information')
+                content = item.get('text', '')
+                item_type = item.get('type', '')
+                relation_type = item.get('relation_type', '')
+                
+                # Format based on item type and relation
+                if relation_type == "related_by_explicit_reference":
+                    knowledge_parts.append(f"- Related {title}: {content}")
+                elif relation_type == "skill_level":
+                    knowledge_parts.append(f"- Skill Level Detail ({title}): {content}")
+                elif relation_type == "career_path":
+                    knowledge_parts.append(f"- Career Path Information ({title}): {content}")
+                elif item_type == "whole_role" or item_type == "fs_complete_overview" or item_type == "esc_complete_overview":
+                    # For complete entity overviews, use the full text
+                    knowledge_parts.append(f"- {title}: {content}")
+                else:
+                    # Standard format for other items
+                    knowledge_parts.append(f"- {title}: {content}")
+                    
         knowledge_text = "\n".join(knowledge_parts) if knowledge_parts else "No specific information found."
 
         prompt = f"""# Response Generation Task
@@ -168,6 +221,8 @@ Create a helpful, conversational response that addresses the user's query using 
 If it isn't related to the PSF-AAI and there isn't enough information to fully answer the query based on the knowledge base, acknowledge this and tell them that this is not your scope.
 Keep your response friendly, straightforward, CONCISE, and conversational because you are conversing with a real person.
 
+If the knowledge includes related items or connections between skills and roles, be sure to mention these relationships.
+
 End your response with a simple encouragement like: "Feel free to ask more questions about PSF-AAI roles, skills, or career pathways. You can also ask me to search for courses to help you learn!"
 
 ## Response:
@@ -178,7 +233,7 @@ End your response with a simple encouragement like: "Feel free to ask more quest
         """Build a prompt for structured educational responses."""
         chat_history = context.get("chat_history", [])
         history_text = ""
-            # Log the chat history for debugging
+        # Log the chat history for debugging
         logger.debug(f"Chat history: {chat_history}")
         if chat_history:
             history_text = "\n## Conversation History:\n"
@@ -193,15 +248,13 @@ End your response with a simple encouragement like: "Feel free to ask more quest
 
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_base", {})
+        kb_items = kb_response.get("items", [])
         sections = format_info.get("sections", ["Definition", "Description", "Examples"])
         sections_text = ", ".join(sections)
-        knowledge_parts = []
-        if kb_response.get("found", False):
-            items = kb_response.get("items", [])
-            for item in items:
-                knowledge_parts.append(f"- {item.get('title', 'Information')}: {item.get('text', '')}")
-        knowledge_text = "\n".join(knowledge_parts) if knowledge_parts else "No specific information found."
-
+        
+        # Check if there are section separators in the KB results
+        has_separators = any(item.get("is_separator", False) for item in kb_items)
+        
         prompt = f"""# Structured Educational Response Task
 
 ## User Query:
@@ -210,7 +263,31 @@ End your response with a simple encouragement like: "Feel free to ask more quest
 {history_text}
 
 ## Available Knowledge:
-{knowledge_text}
+"""
+        # If we have section separators, organize context by sections
+        if has_separators:
+            current_section = "General Information"
+            for item in kb_items:
+                if item.get("is_separator", False):
+                    # Update current section based on separator text
+                    current_section = item.get("text", "").replace("-", "").strip()
+                    prompt += f"\n### {current_section}:\n"
+                else:
+                    title = item.get('title', 'Information')
+                    content = item.get('text', '')
+                    if content:
+                        prompt += f"- {title}: {content}\n"
+        else:
+            # Standard approach for non-sectioned content
+            for item in kb_items:
+                if kb_response.get("found", False):
+                    title = item.get('title', 'Information')
+                    content = item.get('text', '')
+                    if content:
+                        prompt += f"- {title}: {content}\n"
+
+        # Instructions for output structure
+        prompt += f"""
 
 ## Instructions:
 Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
@@ -220,6 +297,8 @@ Present the information in a clear, organized manner that helps the user underst
 Include specific details from the knowledge base when available.
 Use markdown formatting for headers and bullet points.
 
+If the knowledge includes relationships between items (like skills required for roles or roles requiring certain skills), be sure to emphasize these connections in your response.
+
 End with a simple encouragement like: "Want to dive deeper into other PSF-AAI topics or find courses for these skills? Just let me know!"
 
 ## Response:
@@ -228,11 +307,9 @@ End with a simple encouragement like: "Want to dive deeper into other PSF-AAI to
 
     def _build_role_profile_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for role profile responses."""
-
-
         chat_history = context.get("chat_history", [])
         history_text = ""
-            # Log the chat history for debugging
+        # Log the chat history for debugging
         logger.debug(f"Chat history: {chat_history}")
         if chat_history:
             history_text = "\n## Conversation History:\n"
@@ -248,12 +325,61 @@ End with a simple encouragement like: "Want to dive deeper into other PSF-AAI to
         agent_responses = context.get("agent_responses", {})
         flow_context = context.get("flow", {})
         role = flow_context.get("role", "the role")
-        knowledge_parts = []
-        if "knowledge_base" in agent_responses and agent_responses["knowledge_base"].get("found", False):
-            items = agent_responses["knowledge_base"].get("items", [])
-            for item in items:
-                knowledge_parts.append(f"- {item.get('title', 'Information')}: {item.get('text', '')}")
-        knowledge_text = "\n".join(knowledge_parts) if knowledge_parts else f"No specific information found about {role}."
+        
+        # Extract knowledge items with improved handling for role information
+        kb_response = agent_responses.get("knowledge_base", {})
+        kb_items = kb_response.get("items", [])
+        
+        # Prepare sections for different information types
+        role_info = []
+        skill_info = []
+        career_info = []
+        
+        # Extract KB data organized by section
+        has_separators = any(item.get("is_separator", False) for item in kb_items)
+        
+        if has_separators:
+            current_section = "General Information"
+            for item in kb_items:
+                if item.get("is_separator", False):
+                    # Update section
+                    current_section = item.get("text", "").replace("-", "").strip()
+                else:
+                    title = item.get('title', 'Information')
+                    content = item.get('text', '')
+                    metadata = item.get('metadata', {})
+                    entity_type = metadata.get('entity_type', '')
+                    
+                    # Sort information into appropriate sections
+                    if "Skills" in current_section:
+                        skill_info.append(f"- {title}: {content}")
+                    elif "Career Path" in current_section:
+                        career_info.append(f"- {title}: {content}")
+                    elif entity_type == 'job_role' or "whole_role" in metadata.get('type', ''):
+                        role_info.append(f"- {title}: {content}")
+                    else:
+                        role_info.append(f"- {title}: {content}")
+        else:
+            # Standard approach for non-sectioned content
+            for item in kb_items:
+                if kb_response.get("found", False):
+                    title = item.get('title', 'Information')
+                    content = item.get('text', '')
+                    metadata = item.get('metadata', {})
+                    entity_type = metadata.get('entity_type', '')
+                    
+                    # Categorize based on entity type
+                    if entity_type == 'functional_skill' or entity_type == 'enabling_skill':
+                        skill_info.append(f"- {title}: {content}")
+                    elif "career" in entity_type.lower() or "domain" in entity_type.lower():
+                        career_info.append(f"- {title}: {content}")
+                    else:
+                        role_info.append(f"- {title}: {content}")
+        
+        # Format the collected information
+        role_info_text = "\n".join(role_info) if role_info else f"No specific information found about {role}."
+        skill_info_text = "\n".join(skill_info) if skill_info else "No specific skill requirements found."
+        career_info_text = "\n".join(career_info) if career_info else "No specific career progression information found."
 
         prompt = f"""# Role Profile Generation Task
 
@@ -265,8 +391,14 @@ End with a simple encouragement like: "Want to dive deeper into other PSF-AAI to
 ## Role Being Discussed:
 {role}
 
-## Available Knowledge:
-{knowledge_text}
+## Role Information:
+{role_info_text}
+
+## Skill Requirements:
+{skill_info_text}
+
+## Career Progression:
+{career_info_text}
 
 ## Instructions:
 Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
@@ -274,7 +406,7 @@ If the user is very vague and not specific like using words like "it", "this", "
 Create a comprehensive profile for the role of {role} with the following sections:
 1. Role Description - Brief overview of what the role entails
 2. Responsibilities - Key tasks and responsibilities
-3. Required Skills - Technical and soft skills needed
+3. Required Skills - Technical and soft skills needed, organized by functional and enabling skills
 4. Career Path - Potential progression from and to this role
 
 Use markdown formatting for headers. If information is missing for any section, acknowledge this but provide general industry insights about that aspect of the role.
@@ -290,12 +422,81 @@ Conclude with a simple encouragement like: "Interested in courses for these skil
         agent_responses = context.get("agent_responses", {})
         flow_context = context.get("flow", {})
         role = flow_context.get("role", "the targeted role")
-        pathway_info = "No learning pathway information available."
+        
+        # Extract knowledge items with improved handling for pathway information
+        kb_response = agent_responses.get("knowledge_base", {})
+        kb_items = kb_response.get("items", []) if kb_response.get("found", False) else []
+        
+        # Prepare information categories
+        role_info = []
+        skill_info = []
+        learning_resources = []
+        career_progression = []
+        
+        # Extract KB data organized by section
+        has_separators = any(item.get("is_separator", False) for item in kb_items)
+        
+        if has_separators:
+            current_section = "General Information"
+            for item in kb_items:
+                if item.get("is_separator", False):
+                    # Update section
+                    current_section = item.get("text", "").replace("-", "").strip()
+                else:
+                    title = item.get('title', 'Information')
+                    content = item.get('text', '')
+                    
+                    # Categorize based on section
+                    if "Skills" in current_section:
+                        skill_info.append(f"- {title}: {content}")
+                    elif "Career Path" in current_section:
+                        career_progression.append(f"- {title}: {content}")
+                    elif "Role" in current_section:
+                        role_info.append(f"- {title}: {content}")
+                    else:
+                        # Default to role info for uncategorized items
+                        role_info.append(f"- {title}: {content}")
+        else:
+            # Standard approach for non-sectioned content
+            for item in kb_items:
+                title = item.get('title', 'Information')
+                content = item.get('text', '')
+                metadata = item.get('metadata', {})
+                entity_type = metadata.get('entity_type', '')
+                
+                # Categorize based on entity type
+                if entity_type == 'functional_skill' or entity_type == 'enabling_skill':
+                    skill_info.append(f"- {title}: {content}")
+                elif "career" in entity_type.lower() or "domain" in entity_type.lower():
+                    career_progression.append(f"- {title}: {content}")
+                elif entity_type == 'job_role' or "role" in entity_type.lower():
+                    role_info.append(f"- {title}: {content}")
+                else:
+                    # Default to role info for uncategorized items
+                    role_info.append(f"- {title}: {content}")
+        
+        # Add course information if available
+        if "course_search" in agent_responses:
+            courses = agent_responses["course_search"].get("courses", [])
+            if courses:
+                for i, course in enumerate(courses): # type: ignore
+                    learning_resources.append(f"- Course {i+1}: {course.get('title', 'Untitled')}")
+                    learning_resources.append(f"  Provider: {course.get('provider', 'Unknown')}")
+                    learning_resources.append(f"  Level: {course.get('level', 'Not specified')}")
+        
+        # Include learning pathway information if available
         if "learning_path" in agent_responses:
             pathway = agent_responses["learning_path"].get("pathway", {})
             if pathway:
                 steps = pathway.get("steps", [])
-                pathway_info = "\n".join([f"- {step}" for step in steps]) if steps else "No specific steps defined."
+                for step in steps:
+                    learning_resources.append(f"- Pathway Step: {step}")
+        
+        # Format the collected information
+        role_info_text = "\n".join(role_info) if role_info else f"No specific information found about {role}."
+        skill_info_text = "\n".join(skill_info) if skill_info else "No specific skill requirements found."
+        learning_resources_text = "\n".join(learning_resources) if learning_resources else "No specific learning resources found."
+        career_progression_text = "\n".join(career_progression) if career_progression else "No specific career progression information found."
 
         prompt = f"""# Learning Pathway Generation Task
 
@@ -305,8 +506,17 @@ Conclude with a simple encouragement like: "Interested in courses for these skil
 ## Target Role:
 {role}
 
-## Available Pathway Information:
-{pathway_info}
+## Role Information:
+{role_info_text}
+
+## Required Skills:
+{skill_info_text}
+
+## Learning Resources:
+{learning_resources_text}
+
+## Career Progression:
+{career_progression_text}
 
 ## Instructions:
 Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
@@ -317,6 +527,7 @@ Structure your response with these sections:
 2. Target Level - Description of the {role} position
 3. Recommended Skills - Key skills to develop with proficiency targets
 4. Learning Resources - Suggested courses, books, or practice projects
+5. Next Steps - Clear actions the user can take to progress toward the role
 
 Use markdown formatting and make the pathway practical and actionable.
 If specific information is missing, provide general industry best practices.
@@ -344,6 +555,21 @@ End with a simple encouragement like: "Ready to find courses for these skills or
                     course_info += f"- Description: {course.get('description', 'No description')}\n"
                     course_info += f"- Level: {course.get('level', 'Not specified')}\n"
                     course_info += f"- URL: {course.get('url', 'No link provided')}\n"
+        
+        # Also include related skill information from knowledge base
+        kb_response = agent_responses.get("knowledge_base", {})
+        kb_items = kb_response.get("items", []) if kb_response.get("found", False) else []
+        skill_info = []
+        
+        for item in kb_items:
+            metadata = item.get('metadata', {})
+            entity_type = metadata.get('entity_type', '')
+            if entity_type == 'functional_skill' or entity_type == 'enabling_skill':
+                title = item.get('title', 'Skill')
+                content = item.get('text', '')
+                skill_info.append(f"- {title}: {content}")
+        
+        related_skills_text = "\n".join(skill_info) if skill_info else "No specific skill information found."
 
         prompt = f"""# Course Recommendation Task
 
@@ -353,6 +579,9 @@ End with a simple encouragement like: "Ready to find courses for these skills or
 ## Topic:
 {topic}
 
+## Related Skills Information:
+{related_skills_text}
+
 ## Available Courses:
 {course_info}
 
@@ -361,13 +590,13 @@ Note: Try to use all the data you got from the Knowledge Base, do not truncate o
 If the user is very vague and not specific like using words like "it", "this", "that", "there", etc., ask them to clarify their question and be more specific.
 Create a helpful response recommending courses related to {topic}.
 Structure your response with:
-1. Brief introduction explaining the importance of {topic}
+1. Brief introduction explaining the importance of {topic} and related skills
 2. List of recommended courses with name, provider, and brief description
 3. Suggested learning path (beginner to advanced)
-4. Additional tips for learning this topic
+4. Additional tips for learning this topic effectively
 
 Use markdown formatting for the course list. If no specific courses are available,
-provide general advice on how to find good courses on this topic.
+provide general advice on how to find good courses on this topic based on the skill information.
 
 Conclude with a simple encouragement like: "Need more course options or want to explore PSF-AAI roles that use these skills? Just ask!"
 
@@ -380,20 +609,79 @@ Conclude with a simple encouragement like: "Need more course options or want to 
         agent_responses = context.get("agent_responses", {})
         flow_context = context.get("flow", {})
         role = flow_context.get("role", "the role")
+        
+        # Extract knowledge items with improved handling for skill information
+        kb_response = agent_responses.get("knowledge_base", {})
+        kb_items = kb_response.get("items", []) if kb_response.get("found", False) else []
+        
+        # Prepare information categories
+        role_description = []
+        functional_skills = []
+        enabling_skills = []
+        
+        # Extract KB data organized by section
+        has_separators = any(item.get("is_separator", False) for item in kb_items)
+        
+        if has_separators:
+            current_section = "General Information"
+            for item in kb_items:
+                if item.get("is_separator", False):
+                    # Update section
+                    current_section = item.get("text", "").replace("-", "").strip()
+                else:
+                    title = item.get('title', 'Information')
+                    content = item.get('text', '')
+                    metadata = item.get('metadata', {})
+                    entity_type = metadata.get('entity_type', '')
+                    
+                    # Categorize based on section and entity type
+                    if "Skills Required" in current_section or "Skills" in current_section:
+                        if "functional" in title.lower() or "functional" in metadata.get('skill_category', '').lower():
+                            functional_skills.append(f"- {title}: {content}")
+                        elif "enabling" in title.lower() or "enabling" in metadata.get('skill_category', '').lower():
+                            enabling_skills.append(f"- {title}: {content}")
+                        else:
+                            # Default to functional if unclear
+                            functional_skills.append(f"- {title}: {content}")
+                    elif entity_type == 'job_role' or "whole_role" in metadata.get('type', ''):
+                        role_description.append(f"- {title}: {content}")
+                    else:
+                        role_description.append(f"- {title}: {content}")
+        else:
+            # Standard approach for non-sectioned content
+            for item in kb_items:
+                title = item.get('title', 'Information')
+                content = item.get('text', '')
+                metadata = item.get('metadata', {})
+                entity_type = metadata.get('entity_type', '')
+                skill_category = metadata.get('skill_category', '')
+                
+                if entity_type == 'functional_skill' or "functional" in skill_category.lower():
+                    functional_skills.append(f"- {title}: {content}")
+                elif entity_type == 'enabling_skill' or "enabling" in skill_category.lower():
+                    enabling_skills.append(f"- {title}: {content}")
+                elif entity_type == 'job_role' or "whole_role" in metadata.get('type', ''):
+                    role_description.append(f"- {title}: {content}")
+                else:
+                    role_description.append(f"- {title}: {content}")
+        
+        # Also include learning path data if available
         skills_info = {}
         if "learning_path" in agent_responses:
             skills_info = agent_responses["learning_path"].get("skills", {})
-        functional_skills = skills_info.get("functional_skills", [])
-        functional_skills_text = "\n".join([f"- {skill}" for skill in functional_skills]) if functional_skills else "No specific functional skills found."
-        enabling_skills = skills_info.get("enabling_skills", [])
-        enabling_skills_text = "\n".join([f"- {skill}" for skill in enabling_skills]) if enabling_skills else "No specific enabling skills found."
-        role_description = "No detailed role description available."
-        if "knowledge_base" in agent_responses and agent_responses["knowledge_base"].get("found", False):
-            items = agent_responses["knowledge_base"].get("items", [])
-            for item in items:
-                if item.get("type") == "role" and role.lower() in item.get("title", "").lower(): # type: ignore
-                    role_description = item.get("text", role_description)
-                    break
+            fs_from_path = skills_info.get("functional_skills", [])
+            es_from_path = skills_info.get("enabling_skills", [])
+            
+            # Add any skills from learning path not already included
+            for skill in fs_from_path:
+                functional_skills.append(f"- {skill}")
+            for skill in es_from_path:
+                enabling_skills.append(f"- {skill}")
+        
+        # Format the collected information
+        role_description_text = "\n".join(role_description) if role_description else f"No specific information found about {role}."
+        functional_skills_text = "\n".join(functional_skills) if functional_skills else "No specific functional skills found."
+        enabling_skills_text = "\n".join(enabling_skills) if enabling_skills else "No specific enabling skills found."
 
         prompt = f"""# Role Skills Profile
 
@@ -404,7 +692,7 @@ Conclude with a simple encouragement like: "Need more course options or want to 
 {role}
 
 ## Role Description:
-{role_description}
+{role_description_text}
 
 ## Functional Skills:
 {functional_skills_text}
@@ -418,8 +706,9 @@ If the user is very vague and not specific like using words like "it", "this", "
 Create a comprehensive profile of the skills needed for the {role} position.
 Format your response with these sections:
 1. Role Overview - Brief description of the {role} position
-2. Functional Skills - Technical skills required with brief explanations
-3. Enabling Skills - Soft skills and competencies needed
+2. Functional Skills - Technical skills required with brief explanations of why they're important
+3. Enabling Skills - Soft skills and competencies needed with context on their application
+4. Skill Development - Brief advice on how to develop these skills
 
 Use markdown formatting with headers and bullet points. If information is limited, provide industry-standard expectations for this role.
 
@@ -432,11 +721,61 @@ End with a simple encouragement like: "Want to find courses for these skills or 
     def _build_role_listing_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for displaying available roles."""
         agent_responses = context.get("agent_responses", {})
+        
+        # Extract roles from both knowledge base and learning path results
         roles = []
         if "learning_path" in agent_responses:
             roles = agent_responses["learning_path"].get("roles", [])
+        
+        # Also check knowledge base for role information
+        kb_response = agent_responses.get("knowledge_base", {})
+        kb_items = kb_response.get("items", []) if kb_response.get("found", False) else []
+        
+        # Extract career domain information for organizing roles
+        career_domains = []
+        domain_roles = {}
+        
+        for item in kb_items:
+            metadata = item.get('metadata', {})
+            entity_type = metadata.get('entity_type', '')
+            item_type = metadata.get('type', '')
+            
+            if entity_type == 'career_domain' or item_type == 'career_map_domain':
+                domain_name = metadata.get('domain', '') or metadata.get('title', '').replace('Domain: ', '')
+                if domain_name:
+                    career_domains.append(domain_name)
+                    domain_roles[domain_name] = metadata.get('roles', [])
+            elif entity_type == 'job_role' or item_type == 'whole_role':
+                # Add to roles list if not already included
+                role_title = metadata.get('title', '')
+                if role_title and not any(r.get('title') == role_title for r in roles): # type: ignore
+                    roles.append({
+                        'title': role_title,
+                        'description': item.get('text', 'No description available')
+                    })
+        
+        # Format role information
         roles_text = ""
-        if roles:
+        if career_domains and domain_roles:
+            # If we have domain information, organize roles by domain
+            roles_text += "Roles organized by career domains:\n\n"
+            for domain in career_domains:
+                roles_text += f"Domain: {domain}\n"
+                domain_role_list = domain_roles.get(domain, [])
+                if domain_role_list:
+                    for role_info in domain_role_list:
+                        role_name = role_info.get('name', '')
+                        role_grade = role_info.get('grade', '')
+                        if role_name:
+                            # Find corresponding role in roles list
+                            role_desc = next((r.get('description', 'No description available') 
+                                            for r in roles if r.get('title') == role_name), # type: ignore
+                                            'No description available')
+                            roles_text += f"- {role_name} (Grade: {role_grade}): {role_desc[:200]}...\n"
+                else:
+                    roles_text += "- No specific roles listed for this domain\n"
+        elif roles:
+            # If we only have a flat list of roles
             for i, role in enumerate(roles, 1): # type: ignore
                 roles_text += f"\nRole {i}: {role.get('title', 'Unknown Role')}\n"
                 roles_text += f"Description: {role.get('description', 'No description available')}\n"
@@ -448,7 +787,7 @@ End with a simple encouragement like: "Want to find courses for these skills or 
 ## User Query:
 "{query}"
 
-## Available Roles:
+## Available Roles and Career Paths:
 {roles_text}
 
 ## Instructions:
@@ -457,8 +796,9 @@ If the user is very vague and not specific like using words like "it", "this", "
 Create a response that presents the available career roles in the PSF-AAI framework.
 Format your response as follows:
 1. Introduction - Brief explanation of PSF-AAI career framework
-2. Available Roles - List the roles with brief descriptions
-3. Instructions - Guide the user to choose a role they're interested in
+2. Available Roles - List the roles with brief descriptions, organized by domain if that information is available
+3. Career Progression - Explain how these roles relate to each other in terms of career advancement
+4. Instructions - Guide the user to choose a role they're interested in learning more about
 
 Use markdown formatting with clear headers and numbering. Make the response engaging and helpful.
 
@@ -470,10 +810,9 @@ End with a simple encouragement like: "Curious about a specific PSF-AAI role, th
 
     def _build_career_map_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for career map visualization responses."""
-
         chat_history = context.get("chat_history", [])
         history_text = ""
-            # Log the chat history for debugging
+        # Log the chat history for debugging
         logger.debug(f"Chat history: {chat_history}")
         if chat_history:
             history_text = "\n## Conversation History:\n"
@@ -488,14 +827,49 @@ End with a simple encouragement like: "Curious about a specific PSF-AAI role, th
 
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_base", {})
-        career_map_info = []
-        if kb_response.get("found", False):
-            items = kb_response.get("items", [])
-            for item in items:
-                item_type = item.get("type", "")
-                if "career_map" in item_type:
-                    career_map_info.append(f"- {item.get('title', 'Career Map Info')}: {item.get('text', '')}")
-        career_map_text = "\n".join(career_map_info) if career_map_info else "No specific career map information found."
+        kb_items = kb_response.get("items", []) if kb_response.get("found", False) else []
+        
+        # Organize career map information by type
+        overview_info = []
+        domain_info = []
+        grade_info = []
+        
+        for item in kb_items:
+            metadata = item.get('metadata', {})
+            entity_type = metadata.get('entity_type', '')
+            item_type = metadata.get('type', '')
+            title = item.get('title', 'Career Map Information')
+            content = item.get('text', '')
+            
+            if entity_type == 'career_map' or item_type == 'career_map_overview':
+                overview_info.append(f"- {title}: {content}")
+                # Extract domains and grades from metadata if available
+                domains = metadata.get('domains', [])
+                grades = metadata.get('grades', [])
+                if domains:
+                    overview_info.append(f"- Domains: {', '.join(domains)}")
+                if grades:
+                    overview_info.append(f"- Job Grades: {', '.join(grades)}")
+            elif entity_type == 'career_domain' or item_type == 'career_map_domain':
+                domain_info.append(f"- {title}: {content}")
+                # Extract roles in this domain from metadata if available
+                roles = metadata.get('roles', [])
+                if roles:
+                    role_list = []
+                    for role_info in roles:
+                        role_name = role_info.get('name', '')
+                        role_grade = role_info.get('grade', '')
+                        if role_name:
+                            role_list.append(f"{role_name} (Grade: {role_grade})")
+                    if role_list:
+                        domain_info.append(f"  Roles: {', '.join(role_list)}")
+            elif "grade" in title.lower():
+                grade_info.append(f"- {title}: {content}")
+        
+        # Format the collected information
+        overview_text = "\n".join(overview_info) if overview_info else "No specific career map overview found."
+        domain_text = "\n".join(domain_info) if domain_info else "No specific domain information found."
+        grade_text = "\n".join(grade_info) if grade_info else "No specific grade level information found."
 
         prompt = f"""# Career Map Visualization Task
 
@@ -504,8 +878,14 @@ End with a simple encouragement like: "Curious about a specific PSF-AAI role, th
 
 {history_text}
 
-## Available Career Map Information:
-{career_map_text}
+## Career Map Overview:
+{overview_text}
+
+## Career Domains:
+{domain_text}
+
+## Job Grades/Levels:
+{grade_text}
 
 ## Instructions:
 Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
@@ -517,6 +897,8 @@ Create a structured response that visualizes the PSF-AAI career map framework wi
 4. Example Paths - Show a few example progression paths within or across domains
 
 Use markdown formatting to create a clear visual structure. If possible, use bullet points or other formatting to show hierarchical relationships between roles.
+
+If the knowledge includes specific connections between roles and domains, emphasize these relationships in your explanation.
 
 Conclude with a simple encouragement like: "Want to explore specific PSF-AAI roles, skills for progression, or learning pathways on this map? Just ask!"
 

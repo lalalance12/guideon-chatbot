@@ -185,6 +185,17 @@ class ChatView(APIView):
                 try:
                     chat = Chat.objects.get(id=chat_id)
                     logger.info(f"Found existing chat with ID: {chat_id}")
+                    
+                    # Check if the message has content before saving
+                    if prompt.strip():  # Only save non-empty messages
+                        user_message = Message.objects.create(
+                            chat=chat,
+                            role='user',
+                            content=prompt  # Make sure content is being set properly
+                        )
+                        logger.debug(f"Saved user message with content length: {len(prompt)}")
+                    else:
+                        logger.warning("Empty user message detected - not saving to database")
                 except Chat.DoesNotExist:
                     logger.warning(f"Chat ID {chat_id} not found, creating new chat")
                     chat = Chat.objects.create(user=request.user if request.user.is_authenticated else None)

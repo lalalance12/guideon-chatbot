@@ -48,16 +48,27 @@ class KnowledgeBaseFlow(IntentFlow):
             if any(term in query_lower for term in ["career map", "career path", "job progression", "domains", "career tracks"]):
                 self.context["knowledge_sections"] = ["career_map"]
                 return {"flow_action": "retrieve_career_map"}
-            else:
-                self.context["knowledge_sections"] = ["functional_skills", "enabling_skills", "roles", "career_map"]
-                return {"flow_action": "retrieve_knowledge", "sections": self.context["knowledge_sections"]}
             
-        # After providing information, go to follow-up
-        elif self.current_stage == FlowStage.INFORMATION:
-            self.current_stage = FlowStage.FOLLOW_UP
-            return {"flow_action": "suggest_related", "current_topic": self.context.get("last_topic")}
-        
-        return {"flow_action": "general_response"}
+            # Check for role-specific queries
+            extracted_role = conversation_context.get("extracted_entities", {}).get("extracted_role")
+            if extracted_role:
+                self.context["current_role"] = extracted_role
+                return {"flow_action": "role_information", "role": extracted_role}
+                
+            # Check for skill-specific queries
+            extracted_skill = conversation_context.get("extracted_entities", {}).get("extracted_skill")
+            extracted_level = conversation_context.get("extracted_entities", {}).get("extracted_level")
+            if extracted_skill:
+                self.context["current_skill"] = extracted_skill
+                return {
+                    "flow_action": "skill_information", 
+                    "skill": extracted_skill,
+                    "level": extracted_level
+                }
+            
+            # Default knowledge retrieval
+            self.context["knowledge_sections"] = ["functional_skills", "enabling_skills", "roles", "career_map"]
+            return {"flow_action": "retrieve_knowledge", "sections": self.context["knowledge_sections"]}
     
     def get_next_response_format(self) -> Dict[str, Any]:
         if self.current_stage == FlowStage.INFORMATION:
@@ -91,34 +102,21 @@ class LearningPathwayFlow(IntentFlow):
             if extracted_role:
                 self.current_stage = FlowStage.INFORMATION
                 self.context["current_role"] = extracted_role
+                # First show skills needed
                 return {"flow_action": "role_skills", "role": extracted_role}
             else:
                 # No role specified, show available roles
                 self.current_stage = FlowStage.CLARIFICATION
                 return {"flow_action": "list_available_roles"}
         
-        # Clarification stage - extract role from response
-        elif self.current_stage == FlowStage.CLARIFICATION:
-            # Try to extract role from the new query
-            role = extract_role_from_query(query)
-            
-            if role:
-                self.current_stage = FlowStage.INFORMATION
-                self.context["current_role"] = role
-                return {"flow_action": "role_skills", "role": role}
+        # After showing skills, transition to pathway 
+        elif self.current_stage == FlowStage.INFORMATION:
+            if "pathway_shown" not in self.context:
+                self.context["pathway_shown"] = True
+                return {"flow_action": "generate_pathway", "role": self.context.get("current_role")}
             else:
-                # Still no role, suggest some options but stay in CLARIFICATION stage
-                return {"flow_action": "suggest_common_roles"}
-        
-        # If a role is mentioned at any point, go to information stage
-        role_mentioned = extract_role_from_query(query)
-        if role_mentioned:
-            self.current_stage = FlowStage.INFORMATION
-            self.context["current_role"] = role_mentioned
-            return {"flow_action": "role_skills", "role": role_mentioned}
-        
-        # Default response for unhandled states
-        return {"flow_action": "general_response"}
+                self.current_stage = FlowStage.FOLLOW_UP
+                return {"flow_action": "suggest_next_steps", "role": self.context.get("current_role")}
     
     def get_next_response_format(self) -> Dict[str, Any]:
         if self.current_stage == FlowStage.CLARIFICATION:
@@ -144,19 +142,56 @@ class CourseSearchFlow(IntentFlow):
     """Flow for course and learning resource searches"""
     
     def process(self, query: str, conversation_context: Dict[str, Any]) -> Dict[str, Any]:
-        # Initial query - go to recommendation
+        """Process a query within the course search flow."""
+        # Initial query - determine if clarification needed
         if self.current_stage == FlowStage.INITIAL:
+            # Check for ambiguous references
+            query_lower = query.lower()
+            has_ambiguous_reference = any(word in query_lower for word in ["that", "it", "this", "those", "them"])
+            
+            # Extract any explicit topics/skills
+            extracted_skill = conversation_context.get("extracted_entities", {}).get("extracted_skill")
+            extracted_topic = ""
+            
+            # If we have a skill, use that
+            if extracted_skill:
+                topic = extracted_skill
+                self.current_stage = FlowStage.RECOMMENDATION
+            # If we have an ambiguous reference, set flag for clarification
+            elif has_ambiguous_reference and not extracted_skill:
+                self.current_stage = FlowStage.CLARIFICATION
+                return {
+                    "flow_action": "request_topic_clarification",
+                    "needs_clarification": True,
+                    "topic": "",
+                    "response_format": {"format": "clarification_request"}
+                }
+            # Otherwise use the query itself
+            else:
+                topic = query
+                self.current_stage = FlowStage.RECOMMENDATION
+                
+            self.context["search_topic"] = topic
+            return {
+                "flow_action": "course_search", 
+                "topic": self.context["search_topic"]
+            }
+        
+        # Handle clarification response
+        elif self.current_stage == FlowStage.CLARIFICATION:
+            # User has responded to clarification request
+            # Their response should contain the topic
             self.current_stage = FlowStage.RECOMMENDATION
-            # Extract skills or topics from the query
-            # This is a simplified example - would need more logic in real implementation
-            extracted_skill = conversation_context.get("extracted_entities", {}).get("skill")
-            self.context["search_topic"] = extracted_skill or query
-            return {"flow_action": "course_search", "topic": self.context["search_topic"]}
+            self.context["search_topic"] = query
+            return {
+                "flow_action": "course_search",
+                "topic": self.context["search_topic"]
+            }
         
         # After recommendation, go to follow-up
         elif self.current_stage == FlowStage.RECOMMENDATION:
             self.current_stage = FlowStage.FOLLOW_UP
-            return {"flow_action": "suggest_related_courses", "current_topic": self.context.get("search_topic")}
+            return {"flow_action": "suggest_related_courses", "topic": self.context["search_topic"]}
         
         return {"flow_action": "general_response"}
     

@@ -233,6 +233,67 @@ class CourseSearchAgent(BaseAgent):
     SIMILARITY_THRESHOLD = 0.58
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Process a query to find relevant learning resources."""
+        logger.info(f"Processing course search query: {query[:60]}...")
+        
+        # Extract topic from query or context
+        topic = await self.topic_extractor.extract_topic(query, context)
+        flow_context = context.get("flow", {})
+        # If topic is provided in flow, use that instead
+        if flow_context.get("topic"):
+            topic = flow_context.get("topic")
+        
+        logger.info(f"Effective topic for course search: '{topic}' (from query: '{query}')")
+        
+        # If no topic, return clarification request
+        if not topic:
+            logger.info(f"No specific topic extracted for query '{query}'. Clarification needed.")
+            return {
+                "found": False,
+                "reason": "clarification_needed",  # Use a specific reason code
+                "message": "I'd like to help you find courses, but I need to know what topic you're interested in. Could you please specify the subject or skill you want to learn about?",
+                "needs_clarification": True,  # Add explicit flag for clarification
+            }
+        
+        # Search for matching courses
+        courses = await self.search_courses(topic)
+        
+        # Get recommended skill level based on context if available
+        skill_level = self._extract_skill_level(context)
+        
+        if not courses:
+            # Try a more general search with related terms
+            expanded_topic = await self._expand_topic(topic)
+            logger.info(f"No courses found for '{topic}', trying expanded: '{expanded_topic}'")
+            courses = await self.search_courses(expanded_topic)
+        
+        if not courses:
+            logger.warning(f"No courses found for topic: {topic}")
+            return {
+                "found": False,
+                "reason": "no_courses",
+                "message": f"I couldn't find specific courses for {topic}. Would you like me to search for a related topic instead?",
+                "topic": topic
+            }
+        
+        # Filter courses by level if specified
+        if skill_level:
+            courses = self._filter_by_level(courses, skill_level)
+        
+        # Sort courses by relevance
+        sorted_courses = self._sort_by_relevance(courses, topic)
+        
+        logger.info(f"Found {len(sorted_courses)} courses for topic: {topic}")
+        
+        return {
+            "found": True,
+            "courses": sorted_courses[:5],  # Return top 5 courses
+            "topic": topic,
+            "count": len(sorted_courses),
+            "recommended_level": skill_level
+        }
+
+    async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
             current_similarity_threshold = self.SIMILARITY_THRESHOLD # Initialize with default
 

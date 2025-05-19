@@ -13,6 +13,7 @@ import requests
 import numpy as np
 import traceback
 import django
+import uuid
 
 
 django.setup()
@@ -75,7 +76,6 @@ def generate_embeddings(text_chunks):
     return embeddings
 
 # --- Data Processing Functions ---
-# (process_enabling_skills, process_functional_skills, process_roles, process_career_map functions remain as previously defined)
 def process_enabling_skills(filepath):
     """Processes enabling skills data with organized chunking for better retrieval and search."""
     print(f"\nProcessing Enabling Skills from: {filepath}")
@@ -92,6 +92,9 @@ def process_enabling_skills(filepath):
             description = skill.get("description", "No description")
             code_prefix = skill.get("codePrefix", "")
             
+            # Create unique ID for this skill
+            skill_id = f"esc_{clean_for_id(title)}"
+            
             # Get range of application data
             range_data = skill.get("rangeOfApplication", {})
             range_title = range_data.get("title", "Range of Application")
@@ -100,6 +103,9 @@ def process_enabling_skills(filepath):
             # Get valid levels data
             valid_levels = [l for l in skill.get("proficiencyLevels", []) if l.get("description")]
             level_labels = [l.get("level") for l in valid_levels if l.get("level")]
+            
+            # Track roles that require this skill (will be populated in post-processing)
+            required_by_roles = []
             
             # 1. COMPREHENSIVE SKILL OVERVIEW WITH RANGE OF APPLICATION
             overview_text = f"# {title}\n\n"
@@ -122,11 +128,13 @@ def process_enabling_skills(filepath):
             text_chunks.append(overview_text)
             chunk_metadata.append({
                 "type": "esc_complete_overview",
+                "id": skill_id,
                 "title": title,
                 "skill": title,
                 "codePrefix": code_prefix,
                 "available_levels": level_labels,
-                "skill_category": "enabling"
+                "skill_category": "enabling",
+                "required_by_roles": required_by_roles  # Empty for now, filled in post-processing
             })
             
             # 2. COMPLETE LEVEL INFORMATION (one chunk per level with all details)
@@ -134,6 +142,9 @@ def process_enabling_skills(filepath):
                 level_label = lvl.get("level")
                 if not level_label:
                     continue
+                
+                # Create unique ID for this skill level
+                level_id = f"{skill_id}_level_{level_label}"
                 
                 level_desc = lvl.get("description", "")
                 esc_code = lvl.get("escCode", "")
@@ -167,6 +178,8 @@ def process_enabling_skills(filepath):
                 text_chunks.append(level_text)
                 chunk_metadata.append({
                     "type": "esc_complete_level",
+                    "id": level_id,
+                    "parent_skill_id": skill_id,
                     "title": f"{title} - {level_label} Level",
                     "skill": title,
                     "level": level_label,
@@ -180,6 +193,8 @@ def process_enabling_skills(filepath):
             text_chunks.append(basic_overview)
             chunk_metadata.append({
                 "type": "enabling_skill",
+                "id": f"{skill_id}_basic",
+                "parent_skill_id": skill_id,
                 "title": title,
                 "skill": title,
                 "codePrefix": code_prefix,
@@ -195,6 +210,8 @@ def process_enabling_skills(filepath):
                 text_chunks.append(range_text)
                 chunk_metadata.append({
                     "type": "esc_range",
+                    "id": f"{skill_id}_range",
+                    "parent_skill_id": skill_id,
                     "title": f"{title} - Contexts of Application",
                     "skill": title,
                     "skill_category": "enabling"
@@ -223,6 +240,9 @@ def process_functional_skills(filepath):
             description = skill.get("description", "No description")
             code_prefix = skill.get("codePrefix", "")
             
+            # Create unique ID for this skill
+            skill_id = f"fs_{clean_for_id(title)}"
+            
             # Get range of application data
             range_data = skill.get("rangeOfApplication", {})
             range_title = range_data.get("title", "Range of Application")
@@ -231,6 +251,9 @@ def process_functional_skills(filepath):
             # Get valid levels data
             valid_levels = [l for l in skill.get("proficiencyLevels", []) if l.get("description")]
             level_numbers = [str(l.get("level")) for l in valid_levels if l.get("level")]
+            
+            # Track roles that require this skill (will be populated in post-processing)
+            required_by_roles = []
             
             # 1. COMPREHENSIVE SKILL OVERVIEW WITH RANGE OF APPLICATION
             overview_text = f"# {title}\n\n"
@@ -253,11 +276,13 @@ def process_functional_skills(filepath):
             text_chunks.append(overview_text)
             chunk_metadata.append({
                 "type": "fs_complete_overview",
+                "id": skill_id,
                 "title": title,
                 "skill": title,
                 "codePrefix": code_prefix,
                 "available_levels": level_numbers,
-                "skill_category": "functional"
+                "skill_category": "functional",
+                "required_by_roles": required_by_roles  # Empty for now, filled in post-processing
             })
             
             # 2. COMPLETE LEVEL INFORMATION (one chunk per level with all details)
@@ -265,6 +290,9 @@ def process_functional_skills(filepath):
                 level_no = lvl.get("level")
                 if not level_no:
                     continue
+                
+                # Create unique ID for this skill level
+                level_id = f"{skill_id}_level_{level_no}"
                 
                 level_desc = lvl.get("description", "")
                 fsc_code = lvl.get("fscCode", "")
@@ -298,6 +326,8 @@ def process_functional_skills(filepath):
                 text_chunks.append(level_text)
                 chunk_metadata.append({
                     "type": "fs_complete_level",
+                    "id": level_id,
+                    "parent_skill_id": skill_id,
                     "title": f"{title} - Level {level_no}",
                     "skill": title,
                     "level": level_no,
@@ -311,6 +341,8 @@ def process_functional_skills(filepath):
             text_chunks.append(basic_overview)
             chunk_metadata.append({
                 "type": "fs_overview",
+                "id": f"{skill_id}_basic",
+                "parent_skill_id": skill_id,
                 "title": title,
                 "skill": title,
                 "codePrefix": code_prefix,
@@ -326,6 +358,8 @@ def process_functional_skills(filepath):
                 text_chunks.append(range_text)
                 chunk_metadata.append({
                     "type": "fs_range",
+                    "id": f"{skill_id}_range",
+                    "parent_skill_id": skill_id,
                     "title": f"{title} - Contexts of Application",
                     "skill": title,
                     "skill_category": "functional"
@@ -355,6 +389,37 @@ def process_roles(filepath):
             func_skills_list = role.get("functional_skills", [])
             enable_skills_list = role.get("enabling_skills", [])
             
+            # Create unique ID for this role
+            role_id = f"role_{clean_for_id(title)}"
+            
+            # Track related skills with their IDs and levels
+            related_functional_skills = []
+            related_enabling_skills = []
+            
+            # Process functional skills with references
+            for skill in func_skills_list:
+                skill_name = skill.get('skill')
+                skill_level = skill.get('level')
+                skill_id = f"fs_{clean_for_id(skill_name)}"
+                
+                related_functional_skills.append({
+                    "id": skill_id,
+                    "name": skill_name,
+                    "level": skill_level
+                })
+            
+            # Process enabling skills with references
+            for skill in enable_skills_list:
+                skill_name = skill.get('skill')
+                skill_level = skill.get('level')
+                skill_id = f"esc_{clean_for_id(skill_name)}"
+                
+                related_enabling_skills.append({
+                    "id": skill_id,
+                    "name": skill_name,
+                    "level": skill_level
+                })
+            
             # Create a comprehensive "whole role" chunk with all information
             whole_role_text = f"# {title}\n\n"
             whole_role_text += f"## Description\n{description.strip()}\n\n"
@@ -381,11 +446,14 @@ def process_roles(filepath):
             for skill in enable_skills_list:
                 whole_role_text += f"- {skill.get('skill')} (Level {skill.get('level')})\n"
             
-            # Add this comprehensive chunk
+            # Add this comprehensive chunk with enhanced metadata
             text_chunks.append(whole_role_text)
             chunk_metadata.append({
                 "type": "whole_role",
+                "id": role_id,
                 "title": title,
+                "functional_skills": related_functional_skills,
+                "enabling_skills": related_enabling_skills,
                 "source_file": os.path.basename(filepath)
             })
             
@@ -395,6 +463,8 @@ def process_roles(filepath):
             text_chunks.append(desc_chunk)
             chunk_metadata.append({
                 "type": "role_description",
+                "id": f"{role_id}_desc",
+                "parent_role_id": role_id,
                 "title": title,
                 "source_file": os.path.basename(filepath)
             })
@@ -412,6 +482,8 @@ def process_roles(filepath):
                 text_chunks.append(tasks_chunk)
                 chunk_metadata.append({
                     "type": "role_tasks",
+                    "id": f"{role_id}_tasks",
+                    "parent_role_id": role_id,
                     "title": title,
                     "source_file": os.path.basename(filepath)
                 })
@@ -431,7 +503,11 @@ def process_roles(filepath):
             text_chunks.append(skills_chunk)
             chunk_metadata.append({
                 "type": "role_skills",
+                "id": f"{role_id}_skills",
+                "parent_role_id": role_id,
                 "title": title,
+                "functional_skills": related_functional_skills,
+                "enabling_skills": related_enabling_skills,
                 "source_file": os.path.basename(filepath)
             })
 
@@ -462,29 +538,52 @@ def process_career_map(filepath):
             f"Domains/Vertical Tracks: {', '.join(domains)}\n"
             f"Job Grades/Horizontal Levels: {', '.join(grades)}"
         )
+        
+        # Create unique ID for career map overview
+        career_map_id = "career_map_overview"
+        
         text_chunks.append(overview_text)
         chunk_metadata.append({
             "type": "career_map_overview",
+            "id": career_map_id,
             "title": "Career Map Overview",
+            "domains": domains,
+            "grades": grades,
             "source_file": os.path.basename(filepath)
         })
 
         # Domain-specific Chunks
         for domain in data.get("domains", []):
             domain_name = domain.get("name", "Unknown Domain")
+            domain_id = f"domain_{clean_for_id(domain_name)}"
+            
+            # Track roles in this domain with structured data
+            roles_in_domain_data = []
             roles_in_domain = []
+            
             for role_info in domain.get("roles", []):
                 grade = role_info.get("grade", "")
                 role_name = role_info.get("role", "")
                 if grade and role_name:
+                    role_id = f"role_{clean_for_id(role_name)}"
                     roles_in_domain.append(f"- {grade}: {role_name}")
+                    
+                    # Add structured role data
+                    roles_in_domain_data.append({
+                        "id": role_id,
+                        "name": role_name,
+                        "grade": grade
+                    })
 
             domain_text = f"Career Domain: {domain_name}\nRoles:\n" + "\n".join(roles_in_domain)
             text_chunks.append(domain_text)
             chunk_metadata.append({
                 "type": "career_map_domain",
+                "id": domain_id,
                 "title": f"Domain: {domain_name}",
                 "domain": domain_name,
+                "parent_map_id": career_map_id,
+                "roles": roles_in_domain_data,
                 "source_file": os.path.basename(filepath)
             })
 
@@ -496,6 +595,88 @@ def process_career_map(filepath):
     except Exception as e:
         print(f"Error processing {filepath}: {e}")
     return text_chunks, chunk_metadata
+
+def clean_for_id(text):
+    """Clean a string to be used as part of an ID."""
+    if not text:
+        return "unknown"
+    # Replace spaces with underscores and remove special characters
+    return text.lower().replace(' ', '_').replace('-', '_').replace('&', 'and').replace('(', '').replace(')', '')
+
+def post_process_relationship_references(all_chunk_metadata):
+    """Creates bidirectional references between related concepts."""
+    print("\nPost-processing to establish bidirectional references between entities...")
+    
+    # Index chunks by ID for quick lookup
+    chunks_by_id = {}
+    role_chunks = []
+    skill_chunks_fs = []
+    skill_chunks_esc = []
+    
+    # First pass: Index everything
+    for i, chunk in enumerate(all_chunk_metadata):
+        if "id" in chunk:
+            chunks_by_id[chunk["id"]] = {"index": i, "data": chunk}
+            
+        if chunk["type"] == "whole_role":
+            role_chunks.append({"index": i, "data": chunk})
+        elif chunk["type"] == "fs_complete_overview":
+            skill_chunks_fs.append({"index": i, "data": chunk})
+        elif chunk["type"] == "esc_complete_overview":
+            skill_chunks_esc.append({"index": i, "data": chunk})
+    
+    print(f"Indexed {len(chunks_by_id)} chunks by ID")
+    print(f"Found {len(role_chunks)} role chunks and {len(skill_chunks_fs) + len(skill_chunks_esc)} skill chunks")
+    
+    # Second pass: Build bidirectional references for roles → skills
+    for role in role_chunks:
+        role_data = role["data"]
+        role_index = role["index"]
+        
+        # For each functional skill in this role
+        for skill_ref in role_data.get("functional_skills", []):
+            skill_id = skill_ref.get("id")
+            if skill_id and skill_id in chunks_by_id:
+                # Add a reference from skill back to this role
+                skill_chunk = chunks_by_id[skill_id]["data"]
+                skill_index = chunks_by_id[skill_id]["index"]
+                
+                if "required_by_roles" not in skill_chunk:
+                    skill_chunk["required_by_roles"] = []
+                
+                # Add role reference to skill
+                skill_chunk["required_by_roles"].append({
+                    "id": role_data["id"],
+                    "title": role_data["title"],
+                    "level_required": skill_ref.get("level")
+                })
+                
+                # Update the skill chunk in the original metadata list
+                all_chunk_metadata[skill_index] = skill_chunk
+        
+        # For each enabling skill in this role
+        for skill_ref in role_data.get("enabling_skills", []):
+            skill_id = skill_ref.get("id")
+            if skill_id and skill_id in chunks_by_id:
+                # Add a reference from skill back to this role
+                skill_chunk = chunks_by_id[skill_id]["data"]
+                skill_index = chunks_by_id[skill_id]["index"]
+                
+                if "required_by_roles" not in skill_chunk:
+                    skill_chunk["required_by_roles"] = []
+                
+                # Add role reference to skill
+                skill_chunk["required_by_roles"].append({
+                    "id": role_data["id"],
+                    "title": role_data["title"],
+                    "level_required": skill_ref.get("level")
+                })
+                
+                # Update the skill chunk in the original metadata list
+                all_chunk_metadata[skill_index] = skill_chunk
+    
+    print("Established bidirectional references between roles and skills")
+    return all_chunk_metadata
 
 
 # --- Main Processing Orchestration ---
@@ -525,6 +706,9 @@ def process_all_data():
     if not all_text_chunks:
         print("\nNo text chunks were generated. Exiting.")
         return
+
+    # Post-process to establish relationships between entities
+    all_chunk_metadata = post_process_relationship_references(all_chunk_metadata)
 
     print(f"\nTotal text chunks to embed: {len(all_text_chunks)}")
 

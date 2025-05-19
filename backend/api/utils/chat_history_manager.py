@@ -1,4 +1,5 @@
 import logging
+import re
 import numpy as np
 from asgiref.sync import sync_to_async
 from django.db.models import F
@@ -31,38 +32,22 @@ class ChatHistoryManager:
     async def get_last_assistant_message(chat_id):
         """Get the last assistant message from the chat."""
         try:
-            last = await Message.objects.filter(
+            async for message in Message.objects.filter(
                 chat_id=chat_id, 
-                role="assistant"
-            ).order_by('-timestamp').values('content', 'timestamp').afirst()
-            
-            if last:
-                content = last['content']
-                logger.debug(f"Found last assistant message: {content[:50]}...")
-                
-                # Check if message exceeds 500 characters and needs summarization
-                if len(content) > 500:
-                    logger.info(f"Message length ({len(content)}) exceeds 500 chars, summarizing...")
-                    # Use LLM to summarize the message
-                    summarized = await ChatHistoryManager.summarize_message(content)
-                    return {
-                        "text": summarized,
-                        "is_user": False,
-                        "timestamp": last['timestamp'].isoformat() if last['timestamp'] else "",
-                        "summarized": True  # Flag to indicate this is a summary
-                    }
-                
+                role='assistant'
+            ).order_by('-timestamp')[:1]:
+                # Return as dictionary with content renamed to text for consistency
                 return {
-                    "text": content,
                     "is_user": False,
-                    "timestamp": last['timestamp'].isoformat() if last['timestamp'] else ""
+                    "text": message.content,  # Use content field from Message model
+                    "timestamp": message.timestamp.isoformat(),
+                    "previous_topic": ChatHistoryManager._extract_topic_from_text(message.content)
                 }
-            logger.debug("No last assistant message found")
             return None
         except Exception as e:
-            logger.error(f"Error getting last assistant message: {e}")
+            logger.error(f"Error retrieving last assistant message: {e}")
             return None
-    
+
     @staticmethod
     async def summarize_message(content):
         """Summarize a message using an LLM to capture its essence."""
@@ -85,16 +70,14 @@ class ChatHistoryManager:
 
 Your summary:"""
             
-            # Get response from the LLM
-            response = await agent.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                max_tokens=250  # Limiting tokens to ensure we stay under character limit
-            )
+            # Use the arun method directly instead of chat.completions.create
+            response = await agent.arun(user_prompt)
             
-            summary = response.choices[0].message.content.strip()
+            # Extract the summary text from the response
+            summary = response.content if hasattr(response, 'content') else str(response)
+            
+            # Clean up the summary
+            summary = summary.strip()
             
             # Double-check length and truncate if still too long
             if len(summary) > 500:
@@ -105,42 +88,29 @@ Your summary:"""
             logger.error(f"Error using LLM for summarization: {e}")
             # Return truncated original as fallback
             return content[:497] + "..."
-    
+        
     @staticmethod
     async def get_last_user_message(chat_id):
         """Get the last user message before the last assistant message."""
         try:
-            # First get the timestamp of the last assistant message
-            last_assistant = await Message.objects.filter(
-                chat_id=chat_id,
-                role="assistant"
-            ).order_by('-timestamp').values('timestamp').afirst()
+            # Get the latest user message that isn't the current one
+            # (filter for messages older than 30 seconds to avoid the current one)
+            import datetime
+            cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=30)
             
-            # If no assistant message found, just get the last user message
-            if not last_assistant:
-                last_user = await Message.objects.filter(
-                    chat_id=chat_id,
-                    role="user"
-                ).order_by('-timestamp').values('content', 'timestamp').afirst()
-            else:
-                # Get the most recent user message that came before the last assistant message
-                last_user = await Message.objects.filter(
-                    chat_id=chat_id,
-                    role="user",
-                    timestamp__lt=last_assistant['timestamp']
-                ).order_by('-timestamp').values('content', 'timestamp').afirst()
-            
-            if last_user:
-                logger.debug(f"Found last user message: {last_user['content'][:50]}...")
+            async for message in Message.objects.filter(
+                chat_id=chat_id, 
+                role='user',
+                timestamp__lt=cutoff_time  # Only get messages older than cutoff
+            ).order_by('-timestamp')[:1]:
                 return {
-                    "text": last_user['content'],
                     "is_user": True,
-                    "timestamp": last_user['timestamp'].isoformat() if last_user['timestamp'] else ""
+                    "text": message.content,  # Use content field from Message model
+                    "timestamp": message.timestamp.isoformat()
                 }
-            logger.debug("No last user message found")
             return None
         except Exception as e:
-            logger.error(f"Error getting last user message: {e}")
+            logger.error(f"Error retrieving last user message: {e}")
             return None
     
     @staticmethod
@@ -153,9 +123,48 @@ Your summary:"""
         # Combine them in chronological order
         result = []
         if last_user:
-            result.append(last_user)
+            result.append({
+                "is_user": True,
+                "text": last_user.get("content", ""),
+                "timestamp": last_user.get("timestamp", None)
+            })
         if last_assistant:
-            result.append(last_assistant)
+            result.append({
+                "is_user": False,
+                "text": last_assistant.get("content", ""),
+                "timestamp": last_assistant.get("timestamp", None),
+                # Extract any topic mentions for context reference resolution
+                "previous_topic": ChatHistoryManager._extract_topic_from_text(last_assistant.get("content", ""))
+            })
             
         logger.info(f"Simple history retrieved {len(result)} messages")
         return result
+
+    # New helper method to extract topics from text
+    @staticmethod
+    def _extract_topic_from_text(text):
+        """Extract potential topic mentions from text for context resolution."""
+        try:
+            if not text:
+                return None
+                
+            # Extract topics using regex patterns
+            topic_patterns = [
+                # Look for "about X" pattern
+                r'about\s+([a-zA-Z\s]+(?:programming|development|science|learning|analytics|visualization|statistics))',
+                # Look for skill names
+                r'(data\s+science|machine\s+learning|artificial\s+intelligence|programming|python|r\s+programming|statistics|data\s+visualization|data\s+analytics)',
+                # Look for "X skills" pattern
+                r'([a-zA-Z\s]+)\s+skills',
+            ]
+            
+            for pattern in topic_patterns:
+                matches = re.findall(pattern, text.lower())
+                if matches:
+                    # Return the first match
+                    return matches[0].strip()
+            
+            return None
+        except Exception as e:
+            logger.error(f"Error extracting topic from text: {e}")
+            return None
