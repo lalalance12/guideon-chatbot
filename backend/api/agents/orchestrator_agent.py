@@ -12,6 +12,7 @@ from ..utils.intent_classifier import QueryIntent
 from ..flows.intent_flows import FlowController
 from agno.agent import Agent
 from .flow_manager_agent import FlowManagerAgent
+from .general_conversation_agent import GeneralConversationAgent
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ class OrchestratorAgent(BaseAgent):
         self.course_agent = CourseSearchAgent()
         self.learning_path_agent = LearningPathAgent()
         self.flow_manager = FlowManagerAgent()  # Add the flow manager
+        self.general_conversation_agent = GeneralConversationAgent()  # Add general conversation agent
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         start = time.time()
@@ -81,6 +83,10 @@ class OrchestratorAgent(BaseAgent):
         if "course_agent" in agents_to_activate:
             logger.info("[Orchestrator] Activating course_agent")
             tasks.append(self._execute_agent(self.course_agent, query, context, "course_search"))
+        
+        if "general_conversation_agent" in agents_to_activate:
+            logger.info("[Orchestrator] Activating general_conversation_agent")
+            tasks.append(self._execute_agent(self.general_conversation_agent, query, context, "general_conversation"))
 
         # If no specialized agents are needed, still collect basic information
         if not tasks:

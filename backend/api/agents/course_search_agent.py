@@ -344,6 +344,10 @@ class CourseSearchAgent(BaseAgent):
             # Return top 3 courses (or fewer if less than 3 are found)
             top_courses = sorted_courses[:3]
             
+            # After finding top courses, store them in context for follow-up reference
+            if top_courses:
+                context['last_courses'] = top_courses
+            
             if top_courses:
                 logger.info(f"Returning top {len(top_courses)} courses")
                 for i_course, course in enumerate(top_courses, 1): # Renamed loop variable

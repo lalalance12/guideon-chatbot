@@ -284,8 +284,8 @@ class GeneralConversationFlow(IntentFlow):
         return {"format": "conversational"}
     
     def should_activate_agents(self) -> List[str]:
-        # No need for specialized agents for general conversation
-        return ["knowledge_agent"]  # Default to knowledge agent for basic responses
+        # Use the new general conversation agent for general chit-chat
+        return ["general_conversation_agent"]
 
 class FlowController:
     """Controls and manages intent-specific conversation flows"""

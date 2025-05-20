@@ -98,6 +98,33 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
             if course_result.get('message'):
                 return {"response": course_result['message']}
 
+        # Handle vague follow-up queries about previous courses
+        last_courses = context.get('last_courses')
+        if last_courses and self._is_vague_course_followup(query):
+            # Try to extract which course (e.g., 'second', '2', etc.)
+            idx = self._extract_course_index(query)
+            if idx is not None and 0 <= idx < len(last_courses):
+                course = last_courses[idx]
+                return {
+                    "response_text": f"Here are the details for the course I recommended earlier (#{idx+1}):\n\n"
+                                    f"**{course.get('title', 'Unknown Title')}**\n"
+                                    f"Provider: {course.get('provider', 'Unknown Provider')}\n"
+                                    f"Description: {course.get('description', 'No description')}\n"
+                                    f"Link: {course.get('url', '')}",
+                    "format_used": response_format.get("format"),
+                    "flow_action": flow_action
+                }
+            # If index not found, just list the previous courses again
+            course_list = "\n\n".join([
+                f"{i+1}. **{c.get('title', 'Unknown Title')}** (Provider: {c.get('provider', 'Unknown Provider')})"
+                for i, c in enumerate(last_courses)
+            ])
+            return {
+                "response_text": f"Here are the courses I recommended earlier:\sn\n{course_list}\n\nYou can ask for more details by saying, for example, 'Tell me more about course 2'.",
+                "format_used": response_format.get("format"),
+                "flow_action": flow_action
+            }
+
         # Check if we have a valid LLM
         if not self.agent:
             logger.warning("No LLM available for response synthesis, using fallback")
@@ -117,10 +144,18 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
                 "format_used": response_format.get("format"),
                 "flow_action": flow_action
             }
-        # If the user is in general conversation and the knowledge base has no info
-        if intent == QueryIntent.GENERAL_CONVERSATION and (not kb_response or not kb_response.get("found")):
+        # If the user is in general conversation, use the general_conversation_agent's response if available
+        if intent == QueryIntent.GENERAL_CONVERSATION:
+            general_conv = agent_responses.get("general_conversation", {})
+            if general_conv and general_conv.get("response"):
+                return {
+                    "response_text": general_conv["response"],
+                    "format_used": response_format.get("format"),
+                    "flow_action": flow_action
+                }
+            # If not available, fallback to a default friendly message
             return {
-                "response_text": "I'm here to help with PSF-AAI topics. If you have questions about roles, skills, or career paths, just ask!",
+                "response_text": "I'm here for any questions or just to chat! If you want to know about PSF-AAI roles, skills, or career paths, just ask!",
                 "format_used": response_format.get("format"),
                 "flow_action": flow_action
             }
@@ -589,3 +624,26 @@ Conclude with a simple encouragement like: "Want to explore specific PSF-AAI rol
             "format_used": "fallback",
             "flow_action": "fallback_response"
         }
+
+    def _is_vague_course_followup(self, query: str) -> bool:
+        # Simple heuristic for vague follow-up queries
+        q = query.lower()
+        return any(
+            phrase in q for phrase in [
+                "which course", "the course you gave", "the second course", "course 2", "course two", "first course", "tell me more about", "more about course"
+            ]
+        )
+
+    def _extract_course_index(self, query: str):
+        # Try to extract a course index from the query (e.g., 'second', '2', etc.)
+        import re
+        q = query.lower()
+        if "second" in q or "2" in q:
+            return 1
+        if "first" in q or "1" in q:
+            return 0
+        match = re.search(r'course (\d+)', q)
+        if match:
+            idx = int(match.group(1)) - 1
+            return idx
+        return None

@@ -35,20 +35,46 @@ class IntentClassifierAgent(BaseAgent):
             self.agent = None
             logger.warning("Will fall back to rule-based classification")
 
+    def _get_last_assistant_message(self, chat_history: list) -> str:
+        # Find the most recent assistant message in the chat history
+        for item in reversed(chat_history):
+            if not item.get("is_user", False):
+                return item.get("text", "")
+        return ""
+
+    def _is_general_conversation(self, query: str, chat_history: list) -> bool:
+        # Simple greeting/banter detection
+        q = query.lower().strip()
+        greetings = [
+            "hi", "hello", "hey", "what's up", "how are you", "good morning", "good afternoon", "good evening",
+            "how's it going", "how are you doing", "what's new", "what's up guideon", "who are you", "tell me a joke", "what is your name"
+        ]
+        for g in greetings:
+            if g in q:
+                return True
+        # If the query is short and not semantically related to the last assistant message, treat as general conversation
+        if len(q.split()) <= 6:
+            last_assistant = self._get_last_assistant_message(chat_history)
+            if last_assistant:
+                # Use a simple similarity check (can be improved with embeddings)
+                if not any(word in last_assistant.lower() for word in q.split() if len(word) > 2):
+                    return True
+        return False
+
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Process the user query to determine the primary intent.
-        """
         start = time.time()
         logger.info(f"Classifying intent for query: {query[:60]}...")
-        
-        # Get initial classification
+        chat_history = context.get("chat_history", [])
+        use_history = not self._is_general_conversation(query, chat_history)
+        chat_history_for_llm = chat_history if use_history else []
+        context_for_llm = dict(context)
+        context_for_llm["chat_history"] = chat_history_for_llm
+
         if not self.agent:
             logger.warning("Using rule-based intent classification (LLM unavailable)")
-            classification = self._rule_based_classification(query, context)
+            classification = self._rule_based_classification(query, context_for_llm)
         else:
-            # Use LLM classification
-            classification = await self._llm_classification(query, context)
+            classification = await self._llm_classification(query, context_for_llm)
         
         # Check with flow manager for flow continuity
         chat_id = context.get('chat_id')
@@ -66,10 +92,11 @@ class IntentClassifierAgent(BaseAgent):
                 classification["intent"] = flow_check.get("continue_with_intent", classification.get("intent"))
                 classification["flow_continued"] = True
         
-        # Add previous intent to context for flow transition logic
-        previous_intent = context.get("intent")
-        classification["previous_intent"] = previous_intent
-        
+        # Only add previous_intent for explicit follow-up/clarification queries
+        if self._is_vague_followup(query, chat_history):
+            previous_intent = context.get("intent")
+            classification["previous_intent"] = previous_intent
+        # Otherwise, do not add previous_intent to avoid sticky context
         classification["processing_time"] = time.time() - start
         return classification
 
@@ -144,7 +171,7 @@ class IntentClassifierAgent(BaseAgent):
                 "Example: 'Find courses for Data Visualization', 'Are there Level 3 courses for Applications Development?', 'Recommend training for AI Engineering'"
             ),
             QueryIntent.GENERAL_CONVERSATION: (
-                "General conversation or topics unrelated to PSF-AAI or professional/career development. "
+                "General conversation, short or topics unrelated to PSF-AAI or professional/career development. "
                 "Example: 'How's the weather?', 'Tell me a joke', 'What is your name?'"
             ),
         }
@@ -260,3 +287,17 @@ Only respond with this exact format!
         result = classify_intent(query, context.get("chat_history"))
         logger.info(f"Rule-based classification: {result.get('intent').value} ({result.get('confidence'):.2f})")
         return result
+
+    def _is_vague_followup(self, query: str, chat_history: list) -> bool:
+        # Detect vague follow-up queries (e.g., 'what about that?', 'tell me more', etc.)
+        vague_phrases = [
+            "what about that", "what about it", "tell me more", "more info", "can you explain more", "what else", "and that", "what about the last one", "the previous one", "the last course", "the second course", "the first course"
+        ]
+        q = query.lower().strip()
+        for phrase in vague_phrases:
+            if phrase in q:
+                return True
+        # If the query is very short and refers to 'that', 'it', etc.
+        if len(q.split()) <= 5 and any(word in q for word in ["that", "it", "one", "this"]):
+            return True
+        return False
