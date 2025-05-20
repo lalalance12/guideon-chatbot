@@ -3,6 +3,7 @@ from typing import Dict, Any, Tuple, Optional
 import time
 import logging
 import re, asyncio
+import json
 
 from .base_agent import BaseAgent
 from ..utils.intent_classifier import QueryIntent, classify_intent
@@ -20,7 +21,7 @@ class IntentClassifierAgent(BaseAgent):
     def __init__(self) -> None:
         """Initialize the intent classifier with an LLM."""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0",
+            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
                               provider="Ollama", 
                               host="http://localhost:11434")
             self.agent = Agent(
@@ -43,170 +44,165 @@ class IntentClassifierAgent(BaseAgent):
         
         # Fall back to rule-based if LLM not available
         if not self.agent:
-            logger.warning("Using rule-based intent classification (LLM unavailable)")
-            classification = self._rule_based_classification(query, context)
-            classification["processing_time"] = time.time() - start
-            return classification
+            return self._rule_based_classification(query, context)
         
         # Prepare conversation history if available
         chat_history = self._format_chat_history(context.get("chat_history", []))
-        print(f"{chat_history}, this is chat history" )
-        # Construct the classification prompt
-        prompt = self._construct_prompt(query, chat_history)
+        
+        # Check for transitions - look for explicit indicators that user wants to change topics
+        transition_indicators = [
+            "instead", "rather", "actually", "actually i want", "let's change topics", 
+            "i want to ask about", "let me ask", "different question", 
+            "another question", "new topic", "change subject", "forget about",
+            "don't want", "not interested", "something else"
+        ]
+        
+        # Check if user is explicitly trying to change topics
+        is_transition = any(indicator in query.lower() for indicator in transition_indicators)
+        
+        # Give stronger weight to new intent if transitioning
+        if is_transition:
+            logger.info("Detected intent transition indicators in query")
+            prompt = self._construct_transition_prompt(query, chat_history)
+        else:
+            # Construct the regular classification prompt
+            prompt = self._construct_prompt(query, chat_history)
             
         try:
-                # Generate classification with LLM using robust method calling
-                if hasattr(self.agent, "arun"):
-                    run_response = await self.agent.arun(prompt)
-                else:
-                    # Fall back to threaded run() if arun() isn't available
-                    run_response = await asyncio.to_thread(self.agent.run, prompt)
-                    
-                # Extract content safely using getattr for robustness
-                response = getattr(run_response, "content", str(run_response))
-                logger.debug(f"LLM classification response: {response[:200]}...")
-
-                # Parse the LLM's response
-                intent, confidence, extracted_entities = self._parse_llm_response(response, query)
-
-                # If parsing failed, fall back to rule-based
-                if not intent:
-                    logger.warning("Failed to parse LLM response, using rule-based classification")
-                    classification = self._rule_based_classification(query, context)
-                else:
-                    classification = {
-                        "intent": intent,
-                        "confidence": confidence,
-                        "extracted_entities": extracted_entities,
-                        "llm_response": response[:500]  # Store truncated response for debugging
-                    }
-
-                classification["processing_time"] = time.time() - start
-                classification["method"] = "llm" if intent else "rule_based_fallback"
-                return classification
-
+            # Generate intent classification with LLM
+            response = await self.agent.arun(prompt)
+            intent, confidence, extracted_entities = self._parse_llm_response(response.content, query)
+            
+            # Weigh transition more heavily
+            if is_transition and confidence > 0.3:  # Lower threshold for transitions
+                logger.info(f"Accepting transition to new intent: {intent}")
+                # Return with high confidence to encourage transition
+                return {
+                    "intent": intent,
+                    "confidence": max(confidence, 0.75),  # Boost confidence for transitions
+                    "extracted_entities": extracted_entities,
+                    "is_transition": True,
+                    "processing_time": time.time() - start
+                }
+            
+            return {
+                "intent": intent,
+                "confidence": confidence,
+                "extracted_entities": extracted_entities,
+                "processing_time": time.time() - start
+            }
         except Exception as e:
-            logger.exception(f"Error during intent classification: {e}")
-            # Fall back to rule-based on error
-            classification = self._rule_based_classification(query, context)
-            classification["processing_time"] = time.time() - start
-            classification["method"] = "rule_based_fallback"
-            classification["error"] = str(e)
-            return classification
+            logger.error(f"Error in LLM intent classification: {e}")
+            # Fall back to rule-based classification
+            return self._rule_based_classification(query, context)
+
+    def _construct_transition_prompt(self, query: str, chat_history: str = "") -> str:
+        """Build a prompt for the LLM to recognize intent transitions."""
+        return f"""The user appears to be changing the topic with this new query: "{query}"
+
+Previous conversation context:
+{chat_history}
+
+Based on this new query, determine the user's NEW intent. Ignore previous context when deciding intent.
+Choose from these intents:
+- knowledge_base_query: Questions about PSF-AAI framework, roles, skills
+- learning_pathway: Questions about career paths, progression, how to become certain roles
+- course_search: Requests for courses, training, learning materials
+- general_conversation: Greetings, thanks, chit-chat, unrelated to PSF-AAI
+
+Return a JSON object with:
+1. "intent": the most likely intent category
+2. "confidence": confidence score from 0.0 to 1.0
+3. "extracted_entities": any relevant entities (roles, skills, etc.)
+
+Example: {{"intent": "knowledge_base_query", "confidence": 0.85, "extracted_entities": {{"role": "Data Scientist"}}}}
+"""
 
     def _construct_prompt(self, query: str, chat_history: str = "") -> str:
         """Build a prompt for the LLM to classify the intent."""
-        intent_descriptions = {
-            QueryIntent.KNOWLEDGE_BASE_QUERY: "Questions about PSF-AAI framework, including roles, skills, career paths, proficiency levels, or any information contained in the PSF-AAI knowledge base. Questions about career roles, progression paths, or how to develop skills for specific roles within the PSF-AAI framework" ,
-            # QueryIntent.LEARNING_PATHWAY: "Questions about career roles, progression paths, or how to develop skills for specific roles within the PSF-AAI framework",
-            QueryIntent.COURSE_SEARCH: "Questions about asking for specific courses even if they have levels (eg. Applications Development(Level 3)), training, or education resources to learn particular skills",
-            QueryIntent.GENERAL_CONVERSATION: "General conversation or topics unrelated to PSF-AAI or professional development",
-        }
-        
-        # Build the intent descriptions section
-        descriptions = "\n".join([f"- {intent.value}: {desc}" for intent, desc in intent_descriptions.items()])
-        
-        # Build the prompt
-        prompt = f"""# Intent Classification Task
+        return f"""Determine the intent of the user's query: "{query}"
 
-You are an AI assistant specializing in the Philippine Skills Framework for Analytics & AI (PSF-AAI).
+Previous conversation context:
+{chat_history}
 
-## Available Intents:
-{descriptions}
+Choose from these intents:
+- knowledge_base_query: Questions about PSF-AAI framework, roles, skills
+- learning_pathway: Questions about career paths, progression, how to become certain roles
+- course_search: Requests for courses, training, learning materials
+- general_conversation: Greetings, thanks, chit-chat, unrelated to PSF-AAI
 
-## User Query:
-"{query}"
+Return a JSON object with:
+1. "intent": the most likely intent category
+2. "confidence": confidence score from 0.0 to 1.0
+3. "extracted_entities": any relevant entities (roles, skills, etc.)
 
-{f'## Recent Conversation History:\n{chat_history}\n' if chat_history else ''}
-
-## Instructions:
-1. Analyze the query and determine the SINGLE most appropriate intent
-2. Extract any relevant entities (skills, roles mentioned)
-3. Provide your classification in the following format:
-
-INTENT: [intent name]
-CONFIDENCE: [0.0-1.0]
-ENTITIES: [comma-separated list of extracted entities]
-REASONING: [brief explanation of why you chose this intent]
-
-Only respond with this exact format!
+Example: {{"intent": "knowledge_base_query", "confidence": 0.85, "extracted_entities": {{"role": "Data Scientist"}}}}
 """
-        return prompt
 
     def _parse_llm_response(self, response: str, query: str) -> Tuple[Optional[QueryIntent], float, Dict[str, Any]]:
-        """Parse the LLM's intent classification response."""
+        """Parse the LLM response to extract intent, confidence and entities."""
         try:
-            # Extract intent
-            intent_match = re.search(r"INTENT:\s*(\w+)", response)
-            intent_name = intent_match.group(1).lower() if intent_match else ""
+            # Clean the response to extract just the JSON
+            response_text = response.strip()
+            if "```json" in response_text:
+                # Extract JSON from code block
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                # Extract from generic code block
+                response_text = response_text.split("```")[1].strip()
             
-            # Try to map the intent name to an enum
-            intent = None
-            for enum_intent in QueryIntent:
-                if enum_intent.value == intent_name:
-                    intent = enum_intent
-                    break
+            # Parse the JSON
+            intent_data = json.loads(response_text)
             
-            # If no match, try to find the most similar intent
-            if not intent:
-                for enum_intent in QueryIntent:
-                    if enum_intent.value in intent_name or intent_name in enum_intent.value:
-                        intent = enum_intent
-                        break
-            
+            # Extract intent 
+            intent_str = intent_data.get("intent", "").lower()
+            try:
+                # Map to QueryIntent enum
+                intent = QueryIntent(intent_str)
+            except (ValueError, KeyError):
+                logger.warning(f"Unknown intent '{intent_str}', defaulting to GENERAL_CONVERSATION")
+                intent = QueryIntent.GENERAL_CONVERSATION
+                
             # Extract confidence
-            confidence_match = re.search(r"CONFIDENCE:\s*(0\.\d+|1\.0|1)", response)
-            confidence = float(confidence_match.group(1)) if confidence_match else 0.5
+            confidence = float(intent_data.get("confidence", 0.5))
             
             # Extract entities
-            entities_match = re.search(r"ENTITIES:\s*(.+?)(?=\n|$)", response)
-            entities_text = entities_match.group(1) if entities_match else ""
+            entities = intent_data.get("extracted_entities", {})
             
-            # Process entities
-            extracted_entities = {}
-            if entities_text and entities_text.lower() != "none":
-                entity_items = [item.strip() for item in entities_text.split(",")]
-                
-                for entity in entity_items:
-                    if "role:" in entity.lower():
-                        extracted_entities["extracted_role"] = entity.split(":", 1)[1].strip()
-                    elif "level:" in entity.lower():
-                        extracted_entities["extracted_level"] = entity.split(":", 1)[1].strip()
-                    elif "skill:" in entity.lower():
-                        extracted_entities["skill"] = entity.split(":", 1)[1].strip()
-                    else:
-                        # Just add as generic entity
-                        extracted_entities[f"entity_{len(extracted_entities)}"] = entity
+            return intent, confidence, entities
             
-            # Fall back to rule-based role extraction if LLM didn't find a role
-            if intent == QueryIntent.LEARNING_PATHWAY and "extracted_role" not in extracted_entities:
-                from ..utils.intent_classifier import extract_role_from_query
-                role = extract_role_from_query(query)
-                if role:
-                    extracted_entities["extracted_role"] = role
+        except (json.JSONDecodeError, KeyError, AttributeError) as e:
+            logger.error(f"Error parsing LLM response: {e}")
+            logger.debug(f"Raw response: {response}")
             
-            # Return parsed information
-            if intent:
-                return intent, confidence, extracted_entities
+            # Fallback to basic intent detection
+            query_lower = query.lower()
+            if any(word in query_lower for word in ["course", "class", "training", "learn", "study"]):
+                return QueryIntent.COURSE_SEARCH, 0.6, {}
+            elif any(word in query_lower for word in ["career", "path", "become", "role", "job"]):
+                return QueryIntent.LEARNING_PATHWAY, 0.6, {}
+            elif any(word in query_lower for word in ["what is", "tell me about", "explain", "framework"]):
+                return QueryIntent.KNOWLEDGE_BASE_QUERY, 0.6, {}
             else:
-                logger.warning(f"Failed to parse intent from: {response[:100]}")
-                return None, 0.0, {}
-                
-        except Exception as e:
-            logger.exception(f"Error parsing LLM response: {e}")
-            return None, 0.0, {}
+                return QueryIntent.GENERAL_CONVERSATION, 0.5, {}
 
     def _format_chat_history(self, history: list) -> str:
-        """Format chat history for context in the prompt."""
-        if not history or len(history) == 0:
-            return ""
+        """Format the chat history for inclusion in the prompt."""
+        if not history:
+            return "No previous conversation."
             
         formatted = []
-        for item in history[-5:]:  # Only use the 5 most recent messages
-            role = "User" if item.get("is_user", False) else "Assistant"
-            text = item.get("text", "").replace("\n", " ")
-            formatted.append(f"{role}: {text}")
-            
+        for msg in history:
+            prefix = "User:" if msg.get("is_user", False) else "Assistant:"
+            text = msg.get("text", "").replace("\n", " ")
+            if len(text) > 100:
+                text = text[:97] + "..."
+            formatted.append(f"{prefix} {text}")
+        
+        # Only keep last few turns to avoid prompt getting too long
+        if len(formatted) > 6:
+            formatted = formatted[-6:]
+        
         return "\n".join(formatted)
 
     def _rule_based_classification(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:

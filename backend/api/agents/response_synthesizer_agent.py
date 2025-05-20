@@ -71,7 +71,7 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
 """
         try:
             # Initialize the LLM agent
-            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0", # type: ignore
+            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", # type: ignore
                               provider="Ollama",
                               host="http://localhost:11434")
             self.agent = Agent(
@@ -295,6 +295,7 @@ IF the user is very vague and not specific like using words like "it", "this", "
 Create a structured educational response with these sections: {sections_text} if available, else try and answer in your own structured education response.
 Present the information in a clear, organized manner that helps the user understand the topic thoroughly.
 Include specific details from the knowledge base when available.
+Dont give educational resources
 Use markdown formatting for headers and bullet points.
 
 If the knowledge includes relationships between items (like skills required for roles or roles requiring certain skills), be sure to emphasize these connections in your response.

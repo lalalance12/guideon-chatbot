@@ -1,5 +1,6 @@
 import logging
 import re
+import json
 import numpy as np
 from asgiref.sync import sync_to_async
 from django.db.models import F
@@ -11,6 +12,68 @@ from agno.models.ollama import Ollama
 
 logger = logging.getLogger(__name__)
 
+# Make this a standalone function so it can be imported
+async def extract_topics_from_text(text):
+    """Extract potential topic mentions from text using LLM."""
+    if not text or len(text.strip()) == 0:
+        return None
+        
+    try:
+        # Create the LLM agent
+        try:
+            llama_model = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
+            agent = Agent(
+                name="TopicExtractionAgent",
+                model=llama_model,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to initialize agent for topic extraction: {e}")
+            return None
+        
+        # Create a topic extraction prompt
+        system_prompt = """You are an expert at identifying educational topics in text.
+        Your task is to extract all explicit learning topics or skills mentioned in the text.
+        Return ONLY a JSON array of topics. If no clear topics are mentioned, return an empty array."""
+        
+        user_prompt = f"""Extract all learning topics, skills, or subjects that someone might want to take courses about from this text:
+
+{text}
+
+Return ONLY a JSON array of topics like ["topic1", "topic2"]. Include no other text in your response."""
+        
+        # Get topics from LLM
+        response = await agent.arun(user_prompt)
+        
+        # Extract the response content
+        topics_text = response.content if hasattr(response, 'content') else str(response)
+        
+        # Parse the JSON array
+        try:
+            # Clean the response text to make sure it's valid JSON
+            topics_text = topics_text.strip()
+            if topics_text.startswith("```json"):
+                topics_text = topics_text[7:]
+            if topics_text.endswith("```"):
+                topics_text = topics_text[:-3]
+            topics_text = topics_text.strip()
+            
+            topics = json.loads(topics_text)
+            if isinstance(topics, list) and topics:
+                logger.info(f"Extracted topics using LLM: {topics}")
+                return topics
+            else:
+                logger.info("No topics found in text by LLM")
+                return None
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM response as JSON: {e}")
+            logger.debug(f"Raw LLM response: {topics_text}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"Error extracting topics with LLM: {e}")
+        return None
+
+
 class ChatHistoryManager:
     """Manages retrieval of chat history using various strategies."""
     
@@ -18,7 +81,7 @@ class ChatHistoryManager:
     @staticmethod
     async def _get_summarization_agent():
         try:
-            llama_model = Ollama(id="llama3.1:8b-instruct-q8_0", provider="Ollama", host="http://localhost:11434")
+            llama_model = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
             agent = Agent(
                 name="SummarizationAgent",
                 model=llama_model,
@@ -36,13 +99,7 @@ class ChatHistoryManager:
                 chat_id=chat_id, 
                 role='assistant'
             ).order_by('-timestamp')[:1]:
-                # Return as dictionary with content renamed to text for consistency
-                return {
-                    "is_user": False,
-                    "text": message.content,  # Use content field from Message model
-                    "timestamp": message.timestamp.isoformat(),
-                    "previous_topic": ChatHistoryManager._extract_topic_from_text(message.content)
-                }
+                return message.content
             return None
         except Exception as e:
             logger.error(f"Error retrieving last assistant message: {e}")
@@ -56,58 +113,19 @@ class ChatHistoryManager:
             agent = await ChatHistoryManager._get_summarization_agent()
             
             if not agent:
-                # Fallback to simple truncation if agent initialization fails
-                return content[:497] + "..."
-            
-            # Create a summarization prompt
-            system_prompt = """You are an expert summarizer. Your task is to capture the essence of a message 
-            while staying under 500 characters. Preserve key information, main points, and the original tone.
-            Include critical details and maintain any structured format if present."""
-            
-            user_prompt = f"""Summarize the following message in under 500 characters while capturing its essence:
-
-{content}
-
-Your summary:"""
-            
-            # Use the arun method directly instead of chat.completions.create
-            response = await agent.arun(user_prompt)
-            
-            # Extract the summary text from the response
-            summary = response.content if hasattr(response, 'content') else str(response)
-            
-            # Clean up the summary
-            summary = summary.strip()
-            
-            # Double-check length and truncate if still too long
-            if len(summary) > 500:
-                summary = summary[:497] + "..."
+                return None
                 
-            return summary
+            # Implement summarization
+            
         except Exception as e:
-            logger.error(f"Error using LLM for summarization: {e}")
-            # Return truncated original as fallback
-            return content[:497] + "..."
+            logger.error(f"Error summarizing message: {e}")
+            return None
         
     @staticmethod
     async def get_last_user_message(chat_id):
         """Get the last user message before the last assistant message."""
         try:
-            # Get the latest user message that isn't the current one
-            # (filter for messages older than 30 seconds to avoid the current one)
-            import datetime
-            cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=30)
-            
-            async for message in Message.objects.filter(
-                chat_id=chat_id, 
-                role='user',
-                timestamp__lt=cutoff_time  # Only get messages older than cutoff
-            ).order_by('-timestamp')[:1]:
-                return {
-                    "is_user": True,
-                    "text": message.content,  # Use content field from Message model
-                    "timestamp": message.timestamp.isoformat()
-                }
+            # Implement last user message retrieval
             return None
         except Exception as e:
             logger.error(f"Error retrieving last user message: {e}")
@@ -123,48 +141,10 @@ Your summary:"""
         # Combine them in chronological order
         result = []
         if last_user:
-            result.append({
-                "is_user": True,
-                "text": last_user.get("content", ""),
-                "timestamp": last_user.get("timestamp", None)
-            })
+            result.append({"role": "user", "content": last_user})
+        
         if last_assistant:
-            result.append({
-                "is_user": False,
-                "text": last_assistant.get("content", ""),
-                "timestamp": last_assistant.get("timestamp", None),
-                # Extract any topic mentions for context reference resolution
-                "previous_topic": ChatHistoryManager._extract_topic_from_text(last_assistant.get("content", ""))
-            })
+            result.append({"role": "assistant", "content": last_assistant})
             
         logger.info(f"Simple history retrieved {len(result)} messages")
         return result
-
-    # New helper method to extract topics from text
-    @staticmethod
-    def _extract_topic_from_text(text):
-        """Extract potential topic mentions from text for context resolution."""
-        try:
-            if not text:
-                return None
-                
-            # Extract topics using regex patterns
-            topic_patterns = [
-                # Look for "about X" pattern
-                r'about\s+([a-zA-Z\s]+(?:programming|development|science|learning|analytics|visualization|statistics))',
-                # Look for skill names
-                r'(data\s+science|machine\s+learning|artificial\s+intelligence|programming|python|r\s+programming|statistics|data\s+visualization|data\s+analytics)',
-                # Look for "X skills" pattern
-                r'([a-zA-Z\s]+)\s+skills',
-            ]
-            
-            for pattern in topic_patterns:
-                matches = re.findall(pattern, text.lower())
-                if matches:
-                    # Return the first match
-                    return matches[0].strip()
-            
-            return None
-        except Exception as e:
-            logger.error(f"Error extracting topic from text: {e}")
-            return None

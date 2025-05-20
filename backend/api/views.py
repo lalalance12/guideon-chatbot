@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render
 from django.contrib.auth.models import User
 import logging
@@ -191,7 +192,7 @@ class ChatView(APIView):
                         user_message = Message.objects.create(
                             chat=chat,
                             role='user',
-                            content=prompt  # Make sure content is being set properly
+                            content=prompt
                         )
                         logger.debug(f"Saved user message with content length: {len(prompt)}")
                     else:
@@ -206,69 +207,202 @@ class ChatView(APIView):
             logger.info(f"Using chat with ID: {chat.id}")
             
             try:
-                # Save the user message (messages are saved in query_ollama too, but we need this for special cases)
+                # Save the user message
                 user_message = Message.objects.create(
                     chat=chat,
                     role='user',
                     content=prompt
                 )
                 
-                # First, try to classify intent locally for efficient course search handling
-                try:
-                    intent_result = classify_intent(prompt)
-                    intent = intent_result["intent"]
-                    confidence = intent_result["confidence"]
-                    extracted_entities = intent_result.get("extracted_entities", {})
-                    
-                    # Special handling for course search intent only
-                    if intent == QueryIntent.COURSE_SEARCH:
-                        # Create context for course search
-                        context = {
-                            'intent': intent,
-                            'confidence': confidence,
-                            **extracted_entities
-                        }
-                        
-                        # Use CourseSearchAgent to find relevant courses
-                        agent = CourseSearchAgent()
-                        course_result = asyncio.run(agent.process(prompt, context))
-                        
-                        if course_result.get('found', False) and course_result.get('courses', []):
-                            courses = course_result.get('courses', [])
-                            logger.info(f"Found {len(courses)} courses")
-                            
-                            # Generate a response message
-                            response_text = "Based on your query, here are some recommended courses that might help you:"
-                            
-                            # Save the assistant's message
-                            assistant_message = Message.objects.create(
-                                chat=chat,
-                                role='assistant',
-                                content=response_text
-                            )
-                            
-                            # Return the response with courses
-                            response_data = {
-                                'chat_id': chat.id,
-                                'response': response_text,
-                                'courses': courses
-                            }
-                            logger.info(f"Returning response with {len(courses)} courses")
-                            return Response(response_data, status=status.HTTP_200_OK)
-                except Exception as e:
-                    logger.warning(f"Intent classification failed, falling back to regular processing: {str(e)}")
+                # Get chat history for context
+                chat_history = Message.objects.filter(chat=chat).order_by('-timestamp')[:10]
+                formatted_history = []
+                for msg in chat_history:
+                    if msg.id != user_message.id:  # Skip the current message
+                        formatted_history.append({
+                            "is_user": msg.role == 'user',
+                            "text": msg.content,
+                            "timestamp": msg.timestamp.isoformat()
+                        })
                 
-                # For all other cases, use the regular chat flow
-                # Note: query_ollama will save the messages to the database
-                response = query_ollama(prompt, chat_id=str(chat.id))
+                # Check if we're expecting a topic selection
+                topics = []
+                awaiting_selection = False
+                if hasattr(chat, 'metadata') and chat.metadata:
+                    try:
+                        metadata = json.loads(chat.metadata) if isinstance(chat.metadata, str) else chat.metadata
+                        if isinstance(metadata, dict) and metadata.get('awaiting_topic_selection') and metadata.get('topics'):
+                            topics = metadata.get('topics', [])
+                            awaiting_selection = True
+                            logger.info(f"User is responding to topic selection from: {topics}")
+                    except json.JSONDecodeError:
+                        logger.warning(f"Failed to parse chat metadata JSON: {chat.metadata}")
+                
+                # Initialize the orchestrator agent with context
+                context = {
+                    'chat_id': str(chat.id),
+                    'chat_history': formatted_history,
+                }
+                
+                # Add topics to context if we're awaiting selection
+                if awaiting_selection:
+                    context['multiple_topics'] = topics
+                
+                # Use orchestrator agent to handle the query with all available agents
+                from .agents.orchestrator_agent import OrchestratorAgent
+                orchestrator = OrchestratorAgent()
+                
+                # Process the query with the orchestrator
+                orchestrator_result = asyncio.run(orchestrator.process(prompt, context))
+                
+                # Extract intent information from orchestration result
+                intent = orchestrator_result.get('metadata', {}).get('intent', 'unknown')
+                logger.info(f"Orchestrator determined intent: {intent}")
+                
+                # Handle course search results
+                if 'course_search' in orchestrator_result:
+                    course_result = orchestrator_result['course_search']
+                    
+                    # Handle multiple topics case
+                    if course_result.get('multiple_topics', []):
+                        topics = course_result.get('multiple_topics', [])
+                        topics_formatted = ", ".join(topics)
+                        
+                        response_text = f"Based on our conversation, I see several topics we've discussed: {topics_formatted}. Which one would you like to find courses for?"
+                        
+                        # Save the assistant's message
+                        assistant_message = Message.objects.create(
+                            chat=chat,
+                            role='assistant',
+                            content=response_text
+                        )
+                        
+                        # Store topics in chat metadata
+                        metadata = {}
+                        if hasattr(chat, 'metadata') and chat.metadata:
+                            try:
+                                metadata = json.loads(chat.metadata) if isinstance(chat.metadata, str) else chat.metadata
+                                if not isinstance(metadata, dict):
+                                    metadata = {}
+                            except json.JSONDecodeError:
+                                metadata = {}
+                        
+                        metadata['awaiting_topic_selection'] = True
+                        metadata['topics'] = topics
+                        chat.metadata = json.dumps(metadata)
+                        chat.save()
+                        
+                        # Return response with topics
+                        response_data = {
+                            'chat_id': chat.id,
+                            'response': response_text,
+                            'topics': topics
+                        }
+                        logger.info(f"Returning response with multiple topics: {topics}")
+                        return Response(response_data, status=status.HTTP_200_OK)
+                    
+                    # Handle regular course results
+                    elif course_result.get('found', False) and course_result.get('courses', []):
+                        courses = course_result.get('courses', [])
+                        topic = course_result.get('topic', '')
+                        logger.info(f"Found {len(courses)} courses for topic: {topic}")
+                        
+                        # Clear awaiting selection state
+                        if awaiting_selection:
+                            try:
+                                metadata = json.loads(chat.metadata) if isinstance(chat.metadata, str) else chat.metadata
+                                if isinstance(metadata, dict):
+                                    metadata['awaiting_topic_selection'] = False
+                                    chat.metadata = json.dumps(metadata)
+                                    chat.save()
+                            except json.JSONDecodeError:
+                                logger.warning(f"Failed to parse chat metadata JSON: {chat.metadata}")
+                        
+                        # Generate a response message
+                        response_text = f"Based on your interest in {topic}, here are some recommended courses that might help you:"
+                        
+                        # Save the assistant's message
+                        assistant_message = Message.objects.create(
+                            chat=chat,
+                            role='assistant',
+                            content=response_text
+                        )
+                        
+                        # Return the response with courses
+                        response_data = {
+                            'chat_id': chat.id,
+                            'response': response_text,
+                            'courses': courses
+                        }
+                        logger.info(f"Returning response with {len(courses)} courses")
+                        return Response(response_data, status=status.HTTP_200_OK)
+                    
+                    # Handle need for clarification
+                    elif course_result.get('needs_clarification', False):
+                        response_text = "I'd be happy to find courses for you. Could you please specify what topic or skill you're interested in learning about?"
+                        
+                        # Save the assistant's message
+                        assistant_message = Message.objects.create(
+                            chat=chat,
+                            role='assistant',
+                            content=response_text
+                        )
+                        
+                        # Return the clarification request
+                        response_data = {
+                            'chat_id': chat.id,
+                            'response': response_text,
+                            'needs_clarification': True
+                        }
+                        logger.info("Returning clarification request for course topic")
+                        return Response(response_data, status=status.HTTP_200_OK)
+                
+                # Handle learning path results
+                if 'learning_path' in orchestrator_result:
+                    # Process learning path results and return
+                    path_result = orchestrator_result['learning_path']
+                    # Return appropriate response for learning path
+                    # ... implementation for learning path
+                    
+                # Handle knowledge base results
+                if 'knowledge_base' in orchestrator_result:
+                    kb_result = orchestrator_result['knowledge_base']
+                    response_text = kb_result.get('response', '')
+                    
+                    # Save the assistant's message
+                    assistant_message = Message.objects.create(
+                        chat=chat,
+                        role='assistant',
+                        content=response_text
+                    )
+                    
+                    # Return the response
+                    response_data = {
+                        'chat_id': chat.id,
+                        'response': response_text
+                    }
+                    return Response(response_data, status=status.HTTP_200_OK)
+                
+                # If no specific handler matched, use the general response
+                response_text = orchestrator_result.get('response', '')
+                if not response_text:
+                    # Fall back to query_ollama if orchestrator didn't provide a response
+                    response_text = query_ollama(prompt, chat_id=str(chat.id))
+                else:
+                    # Save the message if it wasn't already saved
+                    assistant_message = Message.objects.create(
+                        chat=chat,
+                        role='assistant',
+                        content=response_text
+                    )
                 
                 # Return the response
                 response_data = {
                     'chat_id': chat.id,
-                    'response': response
+                    'response': response_text
                 }
                 return Response(response_data, status=status.HTTP_200_OK)
-                
+                    
             except Exception as e:
                 logger.error(f"Error processing chat request: {str(e)}", exc_info=True)
                 return Response(
