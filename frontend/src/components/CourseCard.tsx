@@ -47,56 +47,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
       <p className="text-gray-600 mb-2">Provider: {course.provider}</p>
       <p className="text-gray-600">Rating: {course.rating.toFixed(1)}/5</p>
       <p className="text-gray-700 mb-4">{course.description}</p>
-      
-      {!showFeedback && (
-        <div className="flex gap-4">
-          <button
-            onClick={() => handleCompletionStatus('completed')}
-            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-          >
-            I Completed the Course
-          </button>
-          <button
-            onClick={() => handleCompletionStatus('not_completed')}
-            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-          >
-            I Can't Complete the Course
-          </button>
-        </div>
-      )}
-
-      {showFeedback && completionStatus !== 'not_started' && (
-        <div className="mt-4">
-          <h4 className="text-lg font-medium mb-3">
-            {completionStatus === 'completed' 
-              ? "How was your experience with the course?" 
-              : "Why couldn't you complete the course?"}
-          </h4>
-          <div className="space-y-2">
-            {feedbackQuestions[completionStatus].map((answer: string, index: number) => (
-              <button
-                key={index}
-                className="w-full p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-md transition-colors"
-                onClick={() => {
-                  setShowFeedback(false);
-                  setCompletionStatus('not_started');
-                }}
-              >
-                {answer}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => {
-              setShowFeedback(false);
-              setCompletionStatus('not_started');
-            }}
-            className="mt-4 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-          >
-            Back to Course
-          </button>
-        </div>
-      )}
+      <div className="flex justify-end gap-4">
+        <button
+          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-800 transition-colors"
+        >
+          Take This Course
+        </button>
+      </div>
     </div>
   );
 };
