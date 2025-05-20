@@ -42,6 +42,7 @@ class CourseSearch(models.Model):
     query = models.TextField()
     searched_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='course_searches')
+    price = models.CharField(max_length=50, null=True, blank=True, help_text="Course price (e.g., 'Free', 'Paid', '$49.99')")
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='searches')
     chat = models.ForeignKey(Chat, on_delete=models.SET_NULL, null=True, blank=True, related_name='course_searches')
     
@@ -108,6 +109,10 @@ class UserLearnedCourse(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='learned_courses') 
     learned_at = models.DateTimeField(auto_now_add=True)
     skill_text = models.TextField(null=True, blank=True)  # Text description of skills gained
+    status = models.CharField(max_length=50, default='in_progress', choices=[
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed')
+    ])
     
     class Meta:
         unique_together = ('user', 'course')
