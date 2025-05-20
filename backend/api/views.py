@@ -195,68 +195,27 @@ class ChatView(APIView):
             logger.info(f"Using chat with ID: {chat.id}")
             
             try:
-                # Save the user message (messages are saved in query_ollama too, but we need this for special cases)
-                user_message = Message.objects.create(
-                    chat=chat,
-                    role='user',
-                    content=prompt
-                )
+                # Process the message using our centralized service
+                # Note: Messages are now saved inside the service
+                result = query_ollama(prompt, chat_id=str(chat.id)) 
                 
-                # First, try to classify intent locally for efficient course search handling
-                try:
-                    intent_result = classify_intent(prompt)
-                    intent = intent_result["intent"]
-                    confidence = intent_result["confidence"]
-                    extracted_entities = intent_result.get("extracted_entities", {})
-                    
-                    # Special handling for course search intent only
-                    if intent == QueryIntent.COURSE_SEARCH:
-                        # Create context for course search
-                        context = {
-                            'intent': intent,
-                            'confidence': confidence,
-                            **extracted_entities
-                        }
-                        
-                        # Use CourseSearchAgent to find relevant courses
-                        agent = CourseSearchAgent()
-                        course_result = asyncio.run(agent.process(prompt, context))
-                        
-                        if course_result.get('found', False) and course_result.get('courses', []):
-                            courses = course_result.get('courses', [])
-                            logger.info(f"Found {len(courses)} courses")
-                            
-                            # Generate a response message
-                            response_text = "Based on your query, here are some recommended courses that might help you:"
-                            
-                            # Save the assistant's message
-                            assistant_message = Message.objects.create(
-                                chat=chat,
-                                role='assistant',
-                                content=response_text
-                            )
-                            
-                            # Return the response with courses
-                            response_data = {
-                                'chat_id': chat.id,
-                                'response': response_text,
-                                'courses': courses
-                            }
-                            logger.info(f"Returning response with {len(courses)} courses")
-                            return Response(response_data, status=status.HTTP_200_OK)
-                except Exception as e:
-                    logger.warning(f"Intent classification failed, falling back to regular processing: {str(e)}")
-                
-                # For all other cases, use the regular chat flow
-                # Note: query_ollama will save the messages to the database
-                response = query_ollama(prompt, chat_id=str(chat.id))
-                
-                # Return the response
-                response_data = {
-                    'chat_id': chat.id,
-                    'response': response
-                }
-                return Response(response_data, status=status.HTTP_200_OK)
+                # Check if we got course results
+                if 'courses' in result:
+                    # Return response with courses
+                    response_data = {
+                        'chat_id': chat.id,
+                        'response': result['response'],
+                        'courses': result['courses']
+                    }
+                    logger.info(f"Returning response with courses")
+                    return Response(response_data, status=status.HTTP_200_OK)
+                else:
+                    # Return standard text response
+                    response_data = {
+                        'chat_id': chat.id,
+                        'response': result['response']
+                    }
+                    return Response(response_data, status=status.HTTP_200_OK)
                 
             except Exception as e:
                 logger.error(f"Error processing chat request: {str(e)}", exc_info=True)

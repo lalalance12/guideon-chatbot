@@ -75,12 +75,13 @@ class KnowledgeSource(models.Model):
 class KnowledgeChunk(models.Model):
     text = models.TextField()
     metadata = models.JSONField(default=dict)
-    embedding = VectorField(dimensions=1024)
+    embedding = VectorField(dimensions=1024) # Ensure this matches your embedding model's dimensions
     source = models.ForeignKey(KnowledgeSource, on_delete=models.CASCADE, related_name='chunks')
+    category = models.CharField(max_length=100, db_index=True, null=True, blank=True) # Added category field
     pathways = models.ManyToManyField(LearningPathway, through='PathwayKnowledge')
     
     def __str__(self):
-        return f"Chunk {self.id} from {self.source.name}"
+        return f"Chunk {self.id} ({self.category}) from {self.source.name}"
 
 class PathwayCourse(models.Model):
     pathway = models.ForeignKey(LearningPathway, on_delete=models.CASCADE)
