@@ -76,11 +76,27 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
             self.agent = None
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Synthesize a response based on multiple agent outputs and the flow context.
-        """
         start = time.time()
         logger.info(f"Synthesizing response for query: {query[:60]}...")
+
+        # If course_search flow and clarification is needed, return prompt directly
+        flow_context = context.get("flow", {})
+        response_format = flow_context.get("response_format", {"format": "conversational"})
+        flow_action = flow_context.get("flow_action", "general_response")
+        intent = context.get("intent")
+        if getattr(intent, 'value', intent) == "course_search":
+            if flow_action in ("clarify_course_topic", "request_course_topic_details"):
+                prompt = response_format.get('prompt_message', "What specific skill or topic are you looking for courses on?")
+                return {"response": prompt, "clarification": True}
+            # If we have course cards, return them directly (skip LLM synthesis)
+            agent_responses = context.get('agent_responses', {})
+            course_result = agent_responses.get('course_search', {})
+            if course_result.get('found', False) and course_result.get('courses', []):
+                courses = course_result.get('courses', [])
+                response_text = "Based on your query, here are some recommended courses that might help you:"
+                return {"response": response_text, "courses": courses}
+            if course_result.get('message'):
+                return {"response": course_result['message']}
 
         # Check if we have a valid LLM
         if not self.agent:
@@ -88,7 +104,6 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
             return self._fallback_response(query, context)
 
         # Get flow-specific response format if available
-        flow_context = context.get("flow", {})
         response_format = flow_context.get("response_format", {"format": "conversational"})
         flow_action = flow_context.get("flow_action", "general_response")
 
