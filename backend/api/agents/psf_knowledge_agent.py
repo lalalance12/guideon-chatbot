@@ -3,7 +3,7 @@ import asyncio, logging
 from typing import Dict, Any, Set, List
 
 from .base_agent import BaseAgent
-from ..utils.query_vectors import search_similar_content
+from ..utils.query_vectors import search_similar_content, search_similar_content_async, create_fallback_content
 from ..utils.intent_classifier import QueryIntent
 
 logger = logging.getLogger(__name__)
@@ -13,57 +13,45 @@ class PSFKnowledgeAgent(BaseAgent):
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         intent = context.get("intent")
-        extracted_level = context.get("extracted_level")
+        extracted_entities = context.get("extracted_entities", {})
+        extracted_level = extracted_entities.get("extracted_level") or context.get("extracted_level")
+        extracted_role = extracted_entities.get("extracted_role")
         limit = 5
 
         # Handle flow-specific context if available
         flow_context = context.get("flow", {})
         flow_action = flow_context.get("flow_action")
-        
-        logger.debug("KB search: %s | intent=%s level=%s flow_action=%s",
-                     query, getattr(intent, "value", intent), extracted_level, flow_action)
+        logger.debug("KB search: %s | intent=%s level=%s role=%s flow_action=%s",
+                     query, getattr(intent, "value", intent), extracted_level, 
+                     extracted_role, flow_action)
 
-        # Adjust search based on flow action
-        if flow_action == "retrieve_career_map":
-            search_query = "career map domains job grades vertical tracks horizontal levels psf-aai"
-            search_limit = limit * 2
-        elif flow_action == "role_information" and "role" in flow_context:
-            role = flow_context.get("role")
-            search_query = f"{role} role description responsibilities career path"
-            search_limit = limit * 2
-        elif flow_action == "generate_pathway" and "role" in flow_context:
-            role = flow_context.get("role")
-            search_query = f"{role} career progression learning pathway skills development"
-            search_limit = limit * 2
-        elif flow_action == "retrieve_knowledge" and "sections" in flow_context:
-            sections = flow_context.get("sections", [])
-            section_str = " ".join(sections)
-            search_query = f"{query} {section_str}"
-            search_limit = limit
-        else:
-            # Use the standard intent-based search query builder
-            search_query, search_limit = self._build_search_query(intent, query, extracted_level, limit, context)
+        # Determine section filter based on intent and flow
+        section_filter = self._determine_section_filter(intent, flow_action, flow_context)
+
+        # Build optimized search query
+        search_query, search_limit = self._build_search_query(
+            intent, query, extracted_level, extracted_role, limit, flow_action, flow_context
+        )
 
         try:
-            # Run blocking vector search in a worker thread
-            results = await asyncio.to_thread(search_similar_content, search_query, int(search_limit))
-            
-            # If we don't get any results, try using the async version which might handle Django ORM better
-            if not results or (isinstance(results, dict) and "error" in results):
-                logger.info("Trying async search method as fallback")
-                from ..utils.query_vectors import search_similar_content_async
-                results = await search_similar_content_async(search_query, int(search_limit))
+            # Use async vector search for best Django compatibility
+            results = await search_similar_content_async(
+                search_query, limit=search_limit or limit, section=section_filter
+            )
         except Exception as exc:
-            logger.error("Search error: %s", exc)
+            logger.error(f"Error during vector search: {exc}")
             return self._fail("exception", f"Error accessing knowledge base: {exc}")
 
         if isinstance(results, dict) and "error" in results:
+            logger.error(f"Vector search error: {results['error']}")
             return self._fail("search_error", f"Error searching knowledge base: {results['error']}")
         if not results:
+            logger.warning("No results found for query: %s", query)
             return self._fail("no_results", "No information found for this query.")
 
-        formatted, types = self._filter_results(intent, extracted_level, results)
+        formatted, types = self._filter_results(intent, extracted_level, extracted_role, results)
         if not formatted:
+            logger.warning("No relevant results after filtering for query: %s", query)
             return self._fail("low_relevance", "Information found but not relevant enough.")
 
         # Add flow-specific metadata to the response
@@ -73,25 +61,80 @@ class PSFKnowledgeAgent(BaseAgent):
             "metadata": {
                 "query_intent": getattr(intent, "value", intent),
                 "extracted_level": extracted_level,
+                "extracted_role": extracted_role,
                 "result_count": len(formatted),
                 "result_types": list(types),
                 "flow_action": flow_action,
-                "search_query": search_query
+                "search_query": search_query,
+                "section_filter": section_filter
             },
             "count": len(formatted[:limit]),
         }
 
-    def _build_search_query(self, intent, query, lvl, limit, context=None):
+    def _determine_section_filter(self, intent, flow_action, flow_context):
+        """Determine which PSF-AAI section to filter by based on intent and flow context"""
+        
+        if flow_action == "retrieve_career_map":
+            return "career_map"
+        elif flow_action == "role_information":
+            return "job_roles"
+            
+        # Intent-based filtering
+        if isinstance(intent, str):
+            intent_str = intent
+        else:
+            intent_str = getattr(intent, "value", "")
+            
+        if intent_str == "learning_pathway":
+            return None  # Need to search across sections for comprehensive pathways
+        elif "course_search" in intent_str:
+            return None  # Course search needs to pull from all sections
+            
+        # Check sections specified in flow context
+        if flow_context and "sections" in flow_context:
+            sections = flow_context.get("sections", [])
+            if "functional_skills" in sections:
+                return "functional_skills"
+            elif "enabling_skills" in sections:
+                return "enabling_skills"
+            elif "job_roles" in sections:
+                return "job_roles"
+            
+        # Default: no section filter
+        return None
+
+    def _build_search_query(self, intent, query, level, role, limit, flow_action=None, flow_context=None):
+        """Build an optimized search query based on intent and extracted entities"""
         search_query = query
         
-        # Handle different intent types with specific search optimizations
-        if intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
-            # Extract entities to help focus the search
-            extracted_entities = context.get("extracted_entities", {}) if context else {}
-            role = extracted_entities.get("extracted_role")
-            level = extracted_entities.get("extracted_level") or lvl
+        # Flow-specific queries take precedence
+        if flow_action == "retrieve_career_map":
+            search_query = "career map domains job grades vertical tracks horizontal levels psf-aai"
+            limit *= 2
+        elif flow_action == "role_information" and role:
+            search_query = f"{role} role description responsibilities skills requirements"
+            limit *= 2
+        elif flow_action == "generate_pathway" and role:
+            search_query = f"{role} career progression learning pathway skills development"
+            limit *= 2
+        elif flow_action == "retrieve_knowledge" and flow_context.get("sections"):
+            sections = flow_context.get("sections", [])
+            section_terms = []
             
-            # Detect sub-intent from query keywords
+            if "functional_skills" in sections:
+                section_terms.append("functional skills technical competencies")
+            if "enabling_skills" in sections:
+                section_terms.append("enabling skills soft skills")
+            if "job_roles" in sections:
+                section_terms.append("job roles positions career")
+                
+            if section_terms:
+                section_str = " ".join(section_terms)
+                search_query = f"{query} {section_str}"
+            
+        # Intent-based query building
+        elif intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
+            # Extract entities to help focus the search
             query_lower = query.lower()
             
             # Check for role-related queries
@@ -101,10 +144,10 @@ class PSFKnowledgeAgent(BaseAgent):
                 search_query = f"{query} career map domain job grades progression psf-aai framework"
                 limit *= 2
             
-            # Rest of conditions remain the same
+            # Check for role-specific queries
             elif role or any(kw in query_lower for kw in ["role", "job", "position", "responsibilities"]):
                 if role:
-                    search_query = f"{role} role description responsibilities tasks requirements"
+                    search_query = f"{role} role description responsibilities tasks requirements skills"
                 else:
                     search_query = f"{query} role description responsibilities tasks"
                 limit *= 1.5
@@ -119,20 +162,27 @@ class PSFKnowledgeAgent(BaseAgent):
                 search_query = f"{query} progression levels path development improvement"
                 limit *= 1.5
             
+            # Check for functional skill queries
+            elif any(kw in query_lower for kw in ["functional skill", "technical skill", "technical competency"]):
+                search_query = f"{query} functional skills technical competencies"
+                limit *= 1.5
+                
+            # Check for enabling skill queries
+            elif any(kw in query_lower for kw in ["enabling skill", "soft skill", "transversal"]):
+                search_query = f"{query} enabling skills soft skills behavioral competencies"
+                limit *= 1.5
+                
             # General knowledge queries
             else:
                 search_query = f"{query} psf-aai framework knowledge description definition"
                     
         elif intent == QueryIntent.LEARNING_PATHWAY:
-            # Extract role if available
-            extracted_entities = context.get("extracted_entities", {}) if context else {}
-            role = extracted_entities.get("extracted_role")
-            
+            # Optimize for learning pathway queries
             if role:
-                search_query = f"{role} career progression learning pathway skills requirements"
+                search_query = f"{role} career progression learning pathway skills requirements development"
                 limit *= 2
             else:
-                search_query = f"{query} career pathway progression job roles"
+                search_query = f"{query} career pathway progression job roles skills development"
                 limit *= 1.5
                     
         elif intent == QueryIntent.COURSE_SEARCH:
@@ -146,7 +196,8 @@ class PSFKnowledgeAgent(BaseAgent):
             
         return search_query, limit
     
-    def _filter_results(self, intent, lvl, raw):
+    def _filter_results(self, intent, level, role, raw):
+        """Filter and prioritize search results based on intent and metadata"""
         filtered: List[Dict[str, str]] = []
         types: Set[str] = set()
 
@@ -170,7 +221,11 @@ class PSFKnowledgeAgent(BaseAgent):
             item_type = meta.get("type", "")
             distance = item.get("distance", 1.0)
             lvl_match = meta.get("level")
-
+            skill_category = meta.get("skill_category", "")
+            
+            # Extract used_in_roles for comparison
+            used_in_roles = meta.get("used_in_roles", [])
+            
             if item_type:
                 types.add(item_type)
                 
@@ -186,6 +241,7 @@ class PSFKnowledgeAgent(BaseAgent):
             if distance >= threshold:
                 continue
                 
+            # Build a clean result object
             result = {
                 "title": meta.get("title", "Information"),
                 "type": item_type,
@@ -193,20 +249,34 @@ class PSFKnowledgeAgent(BaseAgent):
                 "content": item.get("text", ""),
                 "relevance": f"{(1 - distance) * 100:.1f}%",
                 "metadata": meta,
+                "skill_category": skill_category,
+                "distance": distance
             }
             
-            # Prioritization logic based on detected intent and sub-intent
-            if intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
-                if lvl is not None and str(lvl_match) == str(lvl):
-                    # Prioritize exact level matches
-                    filtered.insert(0, result)
-                elif sub_intent and item_type == sub_intent:
-                    # Prioritize matches for detected sub-intent
-                    filtered.insert(0, result)
-                else:
-                    filtered.append(result)
-            elif intent == QueryIntent.LEARNING_PATHWAY and item_type == "role":
-                # Prioritize role information for career queries
+            # Prioritization logic - insert high-priority items at the front
+            should_prioritize = False
+            
+            # Role-specific prioritization
+            if role and isinstance(role, str) and role.strip():
+                # Check if this result mentions the exact role
+                if role.lower() in meta.get("title", "").lower():
+                    should_prioritize = True
+                # Check if this result is for a skill used by the role
+                elif role in used_in_roles:
+                    should_prioritize = True
+            
+            # Level-specific prioritization  
+            if level is not None and str(lvl_match) == str(level):
+                should_prioritize = True
+                
+            # Intent-based prioritization
+            if intent == QueryIntent.KNOWLEDGE_BASE_QUERY and sub_intent and item_type == sub_intent:
+                should_prioritize = True
+            elif intent == QueryIntent.LEARNING_PATHWAY and ("role" in item_type or "career_map" in item_type):
+                should_prioritize = True
+                
+            # Insert at appropriate position
+            if should_prioritize:
                 filtered.insert(0, result)
             else:
                 filtered.append(result)

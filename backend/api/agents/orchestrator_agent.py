@@ -30,11 +30,13 @@ class OrchestratorAgent(BaseAgent):
         logger.info("Orchestrating query: %s", query[:60])
 
         intent = context.get("intent")
+        logger.info(f"[Orchestrator] Received intent: {getattr(intent, 'value', intent)}")
         
         # Get flow-specific instructions
         flow_instructions = self.flow_controller.process_query(
             query, intent, context
         )
+        logger.info(f"[Orchestrator] Flow instructions: {flow_instructions}")
         
         # Update context with flow instructions
         context.update({"flow": flow_instructions})
@@ -42,14 +44,18 @@ class OrchestratorAgent(BaseAgent):
         # Determine which agents to activate based on flow
         tasks = []
         agents_to_activate = flow_instructions.get("activate_agents", [])
+        logger.info(f"[Orchestrator] Agents to activate: {agents_to_activate}")
         
         if "knowledge_agent" in agents_to_activate:
+            logger.info("[Orchestrator] Activating knowledge_agent")
             tasks.append(self._execute_agent(self.knowledge_agent, query, context, "knowledge_base"))
         
         if "learning_path_agent" in agents_to_activate:
+            logger.info("[Orchestrator] Activating learning_path_agent")
             tasks.append(self._execute_agent(self.learning_path_agent, query, context, "learning_path"))
         
         if "course_agent" in agents_to_activate:
+            logger.info("[Orchestrator] Activating course_agent")
             tasks.append(self._execute_agent(self.course_agent, query, context, "course_search"))
 
         # If no specialized agents are needed, still collect basic information
@@ -78,6 +84,7 @@ class OrchestratorAgent(BaseAgent):
                 
             # Add each agent's response to the collection
             agent_name = result.get("agent_name", f"agent_{i}")
+            logger.info(f"[Orchestrator] Result from {agent_name}: {result}")
             agent_responses[agent_name] = result
         
         # Update context with agent responses
