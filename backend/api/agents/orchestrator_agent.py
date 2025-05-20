@@ -3,9 +3,10 @@ from typing import Dict, Any, List
 import asyncio
 import logging
 import time
+import json
 
 from ..utils.chat_history_manager import ChatHistoryManager
-
+from .intent_classifier_agent import IntentClassifierAgent 
 from .base_agent import BaseAgent
 from .psf_knowledge_agent import PSFKnowledgeAgent
 from .course_search_agent import CourseSearchAgent
@@ -15,8 +16,6 @@ from ..flows.intent_flows import FlowController
 from agno.agent import Agent
 
 logger = logging.getLogger(__name__)
-
-# Initialize AGNO agent - keep existing code here
 
 class OrchestratorAgent(BaseAgent):
     """Coordinates the execution of specialised agents based on intent."""
@@ -30,6 +29,27 @@ class OrchestratorAgent(BaseAgent):
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         start = time.time()
         logger.info("Orchestrating query: %s", query[:60])
+        
+        # Store the chat ID for later use
+        self.chat_id = context.get("chat_id")
+        
+        # Check for topics from previous interactions in chat metadata
+        if self.chat_id:
+            chat = await self._get_chat(self.chat_id)
+            if chat and hasattr(chat, 'metadata') and chat.metadata:
+                try:
+                    metadata = json.loads(chat.metadata) if isinstance(chat.metadata, str) else chat.metadata
+                    if isinstance(metadata, dict) and metadata.get('awaiting_topic_selection') and metadata.get('topics'):
+                        # Add topics to context for the flow to use
+                        context['multiple_topics'] = metadata.get('topics')
+                        logger.info(f"Retrieved topics from chat metadata: {context['multiple_topics']}")
+                        
+                        # Force course search intent if we're expecting a topic selection
+                        if context.get("intent") is None:
+                            context["intent"] = QueryIntent.COURSE_SEARCH
+                            logger.info("Set intent to COURSE_SEARCH based on awaiting_topic_selection flag")
+                except (json.JSONDecodeError, AttributeError) as e:
+                    logger.warning(f"Failed to process chat metadata: {e}")
 
         intent = context.get("intent")
         
@@ -41,6 +61,21 @@ class OrchestratorAgent(BaseAgent):
         # Update context with flow instructions
         if flow_instructions:
             context["flow"] = flow_instructions
+        
+        # If this is a topic selection request, store the topics in chat metadata
+        if flow_instructions.get("flow_action") == "request_topic_selection" and "topics" in flow_instructions and self.chat_id:
+            await self._update_chat_metadata(self.chat_id, {
+                'awaiting_topic_selection': True,
+                'topics': flow_instructions['topics']
+            })
+            logger.info(f"Stored topics in chat metadata: {flow_instructions['topics']}")
+        
+        # Clear the awaiting_topic_selection flag if we're doing a course search
+        if flow_instructions.get("flow_action") == "course_search" and self.chat_id:
+            await self._update_chat_metadata(self.chat_id, {
+                'awaiting_topic_selection': False
+            })
+            logger.info("Cleared awaiting_topic_selection flag in chat metadata")
         
         # Determine which agents to activate based on flow instructions
         agents_to_activate = flow_instructions.get("activate_agents", ["knowledge_agent"])
@@ -68,6 +103,16 @@ class OrchestratorAgent(BaseAgent):
             )
             if course_result:
                 results["course_search"] = course_result
+                
+                # Special handling for multiple topics case
+                if course_result.get('multiple_topics', []):
+                    logger.info(f"Multiple topics found: {course_result.get('multiple_topics')}")
+                    # Store topics in chat metadata for future reference
+                    if self.chat_id:
+                        await self._update_chat_metadata(self.chat_id, {
+                            'awaiting_topic_selection': True,
+                            'topics': course_result.get('multiple_topics')
+                        })
         
         if "learning_path_agent" in agents_to_activate:
             path_result = await self._execute_agent(
@@ -105,3 +150,44 @@ class OrchestratorAgent(BaseAgent):
         except Exception as e:
             logger.error(f"Error executing {key} agent: {e}")
             return None
+            
+    async def _get_chat(self, chat_id):
+        """Retrieve a chat object by ID."""
+        try:
+            from ..models import Chat
+            return await Chat.objects.aget(id=chat_id)
+        except Exception as e:
+            logger.error(f"Error retrieving chat: {e}")
+            return None
+
+    async def _update_chat_metadata(self, chat_id, metadata_update):
+        """Update the metadata field of a chat object."""
+        try:
+            from ..models import Chat
+            chat = await Chat.objects.aget(id=chat_id)
+            
+            # Initialize or update existing metadata
+            current_metadata = {}
+            if chat.metadata:
+                try:
+                    if isinstance(chat.metadata, str):
+                        current_metadata = json.loads(chat.metadata) 
+                    else:
+                        current_metadata = chat.metadata
+                except json.JSONDecodeError:
+                    logger.warning(f"Invalid metadata JSON, resetting: {chat.metadata}")
+                    current_metadata = {}
+                    
+            # Ensure current_metadata is a dict
+            if not isinstance(current_metadata, dict):
+                current_metadata = {}
+                
+            # Update with new values
+            current_metadata.update(metadata_update)
+            
+            # Save the updated metadata
+            chat.metadata = json.dumps(current_metadata)
+            await chat.asave()
+            logger.info(f"Updated chat metadata for chat {chat_id}")
+        except Exception as e:
+            logger.error(f"Error updating chat metadata: {e}")

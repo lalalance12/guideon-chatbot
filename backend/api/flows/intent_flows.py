@@ -141,8 +141,17 @@ class LearningPathwayFlow(IntentFlow):
 class CourseSearchFlow(IntentFlow):
     """Flow for course and learning resource searches"""
     
+    def __init__(self):
+        super().__init__()
+        self.context = {}  # Store flow-specific context
+        self.current_stage = FlowStage.INITIAL
+    
     def process(self, query: str, conversation_context: Dict[str, Any]) -> Dict[str, Any]:
         """Process a query within the course search flow."""
+        logger.info(f"Processing course search flow at stage: {self.current_stage}")
+        logger.debug(f"Flow context: {self.context}")
+        logger.debug(f"Conversation context: {conversation_context}")
+        
         # Initial query - determine if clarification needed
         if self.current_stage == FlowStage.INITIAL:
             # Check for ambiguous references
@@ -151,13 +160,36 @@ class CourseSearchFlow(IntentFlow):
             
             # Extract any explicit topics/skills
             extracted_skill = conversation_context.get("extracted_entities", {}).get("extracted_skill")
-            extracted_topic = ""
+            
+            # Check if we have multiple topics from previous processing
+            multiple_topics = conversation_context.get("multiple_topics", [])
+            
+            # If we have multiple topics from context, ask for clarification
+            if multiple_topics and len(multiple_topics) > 1:
+                self.current_stage = FlowStage.CLARIFICATION
+                self.context["multiple_topics"] = multiple_topics
+                return {
+                    "flow_action": "request_topic_selection",
+                    "needs_clarification": True,
+                    "topics": multiple_topics,
+                    "response_format": {"format": "topic_selection"}
+                }
+            
+            # If we have a topic from context, use it
+            elif multiple_topics and len(multiple_topics) == 1:
+                topic = multiple_topics[0]
+                self.current_stage = FlowStage.RECOMMENDATION
+                self.context["search_topic"] = topic
+                return {
+                    "flow_action": "course_search",
+                    "topic": topic
+                }
             
             # If we have a skill, use that
             if extracted_skill:
                 topic = extracted_skill
                 self.current_stage = FlowStage.RECOMMENDATION
-            # If we have an ambiguous reference, set flag for clarification
+            # If we have an ambiguous reference but no context topic, set flag for clarification
             elif has_ambiguous_reference and not extracted_skill:
                 self.current_stage = FlowStage.CLARIFICATION
                 return {
@@ -177,7 +209,32 @@ class CourseSearchFlow(IntentFlow):
                 "topic": self.context["search_topic"]
             }
         
-        # Handle clarification response
+        # Handle topic selection from multiple options
+        elif self.current_stage == FlowStage.CLARIFICATION and "multiple_topics" in self.context:
+            logger.info(f"Processing topic selection from: {self.context['multiple_topics']}")
+            
+            # Try to match user's response to one of the topics
+            selected_topic = self._match_topic_selection(query, self.context["multiple_topics"])
+            
+            if selected_topic:
+                logger.info(f"Matched user selection to topic: {selected_topic}")
+                self.current_stage = FlowStage.RECOMMENDATION
+                self.context["search_topic"] = selected_topic
+                return {
+                    "flow_action": "course_search",
+                    "topic": selected_topic
+                }
+            else:
+                # If no match, use the response as a new topic
+                logger.info(f"No topic match found, using query as topic: {query}")
+                self.current_stage = FlowStage.RECOMMENDATION
+                self.context["search_topic"] = query
+                return {
+                    "flow_action": "course_search",
+                    "topic": query
+                }
+        
+        # Handle regular clarification response
         elif self.current_stage == FlowStage.CLARIFICATION:
             # User has responded to clarification request
             # Their response should contain the topic
@@ -193,7 +250,32 @@ class CourseSearchFlow(IntentFlow):
             self.current_stage = FlowStage.FOLLOW_UP
             return {"flow_action": "suggest_related_courses", "topic": self.context["search_topic"]}
         
+        # Final state - reset to handle further queries
+        elif self.current_stage == FlowStage.FOLLOW_UP:
+            self.reset()
+            return {"flow_action": "general_response"}
+            
+        # Default fallback
         return {"flow_action": "general_response"}
+    
+    def _match_topic_selection(self, user_response: str, topics: List[str]) -> Optional[str]:
+        """Match user's selection to one of the multiple topics."""
+        user_response = user_response.lower()
+        
+        # Check for exact matches
+        for topic in topics:
+            if topic.lower() in user_response:
+                return topic
+        
+        # Check for fuzzy matches (e.g., "python" matches "Data Science with Python")
+        for topic in topics:
+            words = topic.lower().split()
+            for word in words:
+                if len(word) > 3 and word in user_response:  # Only match significant words
+                    return topic
+                
+        # No match found
+        return None
     
     def get_next_response_format(self) -> Dict[str, Any]:
         if self.current_stage == FlowStage.RECOMMENDATION:
@@ -201,10 +283,24 @@ class CourseSearchFlow(IntentFlow):
                 "format": "course_list",
                 "sections": ["Course Name", "Provider", "Description", "Difficulty", "Link"]
             }
+        elif self.current_stage == FlowStage.CLARIFICATION and "multiple_topics" in self.context:
+            return {
+                "format": "topic_selection",
+                "topics": self.context["multiple_topics"]
+            }
         return {"format": "conversational"}
     
     def should_activate_agents(self) -> List[str]:
-        return ["knowledge_agent", "course_agent"]
+        if self.current_stage == FlowStage.RECOMMENDATION:
+            return ["knowledge_agent", "course_agent"]
+        elif self.current_stage == FlowStage.FOLLOW_UP:
+            return ["knowledge_agent", "course_agent"]
+        return []
+        
+    def reset(self):
+        """Reset the flow state."""
+        self.current_stage = FlowStage.INITIAL
+        self.context = {}
 
 class GeneralConversationFlow(IntentFlow):
     """Flow for general chit-chat not related to PSF-AAI"""
