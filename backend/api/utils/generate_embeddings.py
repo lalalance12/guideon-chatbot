@@ -464,7 +464,7 @@ def process_roles(filepath):
 
 
 def process_career_map(filepath):
-    """Processes career map data from career_map.json."""
+    """Processes career map data from career_map.json, including explicit nextGrade/nextRoles progression."""
     print(f"\nProcessing Career Map from: {filepath}")
     text_chunks = []
     chunk_metadata = []
@@ -495,10 +495,16 @@ def process_career_map(filepath):
             for role_info in domain_item.get("roles", []):
                 grade = role_info.get("grade", "")
                 role_name = role_info.get("role", "")
+                next_grade = role_info.get("nextGrade")
+                next_roles = role_info.get("nextRoles") if "nextRoles" in role_info else None
                 if grade and role_name:
-                    roles_in_domain_text_list.append(f"- {grade}: {role_name}")
-                    roles_in_domain_meta.append({"grade": grade, "role": role_name})
-
+                    roles_in_domain_text_list.append(f"- {grade}: {role_name}" + (f" (Next: {next_grade})" if next_grade else ""))
+                    roles_in_domain_meta.append({
+                        "grade": grade,
+                        "role": role_name,
+                        "nextGrade": next_grade,
+                        "nextRoles": next_roles
+                    })
             domain_text = f"Career Domain: {domain_name}\nRoles:\n" + "\n".join(roles_in_domain_text_list)
             text_chunks.append(domain_text)
             chunk_metadata.append({

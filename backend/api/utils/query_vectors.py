@@ -99,6 +99,9 @@ def search_similar_content(query_text, limit=5, section=None):
             # Extract important fields for ranking/filtering
             skill_type = metadata.get('skill_category')
             chunk_type = metadata.get('type', '')
+            # Add nextGrade/nextRoles if present for career map domain
+            next_grade = metadata.get('nextGrade') if 'nextGrade' in metadata else None
+            next_roles = metadata.get('nextRoles') if 'nextRoles' in metadata else None
             
             # Include more detailed info in results
             formatted_results.append({
@@ -106,7 +109,9 @@ def search_similar_content(query_text, limit=5, section=None):
                 "metadata": metadata,
                 "distance": float(result.distance) if hasattr(result, 'distance') and result.distance is not None else 1.0,
                 "skill_type": skill_type,
-                "chunk_type": chunk_type
+                "chunk_type": chunk_type,
+                "nextGrade": next_grade,
+                "nextRoles": next_roles
             })
 
         search_time = time.time() - start_time
@@ -164,10 +169,14 @@ async def search_similar_content_async(query_text, limit=5, section=None):
         formatted_results = []
         for result in results:
             metadata = result.metadata if isinstance(result.metadata, dict) else {}
+            next_grade = metadata.get('nextGrade') if 'nextGrade' in metadata else None
+            next_roles = metadata.get('nextRoles') if 'nextRoles' in metadata else None
             formatted_results.append({
                 "text": result.text,
                 "metadata": metadata,
-                "distance": float(result.distance) if hasattr(result, 'distance') and result.distance is not None else 1.0
+                "distance": float(result.distance) if hasattr(result, 'distance') and result.distance is not None else 1.0,
+                "nextGrade": next_grade,
+                "nextRoles": next_roles
             })
 
         search_time = time.time() - start_time
