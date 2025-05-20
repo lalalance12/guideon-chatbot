@@ -40,18 +40,47 @@ class KnowledgeBaseFlow(IntentFlow):
     
     def process(self, query: str, conversation_context: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"[Flow:KnowledgeBaseFlow] Stage: {self.current_stage} | Query: {query}")
-        # Initial query - information stage
-        if self.current_stage == FlowStage.INITIAL:
+        prev_intent = conversation_context.get("previous_intent")
+        if prev_intent == QueryIntent.GENERAL_CONVERSATION:
+            logger.info("[Flow:KnowledgeBaseFlow] Transitioned from General Conversation to KnowledgeBaseFlow")
             self.current_stage = FlowStage.INFORMATION
-            logger.info(f"[Flow:KnowledgeBaseFlow] Transition to INFORMATION stage")
-            # Check for career map specific query
-            query_lower = query.lower()
-            if any(term in query_lower for term in ["career map", "career path", "job progression", "domains", "career tracks"]):
+            return {"flow_action": "intent_switch_acknowledge", "message": "Switching to PSF-AAI knowledge base mode.", "current_topic": None}
+        query_lower = query.lower()
+        # --- Distribute info based on query content ---
+        if self.current_stage == FlowStage.INITIAL:
+            # Career map or progression
+            if any(term in query_lower for term in ["career map", "career path", "job progression", "domains", "vertical tracks", "horizontal levels", "job grades", "career domains"]):
+                self.current_stage = FlowStage.INFORMATION
                 self.context["knowledge_sections"] = ["career_map"]
                 logger.info(f"[Flow:KnowledgeBaseFlow] Action: retrieve_career_map")
                 return {"flow_action": "retrieve_career_map"}
+            # Role-specific
+            elif any(term in query_lower for term in ["role", "job", "position", "responsibilities"]):
+                self.current_stage = FlowStage.INFORMATION
+                self.context["knowledge_sections"] = ["job_roles"]
+                logger.info(f"[Flow:KnowledgeBaseFlow] Action: retrieve_role_info")
+                return {"flow_action": "role_information"}
+            # Functional/enabling skills
+            elif any(term in query_lower for term in ["functional skill", "technical skill", "technical competency"]):
+                self.current_stage = FlowStage.INFORMATION
+                self.context["knowledge_sections"] = ["functional_skills"]
+                logger.info(f"[Flow:KnowledgeBaseFlow] Action: retrieve_functional_skills")
+                return {"flow_action": "retrieve_knowledge", "sections": ["functional_skills"]}
+            elif any(term in query_lower for term in ["enabling skill", "soft skill", "transversal"]):
+                self.current_stage = FlowStage.INFORMATION
+                self.context["knowledge_sections"] = ["enabling_skills"]
+                logger.info(f"[Flow:KnowledgeBaseFlow] Action: retrieve_enabling_skills")
+                return {"flow_action": "retrieve_knowledge", "sections": ["enabling_skills"]}
+            # General PSF-AAI info
+            elif any(term in query_lower for term in ["psf", "framework", "analytics", "ai", "artificial intelligence", "skills framework"]):
+                self.current_stage = FlowStage.INFORMATION
+                self.context["knowledge_sections"] = ["general"]
+                logger.info(f"[Flow:KnowledgeBaseFlow] Action: retrieve_general_info")
+                return {"flow_action": "retrieve_knowledge", "sections": ["general"]}
+            # Fallback: all sections
             else:
-                self.context["knowledge_sections"] = ["functional_skills", "enabling_skills", "roles", "career_map"]
+                self.current_stage = FlowStage.INFORMATION
+                self.context["knowledge_sections"] = ["functional_skills", "enabling_skills", "job_roles", "career_map"]
                 logger.info(f"[Flow:KnowledgeBaseFlow] Action: retrieve_knowledge, sections: {self.context['knowledge_sections']}")
                 return {"flow_action": "retrieve_knowledge", "sections": self.context["knowledge_sections"]}
         elif self.current_stage == FlowStage.INFORMATION:
@@ -62,79 +91,110 @@ class KnowledgeBaseFlow(IntentFlow):
         return {"flow_action": "general_response"}
     
     def get_next_response_format(self) -> Dict[str, Any]:
-        if self.current_stage == FlowStage.INFORMATION:
-            # Check for career map specific query
-            if self.context.get("knowledge_sections") == ["career_map"]:
-                return {
-                    "format": "career_map",
-                    "sections": ["Overview", "Domains", "Progression Paths"],
-                    "style": "structured"
-                }
-            else:
-                return {
-                    "format": "structured",
-                    "sections": ["Definition", "Description", "Examples"],
-                    "style": "educational"
-                }
-        return {"format": "conversational"}
+        # Pick format based on what section is being retrieved
+        sections = self.context.get("knowledge_sections", [])
+        if sections == ["career_map"]:
+            return {
+                "format": "career_map",
+                "sections": ["Overview", "Domains", "Progression Paths"],
+                "style": "structured"
+            }
+        elif sections == ["job_roles"]:
+            return {
+                "format": "role_profile",
+                "sections": ["Role Description", "Responsibilities", "Required Skills", "Career Path"],
+                "style": "profile"
+            }
+        elif sections == ["functional_skills"]:
+            return {
+                "format": "structured",
+                "sections": ["Definition", "Description", "Examples"],
+                "style": "educational"
+            }
+        elif sections == ["enabling_skills"]:
+            return {
+                "format": "structured",
+                "sections": ["Definition", "Description", "Examples"],
+                "style": "educational"
+            }
+        elif sections == ["general"]:
+            return {
+                "format": "structured",
+                "sections": ["Overview", "Purpose", "Components", "Applications"],
+                "style": "framework"
+            }
+        else:
+            return {"format": "conversational"}
     
     def should_activate_agents(self) -> List[str]:
         return ["knowledge_agent"]
 
 class LearningPathwayFlow(IntentFlow):
     """Flow for career role exploration and pathway generation"""
-    
     def process(self, query: str, conversation_context: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"[Flow:LearningPathwayFlow] Stage: {self.current_stage} | Query: {query}")
         extracted_entities = conversation_context.get("extracted_entities", {})
-        extracted_role = extracted_entities.get("extracted_role")
+        # Collect all possible roles/entities
+        possible_entities = []
+        if "extracted_role" in extracted_entities:
+            if isinstance(extracted_entities["extracted_role"], list):
+                possible_entities.extend([r for r in extracted_entities["extracted_role"] if r])
+            elif extracted_entities["extracted_role"]:
+                possible_entities.append(extracted_entities["extracted_role"])
+        # Optionally, add other entity types if needed
+        # possible_entities += ...
+        # Remove duplicates
+        possible_entities = list(dict.fromkeys([e for e in possible_entities if e]))
+
         if self.current_stage == FlowStage.INITIAL:
-            if extracted_role:
+            if len(possible_entities) == 0:
+                self.current_stage = FlowStage.CLARIFICATION
+                logger.info(f"[Flow:LearningPathwayFlow] Transition to CLARIFICATION stage (no entity)")
+                return {"flow_action": "clarify_entity"}
+            elif len(possible_entities) == 1:
                 self.current_stage = FlowStage.INFORMATION
-                self.context["current_role"] = extracted_role
-                logger.info(f"[Flow:LearningPathwayFlow] Transition to INFORMATION stage, role: {extracted_role}")
-                return {"flow_action": "role_skills", "role": extracted_role}
+                self.context["current_entity"] = possible_entities[0]
+                logger.info(f"[Flow:LearningPathwayFlow] Transition to INFORMATION stage, entity: {possible_entities[0]}")
+                return {"flow_action": "career_overview", "entity": possible_entities[0]}
             else:
                 self.current_stage = FlowStage.CLARIFICATION
-                logger.info(f"[Flow:LearningPathwayFlow] Transition to CLARIFICATION stage")
-                return {"flow_action": "list_available_roles"}
+                logger.info(f"[Flow:LearningPathwayFlow] Transition to CLARIFICATION stage (multiple entities)")
+                return {"flow_action": "choose_entity", "entities": possible_entities}
         elif self.current_stage == FlowStage.CLARIFICATION:
+            # Try to extract entity from the new query
             role = extract_role_from_query(query)
             if role:
                 self.current_stage = FlowStage.INFORMATION
-                self.context["current_role"] = role
-                logger.info(f"[Flow:LearningPathwayFlow] Transition to INFORMATION stage, role: {role}")
-                return {"flow_action": "role_skills", "role": role}
+                self.context["current_entity"] = role
+                logger.info(f"[Flow:LearningPathwayFlow] Transition to INFORMATION stage, entity: {role}")
+                return {"flow_action": "career_overview", "entity": role}
             else:
-                logger.info(f"[Flow:LearningPathwayFlow] Action: suggest_common_roles")
-                return {"flow_action": "suggest_common_roles"}
-        role_mentioned = extract_role_from_query(query)
-        if role_mentioned:
-            self.current_stage = FlowStage.INFORMATION
-            self.context["current_role"] = role_mentioned
-            logger.info(f"[Flow:LearningPathwayFlow] Transition to INFORMATION stage, role: {role_mentioned}")
-            return {"flow_action": "role_skills", "role": role_mentioned}
+                logger.info(f"[Flow:LearningPathwayFlow] Action: clarify_entity (still unclear)")
+                return {"flow_action": "clarify_entity"}
+        elif self.current_stage == FlowStage.INFORMATION:
+            logger.info(f"[Flow:LearningPathwayFlow] Action: suggest_related_entities")
+            return {"flow_action": "suggest_related_entities", "current_entity": self.context.get("current_entity")}
         logger.info(f"[Flow:LearningPathwayFlow] Action: general_response")
         return {"flow_action": "general_response"}
-    
+
     def get_next_response_format(self) -> Dict[str, Any]:
         if self.current_stage == FlowStage.CLARIFICATION:
             return {
-                "format": "role_listing",
-                "sections": ["Available Roles", "Instructions"]
+                "format": "entity_clarification",
+                "prompt_message": "Which career role or entity are you interested in? Please specify so I can provide a career overview."
             }
         elif self.current_stage == FlowStage.INFORMATION:
             return {
-                "format": "role_skills",
-                "sections": ["Role Overview", "Functional Skills", "Enabling Skills"]
+                "format": "career_overview",
+                "sections": ["Role Overview", "Career Path", "Required Skills"]
             }
         return {"format": "conversational"}
-    
+
     def should_activate_agents(self) -> List[str]:
         if self.current_stage == FlowStage.CLARIFICATION:
-            return ["knowledge_agent", "learning_path_agent"]  # Need both for listing roles
+            return ["knowledge_agent", "learning_path_agent"]
         elif self.current_stage == FlowStage.INFORMATION:
-            return ["knowledge_agent", "learning_path_agent"]  # Need both for role skills
+            return ["knowledge_agent", "learning_path_agent"]
         return ["knowledge_agent"]
 
 class CourseSearchFlow(IntentFlow):
@@ -210,6 +270,12 @@ class GeneralConversationFlow(IntentFlow):
     
     def process(self, query: str, conversation_context: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"[Flow:GeneralConversationFlow] Stage: {self.current_stage} | Query: {query}")
+        # If the previous intent was knowledge base, acknowledge the switch
+        prev_intent = conversation_context.get("previous_intent")
+        if prev_intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
+            logger.info("[Flow:GeneralConversationFlow] Transitioned from KnowledgeBaseFlow to General Conversation")
+            self.current_stage = FlowStage.INFORMATION
+            return {"flow_action": "intent_switch_acknowledge", "message": "Switching to general conversation mode.", "current_topic": None}
         self.current_stage = FlowStage.INFORMATION
         logger.info(f"[Flow:GeneralConversationFlow] Transition to INFORMATION stage")
         return {"flow_action": "general_chat_response"}

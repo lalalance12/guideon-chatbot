@@ -63,11 +63,12 @@ class IntentClassifierAgent(BaseAgent):
             
             # If flow manager recommends continuing the flow, update the intent
             if flow_check.get("should_continue_flow", False):
-                recommended_intent = flow_check.get("recommended_intent")
-                if recommended_intent and recommended_intent != classification.get("intent"):
-                    logger.info(f"Flow manager recommends continuing with intent: {recommended_intent.value}")
-                    classification["intent"] = recommended_intent
-                    classification["from_flow_continuity"] = True
+                classification["intent"] = flow_check.get("continue_with_intent", classification.get("intent"))
+                classification["flow_continued"] = True
+        
+        # Add previous intent to context for flow transition logic
+        previous_intent = context.get("intent")
+        classification["previous_intent"] = previous_intent
         
         classification["processing_time"] = time.time() - start
         return classification
@@ -125,10 +126,27 @@ class IntentClassifierAgent(BaseAgent):
     def _construct_prompt(self, query: str, chat_history: str = "") -> str:
         """Build a prompt for the LLM to classify the intent."""
         intent_descriptions = {
-            QueryIntent.KNOWLEDGE_BASE_QUERY: "Questions about PSF-AAI framework, including roles, skills, career paths, proficiency levels, or any information contained in the PSF-AAI knowledge base. Questions about career roles, progression paths, or how to develop skills for specific roles within the PSF-AAI framework" ,
-            QueryIntent.LEARNING_PATHWAY: "Questions about career roles, progression paths, or how to develop skills for specific roles within the PSF-AAI framework",
-            QueryIntent.COURSE_SEARCH: "Questions about asking for specific courses even if they have levels (eg. Applications Development(Level 3)), training, or education resources to learn particular skills",
-            QueryIntent.GENERAL_CONVERSATION: "General conversation or topics unrelated to PSF-AAI or professional development",
+            QueryIntent.KNOWLEDGE_BASE_QUERY: (
+                "Questions seeking factual information, definitions, descriptions, or overviews directly from the PSF-AAI knowledge base. "
+                "Includes queries about what a skill or role is, details about proficiency levels, or the structure of the PSF-AAI framework. "
+                "Example: 'What is the PSF-AAI?', 'Describe the Data Engineer role', 'What are enabling skills?'"
+            ),
+            QueryIntent.LEARNING_PATHWAY: (
+                "Questions about career progression, upskilling, or learning paths within the PSF-AAI framework. "
+                "Includes queries about how to move from one role to another, what skills or courses are needed for advancement, "
+                "and steps to achieve a specific job title. Example: 'How do I become a Data Scientist?', "
+                "How to be <role>? "
+                "'What is the learning path for Machine Learning?', 'What skills do I need to move to Senior AI Engineer?'"
+            ),
+            QueryIntent.COURSE_SEARCH: (
+                "Questions requesting specific courses, training, or educational resources to learn a skill or prepare for a role. "
+                "Includes queries mentioning course names, levels, or asking where to study a particular topic. "
+                "Example: 'Find courses for Data Visualization', 'Are there Level 3 courses for Applications Development?', 'Recommend training for AI Engineering'"
+            ),
+            QueryIntent.GENERAL_CONVERSATION: (
+                "General conversation or topics unrelated to PSF-AAI or professional/career development. "
+                "Example: 'How's the weather?', 'Tell me a joke', 'What is your name?'"
+            ),
         }
         
         # Build the intent descriptions section
