@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import Dict, Any, Tuple, Optional
+import json
 import time
 import logging
-import re, asyncio
-import json
 
 from .base_agent import BaseAgent
 from ..utils.intent_classifier import QueryIntent, classify_intent
@@ -19,25 +18,21 @@ class IntentClassifierAgent(BaseAgent):
     """
 
     def __init__(self) -> None:
-        """Initialize the intent classifier with an LLM."""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
-                              provider="Ollama", 
-                              host="http://localhost:11434")
+            llama_model = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
             self.agent = Agent(
-                name="IntentClassifier", 
-                model=self.llm,
-                system_message="You are an intent classification assistant that analyzes user queries."
+                name="IntentClassifier",
+                model=llama_model,
             )
-            logger.info("Intent classifier initialized with LLM")
+            logger.info("Intent classifier agent initialized")
         except Exception as e:
-            logger.error(f"Failed to initialize intent classifier LLM: {e}")
+            logger.warning(f"Failed to initialize intent classifier agent: {e}")
             self.agent = None
-            logger.warning("Will fall back to rule-based classification")
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Process the user query to determine the primary intent.
+        Uses LLM to naturally detect intent transitions without keyword lists.
         """
         start = time.time()
         logger.info(f"Classifying intent for query: {query[:60]}...")
@@ -46,49 +41,26 @@ class IntentClassifierAgent(BaseAgent):
         if not self.agent:
             return self._rule_based_classification(query, context)
         
-        # Prepare conversation history if available
+        # Prepare conversation history and get previous intent
         chat_history = self._format_chat_history(context.get("chat_history", []))
+        previous_intent = context.get("previous_intent")
         
-        # Check for transitions - look for explicit indicators that user wants to change topics
-        transition_indicators = [
-            "instead", "rather", "actually", "actually i want", "let's change topics", 
-            "i want to ask about", "let me ask", "different question", 
-            "another question", "new topic", "change subject", "forget about",
-            "don't want", "not interested", "something else"
-        ]
+        # Build context-aware prompt that asks LLM to assess transition directly
+        prompt = self._construct_context_aware_prompt(query, chat_history, previous_intent)
         
-        # Check if user is explicitly trying to change topics
-        is_transition = any(indicator in query.lower() for indicator in transition_indicators)
-        
-        # Give stronger weight to new intent if transitioning
-        if is_transition:
-            logger.info("Detected intent transition indicators in query")
-            prompt = self._construct_transition_prompt(query, chat_history)
-        else:
-            # Construct the regular classification prompt
-            prompt = self._construct_prompt(query, chat_history)
-            
         try:
             # Generate intent classification with LLM
             response = await self.agent.arun(prompt)
-            intent, confidence, extracted_entities = self._parse_llm_response(response.content, query)
-            
-            # Weigh transition more heavily
-            if is_transition and confidence > 0.3:  # Lower threshold for transitions
-                logger.info(f"Accepting transition to new intent: {intent}")
-                # Return with high confidence to encourage transition
-                return {
-                    "intent": intent,
-                    "confidence": max(confidence, 0.75),  # Boost confidence for transitions
-                    "extracted_entities": extracted_entities,
-                    "is_transition": True,
-                    "processing_time": time.time() - start
-                }
+            intent, confidence, extracted_entities, is_transition = self._parse_transition_aware_response(
+                response.content, query, previous_intent
+            )
             
             return {
                 "intent": intent,
                 "confidence": confidence,
                 "extracted_entities": extracted_entities,
+                "is_transition": is_transition,
+                "previous_intent": previous_intent if is_transition else None,
                 "processing_time": time.time() - start
             }
         except Exception as e:
@@ -96,51 +68,43 @@ class IntentClassifierAgent(BaseAgent):
             # Fall back to rule-based classification
             return self._rule_based_classification(query, context)
 
-    def _construct_transition_prompt(self, query: str, chat_history: str = "") -> str:
-        """Build a prompt for the LLM to recognize intent transitions."""
-        return f"""The user appears to be changing the topic with this new query: "{query}"
+    def _construct_context_aware_prompt(self, query: str, chat_history: str, previous_intent: str = None) -> str:
+        """Build a prompt that asks the LLM to consider both intent and potential topic transitions."""
+        
+        # Add transition analysis to the prompt
+        transition_context = ""
+        if previous_intent:
+            transition_context = f"""
+The user's previous conversation was about: {previous_intent}
+
+IMPORTANT: Determine if the user is intentionally changing topics or continuing the previous conversation.
+"""
+
+        return f"""Analyze the following user query in the context of their conversation: "{query}"
 
 Previous conversation context:
 {chat_history}
+{transition_context}
 
-Based on this new query, determine the user's NEW intent. Ignore previous context when deciding intent.
-Choose from these intents:
-- knowledge_base_query: Questions about PSF-AAI framework, roles, skills
-- learning_pathway: Questions about career paths, progression, how to become certain roles
-- course_search: Requests for courses, training, learning materials
-- general_conversation: Greetings, thanks, chit-chat, unrelated to PSF-AAI
+1. Determine the user's primary intent from these categories:
+   - knowledge_base_query: Questions about PSF-AAI framework, roles, skills
+   - learning_pathway: Questions about career paths, progression, how to become certain roles
+   - course_search: Requests for courses, training, learning materials
+   - general_conversation: Greetings, thanks, chit-chat, unrelated to PSF-AAI
 
-Return a JSON object with:
-1. "intent": the most likely intent category
-2. "confidence": confidence score from 0.0 to 1.0
-3. "extracted_entities": any relevant entities (roles, skills, etc.)
-
-Example: {{"intent": "knowledge_base_query", "confidence": 0.85, "extracted_entities": {{"role": "Data Scientist"}}}}
-"""
-
-    def _construct_prompt(self, query: str, chat_history: str = "") -> str:
-        """Build a prompt for the LLM to classify the intent."""
-        return f"""Determine the intent of the user's query: "{query}"
-
-Previous conversation context:
-{chat_history}
-
-Choose from these intents:
-- knowledge_base_query: Questions about PSF-AAI framework, roles, skills
-- learning_pathway: Questions about career paths, progression, how to become certain roles
-- course_search: Requests for courses, training, learning materials
-- general_conversation: Greetings, thanks, chit-chat, unrelated to PSF-AAI
+2. If the previous conversation topic was known, determine if this query represents an intentional topic change.
 
 Return a JSON object with:
-1. "intent": the most likely intent category
-2. "confidence": confidence score from 0.0 to 1.0
-3. "extracted_entities": any relevant entities (roles, skills, etc.)
+- "intent": the most likely intent category
+- "confidence": confidence score from 0.0 to 1.0
+- "extracted_entities": any relevant entities (roles, skills, etc.)
+- "is_topic_change": true/false indicating if user is intentionally changing topics from their previous conversation
 
-Example: {{"intent": "knowledge_base_query", "confidence": 0.85, "extracted_entities": {{"role": "Data Scientist"}}}}
+Example: {{"intent": "knowledge_base_query", "confidence": 0.85, "extracted_entities": {{"role": "Data Scientist"}}, "is_topic_change": true}}
 """
 
-    def _parse_llm_response(self, response: str, query: str) -> Tuple[Optional[QueryIntent], float, Dict[str, Any]]:
-        """Parse the LLM response to extract intent, confidence and entities."""
+    def _parse_transition_aware_response(self, response: str, query: str, previous_intent: str = None) -> Tuple[Optional[QueryIntent], float, Dict[str, Any], bool]:
+        """Parse the LLM response, including transition detection."""
         try:
             # Clean the response to extract just the JSON
             response_text = response.strip()
@@ -169,7 +133,16 @@ Example: {{"intent": "knowledge_base_query", "confidence": 0.85, "extracted_enti
             # Extract entities
             entities = intent_data.get("extracted_entities", {})
             
-            return intent, confidence, entities
+            # Determine if this is a topic change
+            is_transition = intent_data.get("is_topic_change", False)
+            
+            # If previous intent exists and changed, that's also a sign of transition
+            if previous_intent and previous_intent != str(intent) and confidence > 0.4:
+                # Intent changed with reasonable confidence
+                logger.info(f"Detected intent change from {previous_intent} to {intent}")
+                is_transition = True
+            
+            return intent, confidence, entities, is_transition
             
         except (json.JSONDecodeError, KeyError, AttributeError) as e:
             logger.error(f"Error parsing LLM response: {e}")
@@ -178,13 +151,13 @@ Example: {{"intent": "knowledge_base_query", "confidence": 0.85, "extracted_enti
             # Fallback to basic intent detection
             query_lower = query.lower()
             if any(word in query_lower for word in ["course", "class", "training", "learn", "study"]):
-                return QueryIntent.COURSE_SEARCH, 0.6, {}
+                return QueryIntent.COURSE_SEARCH, 0.6, {}, False
             elif any(word in query_lower for word in ["career", "path", "become", "role", "job"]):
-                return QueryIntent.LEARNING_PATHWAY, 0.6, {}
+                return QueryIntent.LEARNING_PATHWAY, 0.6, {}, False
             elif any(word in query_lower for word in ["what is", "tell me about", "explain", "framework"]):
-                return QueryIntent.KNOWLEDGE_BASE_QUERY, 0.6, {}
+                return QueryIntent.KNOWLEDGE_BASE_QUERY, 0.6, {}, False
             else:
-                return QueryIntent.GENERAL_CONVERSATION, 0.5, {}
+                return QueryIntent.GENERAL_CONVERSATION, 0.5, {}, False
 
     def _format_chat_history(self, history: list) -> str:
         """Format the chat history for inclusion in the prompt."""
@@ -204,9 +177,35 @@ Example: {{"intent": "knowledge_base_query", "confidence": 0.85, "extracted_enti
             formatted = formatted[-6:]
         
         return "\n".join(formatted)
-
+        
     def _rule_based_classification(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Fall back to rule-based classification when LLM is unavailable."""
-        result = classify_intent(query, context.get("chat_history"))
-        logger.info(f"Rule-based classification: {result.get('intent').value} ({result.get('confidence'):.2f})")
-        return result
+        """Fallback to rule-based classification when LLM is unavailable."""
+        logger.info("Using rule-based intent classification")
+        
+        try:
+            # Use the simple classifier
+            result = classify_intent(query)
+            intent = result.get("intent", QueryIntent.GENERAL_CONVERSATION)
+            confidence = result.get("confidence", 0.5)
+            extracted_entities = result.get("extracted_entities", {})
+            
+            # Simple transition detection
+            previous_intent = context.get("previous_intent")
+            is_transition = False
+            if previous_intent and previous_intent != str(intent):
+                is_transition = True
+                
+            return {
+                "intent": intent,
+                "confidence": confidence,
+                "extracted_entities": extracted_entities,
+                "is_transition": is_transition
+            }
+        except Exception as e:
+            logger.error(f"Error in rule-based classification: {e}")
+            return {
+                "intent": QueryIntent.GENERAL_CONVERSATION,
+                "confidence": 0.3,
+                "extracted_entities": {},
+                "is_transition": False
+            }

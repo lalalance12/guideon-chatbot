@@ -317,28 +317,35 @@ class GeneralConversationFlow(IntentFlow):
         return ["knowledge_agent"]  # Default to knowledge agent for basic responses
 
 class FlowController:
-    """Controls and manages intent-specific conversation flows"""
+    """Controls the flow of conversation based on intent"""
     
     def __init__(self):
-        self.flows = {
-            QueryIntent.KNOWLEDGE_BASE_QUERY: KnowledgeBaseFlow,
-            QueryIntent.LEARNING_PATHWAY: LearningPathwayFlow,
-            QueryIntent.COURSE_SEARCH: CourseSearchFlow,
-            QueryIntent.GENERAL_CONVERSATION: GeneralConversationFlow
-        }
         self.active_flow = None
         self.active_intent = None
-    
+        
     def process_query(self, query: str, intent: QueryIntent, context: Dict[str, Any]) -> Dict[str, Any]:
         """Process a query with the appropriate flow based on intent"""
         try:
             logger.info(f"Processing query with intent: {intent}")
             
-            # Check if this is a forced transition (from IntentClassifierAgent)
+            # Check if this is a transition detected by the LLM
             is_transition = context.get("is_transition", False)
             
-            # If we have an active flow and no forced transition, continue with it
-            if self.active_flow and not is_transition:
+            # Always reset active flow on LLM-detected transition
+            if is_transition:
+                logger.info(f"LLM detected topic transition, resetting active flow")
+                previous_intent = self.active_intent
+                self._reset_active_flow()
+                self._set_flow_for_intent(intent)
+                flow_instructions = self.active_flow.process(query, context)
+                
+                # Add transition information to flow instructions
+                flow_instructions["is_transition"] = True
+                if previous_intent:
+                    flow_instructions["previous_intent"] = previous_intent
+                    
+            # If we have an active flow and no transition, continue with it
+            elif self.active_flow:
                 # Check if the active flow matches the current intent
                 if self.active_intent == intent:
                     # Continue with current flow
@@ -347,11 +354,16 @@ class FlowController:
                 else:
                     # Intent changed, switch flows
                     logger.info(f"Intent changed from {self.active_intent} to {intent}, switching flows")
+                    previous_intent = self.active_intent
                     self._reset_active_flow()
                     self._set_flow_for_intent(intent)
                     flow_instructions = self.active_flow.process(query, context)
+                    
+                    # Add intent change information
+                    flow_instructions["intent_changed"] = True
+                    flow_instructions["previous_intent"] = previous_intent
             else:
-                # No active flow or forced transition, create a new one
+                # No active flow, create a new one
                 self._reset_active_flow()
                 self._set_flow_for_intent(intent)
                 flow_instructions = self.active_flow.process(query, context)

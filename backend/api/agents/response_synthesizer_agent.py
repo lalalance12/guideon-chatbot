@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Dict, Any, List
-import logging
 import time
+import logging
+import json
 
 from .base_agent import BaseAgent
 from ..utils.intent_classifier import QueryIntent
@@ -14,915 +15,271 @@ class ResponseSynthesizerAgent(BaseAgent):
     """Synthesizes a coherent response from multiple agent outputs."""
 
     def __init__(self) -> None:
-        """Initialize the response synthesizer with an LLM."""
-
-        self.system_prompt = """
-# Guideon: PSF-AAI Career Guide
-
-## Identity and Purpose
-You are Guideon, an AI assistant specializing in the Philippine Skills Framework for Analytics & AI (PSF-AAI).
-Your purpose is to help professionals navigate career paths in analytics and AI within the Philippine context.
-
-## Personality Traits
-- Professional but approachable, with a friendly, conversational tone like a helpful mentor
-- Concise and structured in responses, with a focus on clarity
-- Supportive of career growth with practical encouragement
-- Focuses on actionable advice tailored to the user's situation
-- Uses Filipino context where relevant to make examples more relatable
-- Patient and understanding when users are unclear about career paths
-- Shows active listening by referencing previous questions when appropriate
-- Balances honesty about skill requirements with encouragement
-
-## Core Knowledge Areas
-- PSF-AAI framework, roles, and career tracks
-- Technical and functional skills in analytics and AI
-- Skill proficiency levels (1-6) and progression
-- Educational resources and course recommendations
-- Career transition pathways between roles
-
-## Conversation Flow Capabilities
-- **PSF-AAI Knowledge Queries**: When asked about the framework, roles, or skills, provide structured information from the knowledge base
-- **Career Role Exploration**: When no specific role is mentioned in career queries, present available roles with descriptions
-- **Role-Specific Skills**: When a specific role is mentioned, display its functional and enabling skills requirements
-- **Learning Pathway Generation**: Help users understand how to progress toward their target career role
-- **Course Recommendations**: Suggest relevant learning resources based on skills gaps
-
-## Response Guidelines
-- Structure responses with markdown headings and bullet points for easy reading
-- Use clear, simple language; avoid jargon unless necessary
-- Provide relevant examples or analogies to clarify complex concepts
-- Acknowledge the user's questions directly before answering
-- When discussing challenges, pair them with practical next steps
-- End responses with a simple invitation to ask follow-up questions
-- For learning pathways, emphasize progress rather than gaps
-- Include brief transitional phrases between sections to improve flow
-
-## Restrictions
-- Do not provide information outside the PSF-AAI framework unless specifically related
-- Do not make up PSF-AAI information; rely only on provided context
-- Avoid discussing political topics or non-PSF-AAI government policies
-- Do not recommend specific companies or job openings
-- If asked about topics entirely outside your domain, politely redirect to PSF-AAI topics
-
-## Response Format
-- Start with a direct answer to the query
-- Include relevant PSF-AAI context and details
-- Note: Give what the user wants to put extra stuff in the response
-"""
         try:
-            # Initialize the LLM agent
-            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", # type: ignore
-                              provider="Ollama",
-                              host="http://localhost:11434")
+            llama_model = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
             self.agent = Agent(
-                name="Synthesizer",
-                model=self.llm, # type: ignore
-                system_message=self.system_prompt,
+                name="ResponseSynthesizer",
+                model=llama_model,
             )
+            logger.info("Response synthesizer agent initialized")
         except Exception as e:
-            logger.error(f"Error initializing Response Synthesizer: {e}")
+            logger.warning(f"Failed to initialize response synthesizer agent: {e}")
             self.agent = None
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Synthesize a response based on multiple agent outputs and the flow context.
-        """
-        start = time.time()
-        logger.info(f"Synthesizing response for query: {query[:60]}...")
-
-        # Check if we have a valid LLM
-        if not self.agent:
-            logger.warning("No LLM available for response synthesis, using fallback")
-            return self._fallback_response(query, context)
-
-        # Check for clarification needs first
-        agent_results = context.get("agent_responses", {})
+        """Synthesize a final response from multiple agent outputs."""
+        start_time = time.time()
+        logger.info(f"Synthesizing response for: {query[:60]}...")
         
-        # Check each agent result for clarification needs
-        for agent_name, result in agent_results.items():
-            if result.get("needs_clarification") or (not result.get("found", True) and result.get("reason") == "clarification_needed"):
-                logger.info(f"Need for clarification detected from {agent_name}")
-                clarification_message = result.get("message", "I need more information to help you. Could you please clarify?")
-                
-                return {
-                    "response_text": clarification_message,
-                    "processing_time": time.time() - start,
-                    "format_used": "clarification_request",
-                    "flow_action": "request_clarification"
-                }
-
-        # Get flow-specific response format if available
-        flow_context = context.get("flow", {})
-        response_format = flow_context.get("response_format", {"format": "conversational"})
-        flow_action = flow_context.get("flow_action", "general_response")
-
-        # Build prompt based on format and flow action
-        if response_format.get("format") == "structured":
-            prompt = self._build_structured_prompt(query, context, response_format)
-        elif response_format.get("format") == "role_profile":
-            prompt = self._build_role_profile_prompt(query, context, response_format)
-        elif response_format.get("format") == "career_map":
-            prompt = self._build_career_map_prompt(query, context, response_format)
-        elif response_format.get("format") == "role_skills":
-            prompt = self._build_role_skills_prompt(query, context, response_format)
-        elif response_format.get("format") == "role_listing":
-            prompt = self._build_role_listing_prompt(query, context, response_format)
-        elif response_format.get("format") == "learning_pathway":
-            prompt = self._build_learning_pathway_prompt(query, context, response_format)
-        elif response_format.get("format") == "course_list":
-            prompt = self._build_course_list_prompt(query, context, response_format)
+        # Initialize LLM if not already initialized
+        if not self.agent:
+            try:
+                llama_model = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
+                self.agent = Agent(
+                    name="ResponseSynthesizer",
+                    model=llama_model,
+                )
+                logger.info("Response synthesizer agent initialized")
+            except Exception as e:
+                logger.error(f"Failed to initialize response synthesizer agent: {e}")
+                return {"response": "I'm having trouble forming a response right now. Please try again later."}
+        
+        # Check for LLM-detected transitions
+        is_transition = context.get("is_transition", False) or context.get("flow", {}).get("is_transition", False)
+        previous_intent = context.get("previous_intent") or context.get("flow", {}).get("previous_intent")
+        current_intent = context.get("intent")
+        
+        # Get response format information if available
+        format_info = context.get("response_format", {"format": "conversational"})
+        format_type = format_info.get("format", "conversational")
+        
+        # Determine the appropriate prompt based on context
+        if is_transition and previous_intent and current_intent:
+            # Build a transition-aware prompt
+            prompt = self._build_transition_prompt(query, context, previous_intent, current_intent)
+        elif format_type == "topic_selection":
+            prompt = self._build_topic_selection_prompt(query, context, format_info)
+        elif format_type == "course_list":
+            prompt = self._build_course_list_prompt(query, context, format_info)
+        elif format_type == "role_profile":
+            prompt = self._build_role_profile_prompt(query, context, format_info)
+        elif format_type == "learning_pathway":
+            prompt = self._build_learning_pathway_prompt(query, context, format_info)
+        elif format_type == "clarification_request":
+            prompt = self._build_clarification_prompt(query, context, format_info)
         else:
+            # Default to standard response format
             prompt = self._build_standard_prompt(query, context)
-
+        
         try:
-            # Directly use arun since it's now a stable part of the API
-            run_response = await self.agent.arun(prompt)
-            text = getattr(run_response, "content", str(run_response))  # Safely get content
-
+            # Generate the response with LLM
+            response = await self.agent.arun(prompt)
+            response_text = response.content if hasattr(response, 'content') else str(response)
+            
+            processing_time = time.time() - start_time
             return {
-                "response_text": text,
-                "processing_time": time.time() - start,
-                "format_used": response_format.get("format"),
-                "flow_action": flow_action
+                "response": response_text,
+                "processing_time": processing_time,
+                "format": format_type
             }
         except Exception as e:
-            logger.error(f"Error in response synthesis: {e}")
-            return self._fallback_response(query, context)
+            logger.error(f"Error generating response: {e}")
+            return {
+                "response": "I apologize, but I'm having trouble generating a response right now. Please try again.",
+                "error": str(e)
+            }
+
+    def _build_transition_prompt(self, query: str, context: Dict[str, Any], previous_intent: str, current_intent: str) -> str:
+        """Build a prompt that handles topic transitions detected by the LLM."""
+        
+        # Extract relevant information from context for each intent type
+        knowledge_info = ""
+        if "knowledge_base" in context:
+            kb_result = context["knowledge_base"]
+            knowledge_info = kb_result.get("relevant_info", kb_result.get("response", ""))
+            
+        course_info = ""
+        if "course_search" in context:
+            course_result = context["course_search"]
+            if course_result.get("found", False) and course_result.get("courses"):
+                courses = course_result["courses"]
+                course_info = f"Found {len(courses)} courses related to {course_result.get('topic', 'the topic')}"
+                
+                # Add course names for context
+                if len(courses) > 0:
+                    course_names = [c.get("title", "Untitled Course") for c in courses[:3]]
+                    course_info += f". Top courses: {', '.join(course_names)}"
+        
+        path_info = ""
+        if "learning_path" in context:
+            path_result = context["learning_path"]
+            path_info = path_result.get("summary", "")
+        
+        # Format user-friendly intent names
+        intent_names = {
+            "knowledge_base_query": "information about the PSF-AAI framework",
+            "course_search": "course recommendations",
+            "learning_pathway": "career path information",
+            "general_conversation": "our general conversation"
+        }
+        
+        from_intent_name = intent_names.get(previous_intent, "our previous topic")
+        to_intent_name = intent_names.get(current_intent, "your new question")
+        
+        return f"""The user has naturally shifted from {from_intent_name} to {to_intent_name} with this query:
+"{query}"
+
+Relevant information for the new topic:
+- Knowledge information: {knowledge_info}
+- Course information: {course_info}
+- Learning path information: {path_info}
+
+Create a thoughtful response that:
+1. Naturally acknowledges the shift in conversation without explicitly mentioning it
+   (avoid phrases like "I notice you've changed topics")
+2. Flows smoothly to address their new question about {to_intent_name}
+3. Provides helpful, accurate information relevant to their query
+4. Maintains a conversational, supportive tone throughout
+
+Make the response feel like a natural part of an ongoing conversation while focusing on their current need.
+"""
 
     def _build_standard_prompt(self, query: str, context: Dict[str, Any]) -> str:
-        """Build a standard prompt for general conversational responses."""
-        chat_history = context.get("chat_history", [])
-        history_text = ""
-        # Log the chat history for debugging
-        logger.debug(f"Chat history: {chat_history}")
-        if chat_history:
-            history_text = "\n## Conversation History:\n"
-            for msg in chat_history[-3:]:
-                # This is the key line - convert boolean to capitalized role name
-                role = "User" if msg.get("is_user") else "Assistant"
-                text = msg.get("text", "").replace("\n", " ")
-                if msg.get("summarized"):
-                    history_text += f"{role} (summarized): {text}\n"
-                else:
-                    history_text += f"{role}: {text}\n"
-                
-        agent_responses = context.get("agent_responses", {})
-        knowledge_parts = []
-        
-        # Extract knowledge base results with improved handling for structured data
-        if "knowledge_base" in agent_responses and agent_responses["knowledge_base"].get("found", False):
-            items = agent_responses["knowledge_base"].get("items", [])
-            
-            # Check for section separators
-            current_section = None
-            for item in items:
-                # Handle separator items
-                if item.get("is_separator", False):
-                    current_section = item.get("text", "").replace("-", "").strip()
-                    knowledge_parts.append(f"\n**{current_section}:**")
-                    continue
-                
-                # Handle regular content items
-                title = item.get('title', 'Information')
-                content = item.get('text', '')
-                item_type = item.get('type', '')
-                relation_type = item.get('relation_type', '')
-                
-                # Format based on item type and relation
-                if relation_type == "related_by_explicit_reference":
-                    knowledge_parts.append(f"- Related {title}: {content}")
-                elif relation_type == "skill_level":
-                    knowledge_parts.append(f"- Skill Level Detail ({title}): {content}")
-                elif relation_type == "career_path":
-                    knowledge_parts.append(f"- Career Path Information ({title}): {content}")
-                elif item_type == "whole_role" or item_type == "fs_complete_overview" or item_type == "esc_complete_overview":
-                    # For complete entity overviews, use the full text
-                    knowledge_parts.append(f"- {title}: {content}")
-                else:
-                    # Standard format for other items
-                    knowledge_parts.append(f"- {title}: {content}")
-                    
-        knowledge_text = "\n".join(knowledge_parts) if knowledge_parts else "No specific information found."
+        """Build a standard prompt for general responses."""
+        # Extract knowledge base information
+        knowledge_info = ""
+        if "knowledge_base" in context:
+            kb_result = context["knowledge_base"]
+            knowledge_info = kb_result.get("relevant_info", kb_result.get("response", ""))
 
-        prompt = f"""# Response Generation Task
+        # Get intent information
+        intent = context.get("intent", "unknown")
+        intent_info = f"User intent: {intent}" if intent else ""
 
-## User Query:
-"{query}"
+        return f"""The user's query: "{query}"
 
-{history_text}
+{intent_info}
 
-## Available Knowledge:
-{knowledge_text}
+Relevant knowledge information:
+{knowledge_info}
 
-## Instructions:
-Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
-If the user is very vague and not specific like using words like "it", "this", "that", "there", etc., ask them to clarify their question and be more specific.
-Create a helpful, conversational response that addresses the user's query using the available knowledge.
-If it isn't related to the PSF-AAI and there isn't enough information to fully answer the query based on the knowledge base, acknowledge this and tell them that this is not your scope.
-Keep your response friendly, straightforward, CONCISE, and conversational because you are conversing with a real person.
-
-If the knowledge includes related items or connections between skills and roles, be sure to mention these relationships.
-
-End your response with a simple encouragement like: "Feel free to ask more questions about PSF-AAI roles, skills, or career pathways. You can also ask me to search for courses to help you learn!"
-
-## Response:
+Create a helpful, conversational response that directly addresses the user's query.
+The response should be informative, concise, and maintain a friendly, supportive tone.
 """
-        return prompt
 
-    def _build_structured_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
-        """Build a prompt for structured educational responses."""
-        chat_history = context.get("chat_history", [])
-        history_text = ""
-        # Log the chat history for debugging
-        logger.debug(f"Chat history: {chat_history}")
-        if chat_history:
-            history_text = "\n## Conversation History:\n"
-            for msg in chat_history[-3:]:
-                # This is the key line - convert boolean to capitalized role name
-                role = "User" if msg.get("is_user") else "Assistant"
-                text = msg.get("text", "").replace("\n", " ")
-                if msg.get("summarized"):
-                    history_text += f"{role} (summarized): {text}\n"
-                else:
-                    history_text += f"{role}: {text}\n"
+    def _build_topic_selection_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
+        """Build a prompt for topic selection responses."""
+        topics = format_info.get("topics", [])
+        topics_list = ", ".join([f'"{t}"' for t in topics])
 
-        agent_responses = context.get("agent_responses", {})
-        kb_response = agent_responses.get("knowledge_base", {})
-        kb_items = kb_response.get("items", [])
-        sections = format_info.get("sections", ["Definition", "Description", "Examples"])
-        sections_text = ", ".join(sections)
-        
-        # Check if there are section separators in the KB results
-        has_separators = any(item.get("is_separator", False) for item in kb_items)
-        
-        prompt = f"""# Structured Educational Response Task
+        return f"""The user's query: "{query}"
 
-## User Query:
-"{query}"
+Based on the conversation, multiple topics have been identified: {topics_list}
 
-{history_text}
+Create a response that:
+1. Acknowledges the multiple potential topics of interest
+2. Clearly asks the user which specific topic they'd like to explore
+3. Presents the options in a conversational, helpful way
+4. Has a friendly tone inviting them to specify their interest
 
-## Available Knowledge:
+Your response should be concise but warm, making it easy for the user to choose one of the presented topics.
 """
-        # If we have section separators, organize context by sections
-        if has_separators:
-            current_section = "General Information"
-            for item in kb_items:
-                if item.get("is_separator", False):
-                    # Update current section based on separator text
-                    current_section = item.get("text", "").replace("-", "").strip()
-                    prompt += f"\n### {current_section}:\n"
-                else:
-                    title = item.get('title', 'Information')
-                    content = item.get('text', '')
-                    if content:
-                        prompt += f"- {title}: {content}\n"
-        else:
-            # Standard approach for non-sectioned content
-            for item in kb_items:
-                if kb_response.get("found", False):
-                    title = item.get('title', 'Information')
-                    content = item.get('text', '')
-                    if content:
-                        prompt += f"- {title}: {content}\n"
-
-        # Instructions for output structure
-        prompt += f"""
-
-## Instructions:
-Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
-IF the user is very vague and not specific like using words like "it", "this", "that", "there", etc., Do not generate sections, just directly ask them to clarify their question and be more specific.
-Create a structured educational response with these sections: {sections_text} if available, else try and answer in your own structured education response.
-Present the information in a clear, organized manner that helps the user understand the topic thoroughly.
-Include specific details from the knowledge base when available.
-Dont give educational resources
-Use markdown formatting for headers and bullet points.
-
-If the knowledge includes relationships between items (like skills required for roles or roles requiring certain skills), be sure to emphasize these connections in your response.
-
-End with a simple encouragement like: "Want to dive deeper into other PSF-AAI topics or find courses for these skills? Just let me know!"
-
-## Response:
-"""
-        return prompt
-
-    def _build_role_profile_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
-        """Build a prompt for role profile responses."""
-        chat_history = context.get("chat_history", [])
-        history_text = ""
-        # Log the chat history for debugging
-        logger.debug(f"Chat history: {chat_history}")
-        if chat_history:
-            history_text = "\n## Conversation History:\n"
-            for msg in chat_history[-3:]:
-                # This is the key line - convert boolean to capitalized role name
-                role = "User" if msg.get("is_user") else "Assistant"
-                text = msg.get("text", "").replace("\n", " ")
-                if msg.get("summarized"):
-                    history_text += f"{role} (summarized): {text}\n"
-                else:
-                    history_text += f"{role}: {text}\n"
-
-        agent_responses = context.get("agent_responses", {})
-        flow_context = context.get("flow", {})
-        role = flow_context.get("role", "the role")
-        
-        # Extract knowledge items with improved handling for role information
-        kb_response = agent_responses.get("knowledge_base", {})
-        kb_items = kb_response.get("items", [])
-        
-        # Prepare sections for different information types
-        role_info = []
-        skill_info = []
-        career_info = []
-        
-        # Extract KB data organized by section
-        has_separators = any(item.get("is_separator", False) for item in kb_items)
-        
-        if has_separators:
-            current_section = "General Information"
-            for item in kb_items:
-                if item.get("is_separator", False):
-                    # Update section
-                    current_section = item.get("text", "").replace("-", "").strip()
-                else:
-                    title = item.get('title', 'Information')
-                    content = item.get('text', '')
-                    metadata = item.get('metadata', {})
-                    entity_type = metadata.get('entity_type', '')
-                    
-                    # Sort information into appropriate sections
-                    if "Skills" in current_section:
-                        skill_info.append(f"- {title}: {content}")
-                    elif "Career Path" in current_section:
-                        career_info.append(f"- {title}: {content}")
-                    elif entity_type == 'job_role' or "whole_role" in metadata.get('type', ''):
-                        role_info.append(f"- {title}: {content}")
-                    else:
-                        role_info.append(f"- {title}: {content}")
-        else:
-            # Standard approach for non-sectioned content
-            for item in kb_items:
-                if kb_response.get("found", False):
-                    title = item.get('title', 'Information')
-                    content = item.get('text', '')
-                    metadata = item.get('metadata', {})
-                    entity_type = metadata.get('entity_type', '')
-                    
-                    # Categorize based on entity type
-                    if entity_type == 'functional_skill' or entity_type == 'enabling_skill':
-                        skill_info.append(f"- {title}: {content}")
-                    elif "career" in entity_type.lower() or "domain" in entity_type.lower():
-                        career_info.append(f"- {title}: {content}")
-                    else:
-                        role_info.append(f"- {title}: {content}")
-        
-        # Format the collected information
-        role_info_text = "\n".join(role_info) if role_info else f"No specific information found about {role}."
-        skill_info_text = "\n".join(skill_info) if skill_info else "No specific skill requirements found."
-        career_info_text = "\n".join(career_info) if career_info else "No specific career progression information found."
-
-        prompt = f"""# Role Profile Generation Task
-
-## User Query:
-"{query}"
-
-{history_text}
-
-## Role Being Discussed:
-{role}
-
-## Role Information:
-{role_info_text}
-
-## Skill Requirements:
-{skill_info_text}
-
-## Career Progression:
-{career_info_text}
-
-## Instructions:
-Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
-If the user is very vague and not specific like using words like "it", "this", "that", "there", etc., ask them to clarify their question and be more specific.
-Create a comprehensive profile for the role of {role} with the following sections:
-1. Role Description - Brief overview of what the role entails
-2. Responsibilities - Key tasks and responsibilities
-3. Required Skills - Technical and soft skills needed, organized by functional and enabling skills
-4. Career Path - Potential progression from and to this role
-
-Use markdown formatting for headers. If information is missing for any section, acknowledge this but provide general industry insights about that aspect of the role.
-
-Conclude with a simple encouragement like: "Interested in courses for these skills or want to explore other PSF-AAI roles? Feel free to ask!"
-
-## Response:
-"""
-        return prompt
-
-    def _build_learning_pathway_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
-        """Build a prompt for learning pathway responses."""
-        agent_responses = context.get("agent_responses", {})
-        flow_context = context.get("flow", {})
-        role = flow_context.get("role", "the targeted role")
-        
-        # Extract knowledge items with improved handling for pathway information
-        kb_response = agent_responses.get("knowledge_base", {})
-        kb_items = kb_response.get("items", []) if kb_response.get("found", False) else []
-        
-        # Prepare information categories
-        role_info = []
-        skill_info = []
-        learning_resources = []
-        career_progression = []
-        
-        # Extract KB data organized by section
-        has_separators = any(item.get("is_separator", False) for item in kb_items)
-        
-        if has_separators:
-            current_section = "General Information"
-            for item in kb_items:
-                if item.get("is_separator", False):
-                    # Update section
-                    current_section = item.get("text", "").replace("-", "").strip()
-                else:
-                    title = item.get('title', 'Information')
-                    content = item.get('text', '')
-                    
-                    # Categorize based on section
-                    if "Skills" in current_section:
-                        skill_info.append(f"- {title}: {content}")
-                    elif "Career Path" in current_section:
-                        career_progression.append(f"- {title}: {content}")
-                    elif "Role" in current_section:
-                        role_info.append(f"- {title}: {content}")
-                    else:
-                        # Default to role info for uncategorized items
-                        role_info.append(f"- {title}: {content}")
-        else:
-            # Standard approach for non-sectioned content
-            for item in kb_items:
-                title = item.get('title', 'Information')
-                content = item.get('text', '')
-                metadata = item.get('metadata', {})
-                entity_type = metadata.get('entity_type', '')
-                
-                # Categorize based on entity type
-                if entity_type == 'functional_skill' or entity_type == 'enabling_skill':
-                    skill_info.append(f"- {title}: {content}")
-                elif "career" in entity_type.lower() or "domain" in entity_type.lower():
-                    career_progression.append(f"- {title}: {content}")
-                elif entity_type == 'job_role' or "role" in entity_type.lower():
-                    role_info.append(f"- {title}: {content}")
-                else:
-                    # Default to role info for uncategorized items
-                    role_info.append(f"- {title}: {content}")
-        
-        # Add course information if available
-        if "course_search" in agent_responses:
-            courses = agent_responses["course_search"].get("courses", [])
-            if courses:
-                for i, course in enumerate(courses): # type: ignore
-                    learning_resources.append(f"- Course {i+1}: {course.get('title', 'Untitled')}")
-                    learning_resources.append(f"  Provider: {course.get('provider', 'Unknown')}")
-                    learning_resources.append(f"  Level: {course.get('level', 'Not specified')}")
-        
-        # Include learning pathway information if available
-        if "learning_path" in agent_responses:
-            pathway = agent_responses["learning_path"].get("pathway", {})
-            if pathway:
-                steps = pathway.get("steps", [])
-                for step in steps:
-                    learning_resources.append(f"- Pathway Step: {step}")
-        
-        # Format the collected information
-        role_info_text = "\n".join(role_info) if role_info else f"No specific information found about {role}."
-        skill_info_text = "\n".join(skill_info) if skill_info else "No specific skill requirements found."
-        learning_resources_text = "\n".join(learning_resources) if learning_resources else "No specific learning resources found."
-        career_progression_text = "\n".join(career_progression) if career_progression else "No specific career progression information found."
-
-        prompt = f"""# Learning Pathway Generation Task
-
-## User Query:
-"{query}"
-
-## Target Role:
-{role}
-
-## Role Information:
-{role_info_text}
-
-## Required Skills:
-{skill_info_text}
-
-## Learning Resources:
-{learning_resources_text}
-
-## Career Progression:
-{career_progression_text}
-
-## Instructions:
-Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
-If the user is very vague and not specific like using words like "it", "this", "that", "there", etc., ask them to clarify their question and be more specific.
-Create a personalized learning pathway for someone aspiring to become a {role}.
-Structure your response with these sections:
-1. Current Level - Assumed starting point based on the query
-2. Target Level - Description of the {role} position
-3. Recommended Skills - Key skills to develop with proficiency targets
-4. Learning Resources - Suggested courses, books, or practice projects
-5. Next Steps - Clear actions the user can take to progress toward the role
-
-Use markdown formatting and make the pathway practical and actionable.
-If specific information is missing, provide general industry best practices.
-
-End with a simple encouragement like: "Ready to find courses for these skills or explore other PSF-AAI career pathways? I'm here to help!"
-
-## Response:
-"""
-        return prompt
 
     def _build_course_list_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
         """Build a prompt for course list responses."""
-        agent_responses = context.get("agent_responses", {})
-        flow_context = context.get("flow", {})
-        topic = flow_context.get("topic", "the requested topic")
-        course_info = "No course information available."
-        if "course_search" in agent_responses:
-            courses = agent_responses["course_search"].get("courses", [])
-            if courses:
-                course_info = ""
-                for i, course in enumerate(courses): # type: ignore
-                    course_info += f"\nCourse {i+1}:\n"
-                    course_info += f"- Title: {course.get('title', 'Untitled')}\n"
-                    course_info += f"- Provider: {course.get('provider', 'Unknown')}\n"
-                    course_info += f"- Description: {course.get('description', 'No description')}\n"
-                    course_info += f"- Level: {course.get('level', 'Not specified')}\n"
-                    course_info += f"- URL: {course.get('url', 'No link provided')}\n"
+        # Get course information
+        course_info = ""
+        topic = ""
+        courses = []
         
-        # Also include related skill information from knowledge base
-        kb_response = agent_responses.get("knowledge_base", {})
-        kb_items = kb_response.get("items", []) if kb_response.get("found", False) else []
-        skill_info = []
-        
-        for item in kb_items:
-            metadata = item.get('metadata', {})
-            entity_type = metadata.get('entity_type', '')
-            if entity_type == 'functional_skill' or entity_type == 'enabling_skill':
-                title = item.get('title', 'Skill')
-                content = item.get('text', '')
-                skill_info.append(f"- {title}: {content}")
-        
-        related_skills_text = "\n".join(skill_info) if skill_info else "No specific skill information found."
-
-        prompt = f"""# Course Recommendation Task
-
-## User Query:
-"{query}"
-
-## Topic:
-{topic}
-
-## Related Skills Information:
-{related_skills_text}
-
-## Available Courses:
-{course_info}
-
-## Instructions:
-Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
-If the user is very vague and not specific like using words like "it", "this", "that", "there", etc., ask them to clarify their question and be more specific.
-Create a helpful response recommending courses related to {topic}.
-Structure your response with:
-1. Brief introduction explaining the importance of {topic} and related skills
-2. List of recommended courses with name, provider, and brief description
-3. Suggested learning path (beginner to advanced)
-4. Additional tips for learning this topic effectively
-
-Use markdown formatting for the course list. If no specific courses are available,
-provide general advice on how to find good courses on this topic based on the skill information.
-
-Conclude with a simple encouragement like: "Need more course options or want to explore PSF-AAI roles that use these skills? Just ask!"
-
-## Response:
-"""
-        return prompt
-
-    def _build_role_skills_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
-        """Build a prompt for displaying role skills."""
-        agent_responses = context.get("agent_responses", {})
-        flow_context = context.get("flow", {})
-        role = flow_context.get("role", "the role")
-        
-        # Extract knowledge items with improved handling for skill information
-        kb_response = agent_responses.get("knowledge_base", {})
-        kb_items = kb_response.get("items", []) if kb_response.get("found", False) else []
-        
-        # Prepare information categories
-        role_description = []
-        functional_skills = []
-        enabling_skills = []
-        
-        # Extract KB data organized by section
-        has_separators = any(item.get("is_separator", False) for item in kb_items)
-        
-        if has_separators:
-            current_section = "General Information"
-            for item in kb_items:
-                if item.get("is_separator", False):
-                    # Update section
-                    current_section = item.get("text", "").replace("-", "").strip()
-                else:
-                    title = item.get('title', 'Information')
-                    content = item.get('text', '')
-                    metadata = item.get('metadata', {})
-                    entity_type = metadata.get('entity_type', '')
-                    
-                    # Categorize based on section and entity type
-                    if "Skills Required" in current_section or "Skills" in current_section:
-                        if "functional" in title.lower() or "functional" in metadata.get('skill_category', '').lower():
-                            functional_skills.append(f"- {title}: {content}")
-                        elif "enabling" in title.lower() or "enabling" in metadata.get('skill_category', '').lower():
-                            enabling_skills.append(f"- {title}: {content}")
-                        else:
-                            # Default to functional if unclear
-                            functional_skills.append(f"- {title}: {content}")
-                    elif entity_type == 'job_role' or "whole_role" in metadata.get('type', ''):
-                        role_description.append(f"- {title}: {content}")
-                    else:
-                        role_description.append(f"- {title}: {content}")
-        else:
-            # Standard approach for non-sectioned content
-            for item in kb_items:
-                title = item.get('title', 'Information')
-                content = item.get('text', '')
-                metadata = item.get('metadata', {})
-                entity_type = metadata.get('entity_type', '')
-                skill_category = metadata.get('skill_category', '')
+        if "course_search" in context:
+            course_result = context["course_search"]
+            if course_result.get("found", False) and course_result.get("courses"):
+                courses = course_result["courses"]
+                topic = course_result.get("topic", "your topic of interest")
                 
-                if entity_type == 'functional_skill' or "functional" in skill_category.lower():
-                    functional_skills.append(f"- {title}: {content}")
-                elif entity_type == 'enabling_skill' or "enabling" in skill_category.lower():
-                    enabling_skills.append(f"- {title}: {content}")
-                elif entity_type == 'job_role' or "whole_role" in metadata.get('type', ''):
-                    role_description.append(f"- {title}: {content}")
-                else:
-                    role_description.append(f"- {title}: {content}")
+                # Format course information
+                for idx, course in enumerate(courses[:5], 1):  # Limit to top 5 courses
+                    title = course.get("title", "Untitled Course")
+                    provider = course.get("provider", "Unknown Provider")
+                    description = course.get("description", "No description available.")[:100] + "..."
+                    course_info += f"{idx}. {title} by {provider}: {description}\n"
         
-        # Also include learning path data if available
-        skills_info = {}
-        if "learning_path" in agent_responses:
-            skills_info = agent_responses["learning_path"].get("skills", {})
-            fs_from_path = skills_info.get("functional_skills", [])
-            es_from_path = skills_info.get("enabling_skills", [])
-            
-            # Add any skills from learning path not already included
-            for skill in fs_from_path:
-                functional_skills.append(f"- {skill}")
-            for skill in es_from_path:
-                enabling_skills.append(f"- {skill}")
-        
-        # Format the collected information
-        role_description_text = "\n".join(role_description) if role_description else f"No specific information found about {role}."
-        functional_skills_text = "\n".join(functional_skills) if functional_skills else "No specific functional skills found."
-        enabling_skills_text = "\n".join(enabling_skills) if enabling_skills else "No specific enabling skills found."
+        return f"""The user is interested in courses about: "{topic}"
 
-        prompt = f"""# Role Skills Profile
+Available courses:
+{course_info if course_info else "No specific courses found."}
 
-## User Query:
-"{query}"
+Create a response that:
+1. Acknowledges the user's interest in {topic}
+2. Presents the course options in a helpful, organized way
+3. Highlights the most relevant aspects of each course
+4. Encourages the user to explore these learning opportunities
 
-## Role:
-{role}
-
-## Role Description:
-{role_description_text}
-
-## Functional Skills:
-{functional_skills_text}
-
-## Enabling Skills:
-{enabling_skills_text}
-
-## Instructions:
-Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
-If the user is very vague and not specific like using words like "it", "this", "that", "there", etc., ask them to clarify their question and be more specific.
-Create a comprehensive profile of the skills needed for the {role} position.
-Format your response with these sections:
-1. Role Overview - Brief description of the {role} position
-2. Functional Skills - Technical skills required with brief explanations of why they're important
-3. Enabling Skills - Soft skills and competencies needed with context on their application
-4. Skill Development - Brief advice on how to develop these skills
-
-Use markdown formatting with headers and bullet points. If information is limited, provide industry-standard expectations for this role.
-
-End with a simple encouragement like: "Want to find courses for these skills or learn about career progression from this PSF-AAI role? Let me know!"
-
-## Response:
+Your response should be informative yet conversational, focusing on helping the user find the right learning resources.
 """
-        return prompt
 
-    def _build_role_listing_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
-        """Build a prompt for displaying available roles."""
-        agent_responses = context.get("agent_responses", {})
+    def _build_role_profile_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
+        """Build a prompt for role profile responses."""
+        role_info = ""
+        role_name = ""
         
-        # Extract roles from both knowledge base and learning path results
-        roles = []
-        if "learning_path" in agent_responses:
-            roles = agent_responses["learning_path"].get("roles", [])
+        if "knowledge_base" in context:
+            kb_result = context["knowledge_base"]
+            role_info = kb_result.get("role_info", kb_result.get("relevant_info", ""))
+            role_name = kb_result.get("role_name", "the requested role")
         
-        # Also check knowledge base for role information
-        kb_response = agent_responses.get("knowledge_base", {})
-        kb_items = kb_response.get("items", []) if kb_response.get("found", False) else []
-        
-        # Extract career domain information for organizing roles
-        career_domains = []
-        domain_roles = {}
-        
-        for item in kb_items:
-            metadata = item.get('metadata', {})
-            entity_type = metadata.get('entity_type', '')
-            item_type = metadata.get('type', '')
-            
-            if entity_type == 'career_domain' or item_type == 'career_map_domain':
-                domain_name = metadata.get('domain', '') or metadata.get('title', '').replace('Domain: ', '')
-                if domain_name:
-                    career_domains.append(domain_name)
-                    domain_roles[domain_name] = metadata.get('roles', [])
-            elif entity_type == 'job_role' or item_type == 'whole_role':
-                # Add to roles list if not already included
-                role_title = metadata.get('title', '')
-                if role_title and not any(r.get('title') == role_title for r in roles): # type: ignore
-                    roles.append({
-                        'title': role_title,
-                        'description': item.get('text', 'No description available')
-                    })
-        
-        # Format role information
-        roles_text = ""
-        if career_domains and domain_roles:
-            # If we have domain information, organize roles by domain
-            roles_text += "Roles organized by career domains:\n\n"
-            for domain in career_domains:
-                roles_text += f"Domain: {domain}\n"
-                domain_role_list = domain_roles.get(domain, [])
-                if domain_role_list:
-                    for role_info in domain_role_list:
-                        role_name = role_info.get('name', '')
-                        role_grade = role_info.get('grade', '')
-                        if role_name:
-                            # Find corresponding role in roles list
-                            role_desc = next((r.get('description', 'No description available') 
-                                            for r in roles if r.get('title') == role_name), # type: ignore
-                                            'No description available')
-                            roles_text += f"- {role_name} (Grade: {role_grade}): {role_desc[:200]}...\n"
-                else:
-                    roles_text += "- No specific roles listed for this domain\n"
-        elif roles:
-            # If we only have a flat list of roles
-            for i, role in enumerate(roles, 1): # type: ignore
-                roles_text += f"\nRole {i}: {role.get('title', 'Unknown Role')}\n"
-                roles_text += f"Description: {role.get('description', 'No description available')}\n"
-        else:
-            roles_text = "No specific roles found in the knowledge base."
+        return f"""The user is asking about the role: "{role_name}"
 
-        prompt = f"""# PSF-AAI Career Roles
+Role information:
+{role_info}
 
-## User Query:
-"{query}"
+Create a comprehensive profile of this role that:
+1. Explains the key responsibilities and functions
+2. Outlines the essential skills and qualifications
+3. Describes how this role fits within the PSF-AAI framework
+4. Provides insight into career progression opportunities
 
-## Available Roles and Career Paths:
-{roles_text}
-
-## Instructions:
-Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
-If the user is very vague and not specific like using words like "it", "this", "that", "there", etc., ask them to clarify their question and be more specific.
-Create a response that presents the available career roles in the PSF-AAI framework.
-Format your response as follows:
-1. Introduction - Brief explanation of PSF-AAI career framework
-2. Available Roles - List the roles with brief descriptions, organized by domain if that information is available
-3. Career Progression - Explain how these roles relate to each other in terms of career advancement
-4. Instructions - Guide the user to choose a role they're interested in learning more about
-
-Use markdown formatting with clear headers and numbering. Make the response engaging and helpful.
-
-End with a simple encouragement like: "Curious about a specific PSF-AAI role, the skills needed, or learning pathways? Feel free to ask me more!"
-
-## Response:
+Your response should be structured, informative, and presented in a conversational tone that engages the user.
 """
-        return prompt
 
-    def _build_career_map_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
-        """Build a prompt for career map visualization responses."""
-        chat_history = context.get("chat_history", [])
-        history_text = ""
-        # Log the chat history for debugging
-        logger.debug(f"Chat history: {chat_history}")
-        if chat_history:
-            history_text = "\n## Conversation History:\n"
-            for msg in chat_history[-3:]:
-                # This is the key line - convert boolean to capitalized role name
-                role = "User" if msg.get("is_user") else "Assistant"
-                text = msg.get("text", "").replace("\n", " ")
-                if msg.get("summarized"):
-                    history_text += f"{role} (summarized): {text}\n"
-                else:
-                    history_text += f"{role}: {text}\n"
-
-        agent_responses = context.get("agent_responses", {})
-        kb_response = agent_responses.get("knowledge_base", {})
-        kb_items = kb_response.get("items", []) if kb_response.get("found", False) else []
+    def _build_learning_pathway_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
+        """Build a prompt for learning pathway responses."""
+        pathway_info = ""
+        target_role = ""
         
-        # Organize career map information by type
-        overview_info = []
-        domain_info = []
-        grade_info = []
+        if "learning_path" in context:
+            path_result = context["learning_path"]
+            pathway_info = path_result.get("pathway", path_result.get("summary", ""))
+            target_role = path_result.get("role", "the requested role")
         
-        for item in kb_items:
-            metadata = item.get('metadata', {})
-            entity_type = metadata.get('entity_type', '')
-            item_type = metadata.get('type', '')
-            title = item.get('title', 'Career Map Information')
-            content = item.get('text', '')
-            
-            if entity_type == 'career_map' or item_type == 'career_map_overview':
-                overview_info.append(f"- {title}: {content}")
-                # Extract domains and grades from metadata if available
-                domains = metadata.get('domains', [])
-                grades = metadata.get('grades', [])
-                if domains:
-                    overview_info.append(f"- Domains: {', '.join(domains)}")
-                if grades:
-                    overview_info.append(f"- Job Grades: {', '.join(grades)}")
-            elif entity_type == 'career_domain' or item_type == 'career_map_domain':
-                domain_info.append(f"- {title}: {content}")
-                # Extract roles in this domain from metadata if available
-                roles = metadata.get('roles', [])
-                if roles:
-                    role_list = []
-                    for role_info in roles:
-                        role_name = role_info.get('name', '')
-                        role_grade = role_info.get('grade', '')
-                        if role_name:
-                            role_list.append(f"{role_name} (Grade: {role_grade})")
-                    if role_list:
-                        domain_info.append(f"  Roles: {', '.join(role_list)}")
-            elif "grade" in title.lower():
-                grade_info.append(f"- {title}: {content}")
-        
-        # Format the collected information
-        overview_text = "\n".join(overview_info) if overview_info else "No specific career map overview found."
-        domain_text = "\n".join(domain_info) if domain_info else "No specific domain information found."
-        grade_text = "\n".join(grade_info) if grade_info else "No specific grade level information found."
+        return f"""The user is interested in a career pathway to become: "{target_role}"
 
-        prompt = f"""# Career Map Visualization Task
+Pathway information:
+{pathway_info}
 
-## User Query:
-"{query}"
+Create a clear learning pathway that:
+1. Outlines the progression steps to become a {target_role}
+2. Highlights key skills to develop at each stage
+3. Suggests relevant certifications or qualifications
+4. Provides practical advice for someone pursuing this career track
 
-{history_text}
-
-## Career Map Overview:
-{overview_text}
-
-## Career Domains:
-{domain_text}
-
-## Job Grades/Levels:
-{grade_text}
-
-## Instructions:
-Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
-If the user is very vague and not specific like using words like "it", "this", "that", "there", etc., ask them to clarify their question and be more specific.
-Create a structured response that visualizes the PSF-AAI career map framework with these sections:
-1. Overview - Explain what the career map is and how it's organized
-2. Domains/Vertical Tracks - Describe the different domains or vertical specialization areas
-3. Job Grades/Horizontal Levels - Explain the progression levels across the framework
-4. Example Paths - Show a few example progression paths within or across domains
-
-Use markdown formatting to create a clear visual structure. If possible, use bullet points or other formatting to show hierarchical relationships between roles.
-
-If the knowledge includes specific connections between roles and domains, emphasize these relationships in your explanation.
-
-Conclude with a simple encouragement like: "Want to explore specific PSF-AAI roles, skills for progression, or learning pathways on this map? Just ask!"
-
-## Response:
+Your response should be structured as a roadmap with clear steps, while maintaining a supportive, encouraging tone.
 """
-        return prompt
 
-    def _fallback_response(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate a fallback response when the LLM is unavailable."""
-        intent = context.get("intent")
-        response_text = "I'm having a little trouble connecting right now."
+    def _build_clarification_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
+        """Build a prompt for clarification request responses."""
+        unclear_topic = format_info.get("topic", "")
+        
+        return f"""The user's query: "{query}"
 
-        if intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
-            response_text = "I can usually provide information about the PSF-AAI framework. What specific role, skill, or career path are you interested in?"
-        elif intent == QueryIntent.LEARNING_PATHWAY:
-            response_text = "I can help with learning pathways. Which PSF-AAI role are you aiming for?"
-        elif intent == QueryIntent.COURSE_SEARCH:
-            response_text = "Looking for courses? Tell me what skills or PSF-AAI topics you're interested in."
-        else:
-            response_text = "I'm here to help with your questions about the PSF-AAI framework. How can I assist you today?"
+The user's request needs clarification regarding: {unclear_topic if unclear_topic else "their learning interests"}
 
-        return {
-            "response_text": response_text + " Please try asking again in a moment.",
-            "format_used": "fallback",
-            "flow_action": "fallback_response"
-        }
+Create a friendly response that:
+1. Acknowledges their query in a positive way
+2. Politely asks for specific clarification
+3. Explains why more information would help provide a better answer
+4. Makes it easy for them to respond with the details you need
+
+Your response should be conversational and encouraging, making it comfortable for the user to provide more information.
+"""

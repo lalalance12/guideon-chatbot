@@ -34,34 +34,30 @@ class OrchestratorAgent(BaseAgent):
         # Store the chat ID for later use
         self.chat_id = context.get("chat_id")
         
-        # Check for topics from previous interactions in chat metadata
+        # Track the previous intent for transition detection
+        previous_intent = None
         if self.chat_id:
             chat = await self._get_chat(self.chat_id)
             if chat and hasattr(chat, 'metadata') and chat.metadata:
                 try:
                     metadata = json.loads(chat.metadata) if isinstance(chat.metadata, str) else chat.metadata
-                    if isinstance(metadata, dict) and metadata.get('awaiting_topic_selection') and metadata.get('topics'):
-                        # Add topics to context for the flow to use
-                        context['multiple_topics'] = metadata.get('topics')
-                        logger.info(f"Retrieved topics from chat metadata: {context['multiple_topics']}")
+                    if isinstance(metadata, dict):
+                        # Get previous intent from metadata
+                        previous_intent = metadata.get('last_intent')
+                        context['previous_intent'] = previous_intent
                         
-                        # Check if user message indicates they don't want to proceed with course selection
-                        skip_keywords = ["nevermind", "never mind", "cancel", "stop", "not interested", 
-                                        "changed my mind", "something else", "different topic", "don't want", 
-                                        "change topic", "forget it", "let's talk about", "instead"]
-                        
-                        if any(keyword in query.lower() for keyword in skip_keywords):
-                            # Clear the awaiting flag and let intent classifier determine new intent
-                            await self._update_chat_metadata(self.chat_id, {
-                                'awaiting_topic_selection': False,
-                                'topics': []
-                            })
-                            logger.info("User indicated desire to change topics, clearing selection state")
-                            # Don't force course search intent so we'll classify a new one
-                        else:
-                            # Force course search intent if we're expecting a topic selection
-                            context["intent"] = QueryIntent.COURSE_SEARCH
-                            logger.info("Set intent to COURSE_SEARCH based on awaiting_topic_selection flag")
+                        # Check for awaiting topic selection
+                        if metadata.get('awaiting_topic_selection') and metadata.get('topics'):
+                            # Add topics to context for the flow to use
+                            context['multiple_topics'] = metadata.get('topics')
+                            logger.info(f"Retrieved topics from chat metadata: {context['multiple_topics']}")
+                            
+                            # Only set force course search if we can identify that the user
+                            # is directly responding to the topic selection and not changing topics
+                            if not self._appears_to_change_topic(query):
+                                # Force course search intent if we're expecting a topic selection
+                                context["intent"] = QueryIntent.COURSE_SEARCH
+                                logger.info("Set intent to COURSE_SEARCH based on awaiting_topic_selection flag")
                 except (json.JSONDecodeError, AttributeError) as e:
                     logger.warning(f"Failed to process chat metadata: {e}")
 
@@ -75,6 +71,21 @@ class OrchestratorAgent(BaseAgent):
                 intent = intent_result.get("intent")
                 confidence = intent_result.get("confidence", 0.0)
                 
+                # Check if this is a transition detected by the LLM
+                is_transition = intent_result.get("is_transition", False)
+                if is_transition:
+                    # Mark context as transitioning for flow controller
+                    context["is_transition"] = True
+                    logger.info(f"LLM detected intent transition to {intent}")
+                    
+                    # If we were awaiting topic selection but user changed topics, clear that state
+                    if self.chat_id and context.get('multiple_topics'):
+                        await self._update_chat_metadata(self.chat_id, {
+                            'awaiting_topic_selection': False,
+                            'topics': []
+                        })
+                        logger.info("Cleared topic selection state due to topic change")
+                
                 # Add intent to context
                 context["intent"] = intent
                 context["intent_confidence"] = confidence
@@ -85,7 +96,13 @@ class OrchestratorAgent(BaseAgent):
                 logger.error(f"Error classifying intent: {e}")
                 intent = None
         
-        # Get flow-specific instructions
+        # Store the current intent in metadata for future reference
+        if self.chat_id and intent:
+            await self._update_chat_metadata(self.chat_id, {
+                'last_intent': str(intent)
+            })
+        
+        # Process with appropriate flow controller
         flow_instructions = self.flow_controller.process_query(
             query, intent, context
         )
@@ -109,6 +126,13 @@ class OrchestratorAgent(BaseAgent):
             })
             logger.info("Cleared awaiting_topic_selection flag in chat metadata")
         
+        # Add transition info to context for response synthesizer
+        if context.get("is_transition", False) and previous_intent:
+            context["transition_info"] = {
+                "from_intent": previous_intent,
+                "to_intent": str(intent)
+            }
+            
         # Determine which agents to activate based on flow instructions
         agents_to_activate = flow_instructions.get("activate_agents", ["knowledge_agent"])
         
@@ -160,8 +184,13 @@ class OrchestratorAgent(BaseAgent):
         results["metadata"] = {
             "intent": getattr(intent, "value", str(intent)) if intent else "unknown",
             "processing_time": time.time() - start_time,
-            "flow": flow_instructions.get("flow_action", "general_response")
+            "flow": flow_instructions.get("flow_action", "general_response"),
+            "is_transition": context.get("is_transition", False)
         }
+        
+        # Add transition info to results for response synthesizer
+        if context.get("transition_info"):
+            results["metadata"]["transition_info"] = context["transition_info"]
         
         return results
 
@@ -223,3 +252,12 @@ class OrchestratorAgent(BaseAgent):
             logger.info(f"Updated chat metadata for chat {chat_id}")
         except Exception as e:
             logger.error(f"Error updating chat metadata: {e}")
+
+    def _appears_to_change_topic(self, query: str) -> bool:
+        """
+        Use a lightweight heuristic to quickly check if the query appears to be changing topics.
+        This is only used as a fast pre-check before the LLM makes the full determination.
+        """
+        # Simple logic - if the query is very short, it's likely a direct topic selection
+        # If it's longer and more complex, we'll let the LLM decide
+        return len(query.split()) > 5 and any(char in query for char in "?.,")
