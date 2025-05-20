@@ -31,6 +31,7 @@ class OrchestratorAgent(BaseAgent):
         logger.info("Orchestrating query: %s", query[:60])
 
         intent = context.get("intent")
+        previous_intent = context.get("previous_intent")
         logger.info(f"[Orchestrator] Received intent: {getattr(intent, 'value', intent)}")
         
         # First, consult the flow manager agent
@@ -41,7 +42,8 @@ class OrchestratorAgent(BaseAgent):
         # Update context with flow information
         context.update({
             "flow": flow_instructions,
-            "current_flow_state": flow_result.get("current_flow", {})
+            "current_flow_state": flow_result.get("current_flow", {}),
+            "previous_intent": previous_intent
         })
         
         # Determine which agents to activate based on flow
@@ -52,6 +54,16 @@ class OrchestratorAgent(BaseAgent):
         # If course_search and clarification is needed, skip agent execution
         if getattr(intent, 'value', intent) == "course_search" and flow_instructions.get('flow_action') in ("clarify_course_topic", "request_course_topic_details"):
             # No agent execution needed, just return flow info
+            return {
+                "agents_processed": 0,
+                "processing_time": time.time() - start,
+                "context": context
+            }
+        
+        # If switching between general conversation and knowledge base, acknowledge and skip agent execution
+        if flow_instructions.get("flow_action") == "intent_switch_acknowledge":
+            logger.info(f"[Orchestrator] Intent switch acknowledged: {flow_instructions.get('message')}")
+            context["agent_responses"] = {"intent_switch": flow_instructions.get("message")}
             return {
                 "agents_processed": 0,
                 "processing_time": time.time() - start,

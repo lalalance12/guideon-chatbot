@@ -103,6 +103,28 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
             logger.warning("No LLM available for response synthesis, using fallback")
             return self._fallback_response(query, context)
 
+        # If the flow is a knowledge base query and no relevant info is found, handle gracefully
+        agent_responses = context.get('agent_responses', {})
+        flow_context = context.get("flow", {})
+        response_format = flow_context.get("response_format", {"format": "conversational"})
+        flow_action = flow_context.get("flow_action", "general_response")
+        intent = context.get("intent")
+        kb_response = agent_responses.get("knowledge_base", {})
+        # If the user is asking for knowledge base info but nothing was found
+        if intent == QueryIntent.KNOWLEDGE_BASE_QUERY and (not kb_response or not kb_response.get("found")):
+            return {
+                "response_text": "I couldn't find specific information for your query in the PSF-AAI knowledge base. Could you clarify or ask about a different role, skill, or topic?",
+                "format_used": response_format.get("format"),
+                "flow_action": flow_action
+            }
+        # If the user is in general conversation and the knowledge base has no info
+        if intent == QueryIntent.GENERAL_CONVERSATION and (not kb_response or not kb_response.get("found")):
+            return {
+                "response_text": "I'm here to help with PSF-AAI topics. If you have questions about roles, skills, or career paths, just ask!",
+                "format_used": response_format.get("format"),
+                "flow_action": flow_action
+            }
+
         # Get flow-specific response format if available
         response_format = flow_context.get("response_format", {"format": "conversational"})
         flow_action = flow_context.get("flow_action", "general_response")
@@ -301,18 +323,25 @@ Conclude with a simple encouragement like: "Interested in courses for these skil
         return prompt
 
     def _build_learning_pathway_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
-        """Build a prompt for learning pathway responses."""
+        """Build a prompt for learning pathway responses with career map and skills, using only relevant chunk types."""
         agent_responses = context.get("agent_responses", {})
         flow_context = context.get("flow", {})
         role = flow_context.get("role", "the targeted role")
-        pathway_info = "No learning pathway information available."
+        # Get career map and skills from learning_path agent response
+        career_map = "No career map information available."
+        functional_skills = []
+        enabling_skills = []
         if "learning_path" in agent_responses:
-            pathway = agent_responses["learning_path"].get("pathway", {})
-            if pathway:
-                steps = pathway.get("steps", [])
-                pathway_info = "\n".join([f"- {step}" for step in steps]) if steps else "No specific steps defined."
+            lp = agent_responses["learning_path"]
+            if lp.get("career_map"):
+                career_map = lp["career_map"]
+            skills = lp.get("skills", {})
+            functional_skills = skills.get("functional_skills", [])
+            enabling_skills = skills.get("enabling_skills", [])
+        functional_skills_text = "\n".join([f"- {skill}" for skill in functional_skills]) if functional_skills else "No specific functional skills found."
+        enabling_skills_text = "\n".join([f"- {skill}" for skill in enabling_skills]) if enabling_skills else "No specific enabling skills found."
 
-        prompt = f"""# Learning Pathway Generation Task
+        prompt = f"""# Learning Pathway & Career Map Generation Task
 
 ## User Query:
 "{query}"
@@ -320,21 +349,23 @@ Conclude with a simple encouragement like: "Interested in courses for these skil
 ## Target Role:
 {role}
 
-## Available Pathway Information:
-{pathway_info}
+## Career Map Overview / Pathway (from relevant knowledge base chunks):
+{career_map}
+
+## Functional Skills Needed (from whole_role, fs_complete_overview, role_skills):
+{functional_skills_text}
+
+## Enabling Skills Needed (from whole_role, esc_complete_overview, role_skills):
+{enabling_skills_text}
 
 ## Instructions:
-Note: Try to use all the data you got from the Knowledge Base, do not truncate or lose data.
-If the user is very vague and not specific like using words like "it", "this", "that", "there", etc., ask them to clarify their question and be more specific.
-Create a personalized learning pathway for someone aspiring to become a {role}.
-Structure your response with these sections:
-1. Current Level - Assumed starting point based on the query
-2. Target Level - Description of the {role} position
-3. Recommended Skills - Key skills to develop with proficiency targets
-4. Learning Resources - Suggested courses, books, or practice projects
-
-Use markdown formatting and make the pathway practical and actionable.
-If specific information is missing, provide general industry best practices.
+- Use only the relevant knowledge base data (whole_role, career_map_overview, career_map_domain, career_map_grade, fs_complete_overview, esc_complete_overview, role_skills). Do not use or invent data from other sources.
+- If the user is vague (e.g., uses 'it', 'this', 'that'), ask them to clarify and be more specific.
+- First, outline the career map or pathway for {role} using figures, diagrams, or bullet points to show progression and structure.
+- Then, list all the functional skills required for this role, with brief explanations if available.
+- Also, list enabling skills needed for this role.
+- Use markdown formatting, clear headers, and bullet points. Make the pathway practical and actionable.
+- If specific information is missing, provide general industry best practices.
 
 End with a simple encouragement like: "Ready to find courses for these skills or explore other PSF-AAI career pathways? I'm here to help!"
 

@@ -18,25 +18,67 @@ class PSFKnowledgeAgent(BaseAgent):
         extracted_role = extracted_entities.get("extracted_role")
         limit = 5
 
-        # Handle flow-specific context if available
         flow_context = context.get("flow", {})
         flow_action = flow_context.get("flow_action")
         logger.debug("KB search: %s | intent=%s level=%s role=%s flow_action=%s",
                      query, getattr(intent, "value", intent), extracted_level, 
                      extracted_role, flow_action)
 
-        # Determine section filter based on intent and flow
-        section_filter = self._determine_section_filter(intent, flow_action, flow_context)
+        # --- Section filter logic ---
+        section_filter = None
+        # If the user is asking about a career map or progression
+        if flow_action in ("provide_career_map", "retrieve_career_map") or (
+            isinstance(query, str) and any(term in query.lower() for term in ["career map", "career path", "job progression", "domains", "vertical tracks", "horizontal levels", "job grades", "career domains"])):
+            section_filter = "career_map"
+        # If the user is asking about a specific role
+        elif (flow_action in ("role_information", "provide_role_info") or extracted_role):
+            section_filter = "job_roles"
+        # If the user is asking about functional/enabling skills
+        elif (flow_action in ("provide_knowledge_info", "retrieve_knowledge") or (isinstance(query, str) and any(term in query.lower() for term in ["functional skill", "technical skill", "enabling skill", "soft skill", "competency", "proficiency"]))):
+            # Try to distinguish between functional and enabling
+            if any(term in query.lower() for term in ["functional skill", "technical skill", "technical competency"]):
+                section_filter = "functional_skills"
+            elif any(term in query.lower() for term in ["enabling skill", "soft skill", "transversal"]):
+                section_filter = "enabling_skills"
+            else:
+                section_filter = None
+        # If the user is asking for general PSF-AAI info
+        elif intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
+            section_filter = None  # Search all sections for general info
+        # If the user is asking for a learning pathway
+        elif intent == QueryIntent.LEARNING_PATHWAY:
+            section_filter = None  # Pathways may span multiple sections
+        # If the user is searching for courses
+        elif intent == QueryIntent.COURSE_SEARCH:
+            section_filter = None  # Course search may need all sections
 
-        # Build optimized search query
-        search_query, search_limit = self._build_search_query(
-            intent, query, extracted_level, extracted_role, limit, flow_action, flow_context
-        )
+        # --- Build search query ---
+        search_query = query
+        if section_filter == "career_map":
+            search_query = "career map domains job grades vertical tracks horizontal levels psf-aai"
+            limit = 8
+        elif section_filter == "job_roles" and extracted_role:
+            search_query = f"{extracted_role} role description responsibilities skills requirements"
+            limit = 8
+        elif section_filter == "functional_skills":
+            search_query = f"{query} functional skills technical competencies"
+            limit = 6
+        elif section_filter == "enabling_skills":
+            search_query = f"{query} enabling skills soft skills behavioral competencies"
+            limit = 6
+        elif intent == QueryIntent.LEARNING_PATHWAY and extracted_role:
+            search_query = f"{extracted_role} career progression learning pathway skills development"
+            limit = 8
+        elif intent == QueryIntent.COURSE_SEARCH:
+            search_query = f"{query} skill development learning training education"
+            limit = 6
+        else:
+            search_query = f"{query} psf-aai framework knowledge description definition"
+            limit = 5
 
         try:
-            # Use async vector search for best Django compatibility
             results = await search_similar_content_async(
-                search_query, limit=search_limit or limit, section=section_filter
+                search_query, limit=limit, section=section_filter
             )
         except Exception as exc:
             logger.error(f"Error during vector search: {exc}")
@@ -49,26 +91,47 @@ class PSFKnowledgeAgent(BaseAgent):
             logger.warning("No results found for query: %s", query)
             return self._fail("no_results", "No information found for this query.")
 
-        formatted, types = self._filter_results(intent, extracted_level, extracted_role, results)
-        if not formatted:
+        # Filter results: Only include those with high relevance and matching the section if set
+        filtered = []
+        types = set()
+        for item in results:
+            meta = item.get("metadata", {})
+            item_type = meta.get("type", "")
+            distance = item.get("distance", 1.0)
+            if section_filter and meta.get("psf_section") != section_filter:
+                continue
+            if distance >= 0.78:
+                continue
+            types.add(item_type)
+            filtered.append({
+                "title": meta.get("title", "Information"),
+                "type": item_type,
+                "text": item.get("text", ""),
+                "content": item.get("text", ""),
+                "relevance": f"{(1 - distance) * 100:.1f}%",
+                "metadata": meta,
+                "skill_category": meta.get("skill_category", ""),
+                "distance": distance
+            })
+
+        if not filtered:
             logger.warning("No relevant results after filtering for query: %s", query)
             return self._fail("low_relevance", "Information found but not relevant enough.")
 
-        # Add flow-specific metadata to the response
         return {
             "found": True,
-            "items": formatted[:limit],
+            "items": filtered[:limit],
             "metadata": {
                 "query_intent": getattr(intent, "value", intent),
                 "extracted_level": extracted_level,
                 "extracted_role": extracted_role,
-                "result_count": len(formatted),
+                "result_count": len(filtered),
                 "result_types": list(types),
                 "flow_action": flow_action,
                 "search_query": search_query,
                 "section_filter": section_filter
             },
-            "count": len(formatted[:limit]),
+            "count": len(filtered[:limit]),
         }
 
     def _determine_section_filter(self, intent, flow_action, flow_context):
