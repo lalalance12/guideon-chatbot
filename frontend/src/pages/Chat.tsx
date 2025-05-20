@@ -146,13 +146,12 @@ const Chat: React.FC = () => {
 
   const handleCourseSearch = async (query: string) => {
     setIsSearchingCourses(true);
-    try {
-      const token = localStorage.getItem(ACCESS_TOKEN);
+    try {      const token = localStorage.getItem(ACCESS_TOKEN);
       if (!token) {
         throw new Error("Authentication required");
       }
 
-      const courses = await searchCourses(query, token);
+      const courses = await searchCourses(query, token, currentChatId);
       
       if (courses.length > 0) {
         const botMessage: MessageType = {
