@@ -8,6 +8,7 @@ from .base_agent import BaseAgent
 from ..utils.intent_classifier import QueryIntent, classify_intent
 from agno.agent import Agent
 from agno.models.ollama import Ollama
+from .flow_manager_agent import FlowManagerAgent
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +42,39 @@ class IntentClassifierAgent(BaseAgent):
         start = time.time()
         logger.info(f"Classifying intent for query: {query[:60]}...")
         
-        # Fall back to rule-based if LLM not available
+        # Get initial classification
         if not self.agent:
             logger.warning("Using rule-based intent classification (LLM unavailable)")
             classification = self._rule_based_classification(query, context)
-            classification["processing_time"] = time.time() - start
-            return classification
+        else:
+            # Use LLM classification
+            classification = await self._llm_classification(query, context)
+        
+        # Check with flow manager for flow continuity
+        chat_id = context.get('chat_id')
+        if chat_id:
+            # Create flow manager instance 
+            flow_manager = FlowManagerAgent()
+            
+            # Check if we should continue an existing flow
+            flow_check = await flow_manager.check_flow_transition(
+                query, classification.get("intent"), context
+            )
+            
+            # If flow manager recommends continuing the flow, update the intent
+            if flow_check.get("should_continue_flow", False):
+                recommended_intent = flow_check.get("recommended_intent")
+                if recommended_intent and recommended_intent != classification.get("intent"):
+                    logger.info(f"Flow manager recommends continuing with intent: {recommended_intent.value}")
+                    classification["intent"] = recommended_intent
+                    classification["from_flow_continuity"] = True
+        
+        classification["processing_time"] = time.time() - start
+        return classification
+
+    async def _llm_classification(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Classify intent using the LLM."""
+        start = time.time()
         
         # Prepare conversation history if available
         chat_history = self._format_chat_history(context.get("chat_history", []))

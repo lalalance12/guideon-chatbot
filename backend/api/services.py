@@ -11,6 +11,8 @@ from .utils.chat_history_manager import ChatHistoryManager
 import logging
 import asyncio
 import json
+from .agents.flow_manager_agent import FlowManagerAgent
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +22,7 @@ class GuideonChatService:
         self.orchestrator = OrchestratorAgent()
         self.synthesizer = ResponseSynthesizerAgent()
         self.course_search_agent = CourseSearchAgent()
+        self.flow_manager = FlowManagerAgent()
         self.agno_agent = None
         self._init_agent()
 
@@ -40,19 +43,9 @@ class GuideonChatService:
     async def process_message(self, user_query: str, chat_id=None):
         """
         Process a user message through the complete agent pipeline:
-        Intent Classification → Orchestration → Response Synthesis
-        
-        Args:
-            user_query: The user's message text
-            chat_id: Optional ID to retrieve chat history
-            
-        Returns:
-            Dictionary containing response text and optional course data
+        Intent Classification → (Course Search Flow) → Course Search Agent (if needed)
         """
-        # Initialize context
         context = {'chat_id': chat_id}
-    
-        # Get chat history if available
         if chat_id:
             try:
                 chat_history = await self._get_chat_history(chat_id, user_query)
@@ -61,79 +54,75 @@ class GuideonChatService:
             except Exception as e:
                 logger.error(f"Error retrieving chat history: {e}", exc_info=True)
                 context['chat_history'] = []
-        
+
         try:
             # Step 1: Determine user intent using the IntentClassifierAgent
             intent_result = await self.intent_agent.process(user_query, context)
-            
-            # Update context with intent classification results
             context.update(intent_result)
-            
-            intent_name = getattr(intent_result.get('intent'), 'value', None) 
+            intent_name = getattr(intent_result.get('intent'), 'value', None)
             if not intent_name and isinstance(intent_result.get('intent'), str):
                 intent_name = intent_result.get('intent')
-                
             confidence = intent_result.get('confidence', 0.0)
-            
-            logger.info(f"Classified intent: {intent_name} (confidence: {confidence})")
 
-            # Handle course search intent as a special case for performance optimization
-            if intent_name == "course_search" and confidence >= 0.7:
-                logger.info("Detected course search intent, using fast path for course search")
-                
-                # Use CourseSearchAgent to find relevant courses
-                course_result = await self.course_search_agent.process(user_query, context)
-                
+            # Always use orchestrator for all intents (including course_search)
+            logger.info(f"Processing with orchestrator using intent: {intent_name}")
+            orchestrator_result = await self.orchestrator.process(user_query, context)
+            context.update(orchestrator_result)
+
+            # If the flow is course_search and the flow action is clarification, return the clarification prompt directly
+            flow = context.get('flow', {})
+            flow_action = flow.get('flow_action')
+            response_format = flow.get('response_format', {})
+            if intent_name == "course_search":
+                # If clarification is needed
+                if flow_action in ('clarify_course_topic', 'request_course_topic_details'):
+                    prompt = response_format.get('prompt_message', "What specific skill or topic are you looking for courses on?")
+                    if chat_id:
+                        chat = await self._get_or_create_chat(chat_id)
+                        await self._save_message(chat, 'user', user_query)
+                        await self._save_message(chat, 'assistant', prompt)
+                    return {
+                        'response': prompt,
+                        'clarification': True
+                    }
+                # If we have course cards, return them directly (skip synthesis)
+                agent_responses = context.get('agent_responses', {})
+                course_result = agent_responses.get('course_search', {})
                 if course_result.get('found', False) and course_result.get('courses', []):
                     courses = course_result.get('courses', [])
-                    logger.info(f"Found {len(courses)} courses")
-                    
-                    # Generate a standard response message for course results
                     response_text = "Based on your query, here are some recommended courses that might help you:"
-                    
-                    # Save the messages to the chat if we have a chat_id
                     if chat_id:
                         chat = await self._get_or_create_chat(chat_id)
                         await self._save_message(chat, 'user', user_query)
                         await self._save_message(chat, 'assistant', response_text)
-                    
-                    # Return both the response text and courses
                     return {
                         'response': response_text,
                         'courses': courses
                     }
-            
-            # For all other intents or low confidence course searches, use the standard pipeline
-            # Step 2: Orchestrate knowledge retrieval and context building
-            logger.info(f"Processing with orchestrator using intent: {intent_name}")
-            orchestrator_result = await self.orchestrator.process(user_query, context)
-            
-            # Update context with orchestrator results
-            context.update(orchestrator_result)
-            
-            # Step 3: Synthesize the final response
+                # If no courses found, return the message from the agent
+                if course_result.get('message'):
+                    if chat_id:
+                        chat = await self._get_or_create_chat(chat_id)
+                        await self._save_message(chat, 'user', user_query)
+                        await self._save_message(chat, 'assistant', course_result['message'])
+                    return {
+                        'response': course_result['message']
+                    }
+
+            # For all other intents, use the synthesizer
             logger.info("Generating final response with synthesizer")
             synthesizer_result = await self.synthesizer.process(user_query, context)
-            
-            # Extract the final response text
             response_text = synthesizer_result.get('response') or synthesizer_result.get('response_text') or 'I apologize, but I could not generate a proper response.'
-            
-            # Save the messages to the chat if we have a chat_id
             if chat_id:
                 chat = await self._get_or_create_chat(chat_id)
                 await self._save_message(chat, 'user', user_query)
                 await self._save_message(chat, 'assistant', response_text)
-            
-            # Return just the response text for standard interactions
             return {
                 'response': response_text
             }
-            
-        except Exception as e:  
+        except Exception as e:
             logger.error(f"Error processing message: {e}", exc_info=True)
             fallback_response = self._fallback_response(user_query)
-            
-            # Even on error, try to save the conversation
             if chat_id:
                 try:
                     chat = await self._get_or_create_chat(chat_id)
@@ -141,7 +130,6 @@ class GuideonChatService:
                     await self._save_message(chat, 'assistant', fallback_response)
                 except Exception as save_error:
                     logger.error(f"Error saving fallback message: {save_error}")
-            
             return {
                 'response': fallback_response
             }

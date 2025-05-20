@@ -11,6 +11,7 @@ from .learning_path_agent import LearningPathAgent
 from ..utils.intent_classifier import QueryIntent
 from ..flows.intent_flows import FlowController
 from agno.agent import Agent
+from .flow_manager_agent import FlowManagerAgent
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class OrchestratorAgent(BaseAgent):
         self.knowledge_agent = PSFKnowledgeAgent()
         self.course_agent = CourseSearchAgent()
         self.learning_path_agent = LearningPathAgent()
-        self.flow_controller = FlowController()
+        self.flow_manager = FlowManagerAgent()  # Add the flow manager
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         start = time.time()
@@ -32,19 +33,30 @@ class OrchestratorAgent(BaseAgent):
         intent = context.get("intent")
         logger.info(f"[Orchestrator] Received intent: {getattr(intent, 'value', intent)}")
         
-        # Get flow-specific instructions
-        flow_instructions = self.flow_controller.process_query(
-            query, intent, context
-        )
+        # First, consult the flow manager agent
+        flow_result = await self.flow_manager.process(query, context)
+        flow_instructions = flow_result.get("flow_instructions", {})
         logger.info(f"[Orchestrator] Flow instructions: {flow_instructions}")
         
-        # Update context with flow instructions
-        context.update({"flow": flow_instructions})
+        # Update context with flow information
+        context.update({
+            "flow": flow_instructions,
+            "current_flow_state": flow_result.get("current_flow", {})
+        })
         
         # Determine which agents to activate based on flow
         tasks = []
         agents_to_activate = flow_instructions.get("activate_agents", [])
         logger.info(f"[Orchestrator] Agents to activate: {agents_to_activate}")
+
+        # If course_search and clarification is needed, skip agent execution
+        if getattr(intent, 'value', intent) == "course_search" and flow_instructions.get('flow_action') in ("clarify_course_topic", "request_course_topic_details"):
+            # No agent execution needed, just return flow info
+            return {
+                "agents_processed": 0,
+                "processing_time": time.time() - start,
+                "context": context
+            }
         
         if "knowledge_agent" in agents_to_activate:
             logger.info("[Orchestrator] Activating knowledge_agent")
