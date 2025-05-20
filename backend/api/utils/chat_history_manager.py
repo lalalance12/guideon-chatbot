@@ -17,7 +17,7 @@ class ChatHistoryManager:
     @staticmethod
     async def _get_summarization_agent():
         try:
-            llama_model = Ollama(id="llama3.1:8b-instruct-q8_0", provider="Ollama", host="http://localhost:11434")
+            llama_model = Ollama(id="llama3.1:8b-instruct-q2_K", provider="Ollama", host="http://localhost:11434")
             agent = Agent(
                 name="SummarizationAgent",
                 model=llama_model,
@@ -40,9 +40,9 @@ class ChatHistoryManager:
                 content = last['content']
                 logger.debug(f"Found last assistant message: {content[:50]}...")
                 
-                # Check if message exceeds 500 characters and needs summarization
-                if len(content) > 500:
-                    logger.info(f"Message length ({len(content)}) exceeds 500 chars, summarizing...")
+                # Check if message exceeds 300 characters and needs summarization
+                if len(content) > 300:
+                    logger.info(f"Message length ({len(content)}) exceeds 300 chars, summarizing...")
                     # Use LLM to summarize the message
                     summarized = await ChatHistoryManager.summarize_message(content)
                     return {
@@ -75,29 +75,25 @@ class ChatHistoryManager:
                 return content[:497] + "..."
             
             # Create a summarization prompt
-            system_prompt = """You are an expert summarizer. Your task is to capture the essence of a message 
-            while staying under 500 characters. Preserve key information, main points, and the original tone.
-            Include critical details and maintain any structured format if present."""
-            
-            user_prompt = f"""Summarize the following message in under 500 characters while capturing its essence:
+            prompt = f"""You are an expert summarizer. Your task is to capture the essence of a message 
+            while staying under 300 characters. Preserve key information, main points, and the original tone.
+            Include critical details and maintain any structured format if present.
 
-{content}
+            Summarize the following message in under 300 characters while capturing its essence:
 
-Your summary:"""
+            {content}
+
+            Your summary:"""
             
-            # Get response from the LLM
-            response = await agent.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                max_tokens=250  # Limiting tokens to ensure we stay under character limit
-            )
+            # Use the arun method directly instead of chat.completions.create
+            response = await agent.arun(prompt)
             
-            summary = response.choices[0].message.content.strip()
+            # Extract content from response object
+            summary = response.content if hasattr(response, 'content') else str(response)
+            summary = summary.strip()
             
             # Double-check length and truncate if still too long
-            if len(summary) > 500:
+            if len(summary) > 300:
                 summary = summary[:497] + "..."
                 
             return summary
@@ -159,3 +155,46 @@ Your summary:"""
             
         logger.info(f"Simple history retrieved {len(result)} messages")
         return result
+
+    @staticmethod
+    async def get_last_n_turns(chat_id, n=4):
+        """Get the last n messages in the sequence: user, assistant, user, assistant (excluding the latest user prompt). Summarize assistant messages if too long."""
+        try:
+            # Create a sync function to fetch messages
+            @sync_to_async
+            def get_messages():
+                return list(Message.objects.filter(
+                    chat_id=chat_id
+                ).order_by('-timestamp').values('content', 'role', 'timestamp')[:n+1])
+            
+            # Await the sync-to-async wrapped function
+            messages = await get_messages()
+            
+            filtered = []
+            user_count = 0
+            for msg in messages:
+                if msg['role'] == 'user':
+                    user_count += 1
+                if user_count > 1:
+                    continue
+                filtered.append(msg)
+                if len(filtered) == n:
+                    break
+            filtered = list(reversed(filtered))
+            
+            result = []
+            for msg in filtered:
+                text = msg['content']
+                if msg['role'] == 'assistant' and len(text) > 300:
+                    # Summarize long assistant messages
+                    text = await ChatHistoryManager.summarize_message(text)
+                result.append({
+                    'text': text,
+                    'is_user': msg['role'] == 'user',
+                    'timestamp': msg['timestamp'].isoformat() if msg['timestamp'] else ''
+                })
+            logger.info(f"Last {n} turns retrieved {len(result)} messages (with assistant summarization if needed)")
+            return result
+        except Exception as e:
+            logger.error(f"Error getting last {n} turns: {e}")
+            return []
