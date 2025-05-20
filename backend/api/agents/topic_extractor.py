@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional, List, Union
 import logging
-import asyncio, re
 
 from agno.agent import Agent
 from agno.models.ollama import Ollama
+from ..utils.chat_history_manager import extract_topics_from_text
 
 logger = logging.getLogger(__name__)
 
@@ -17,19 +17,15 @@ class TopicExtractor:
     def __init__(self) -> None:
         """Initialize with LLM for topic extraction."""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0",
-                              provider="Ollama", 
-                              host="http://localhost:11434")
+            llama_model = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
             self.agent = Agent(
-                name="TopicExtractor", 
-                model=self.llm,
-                system_message="You are an assistant that extracts learning topics from user queries."
+                name="TopicExtractionAgent",
+                model=llama_model,
             )
-            logger.info("Topic extractor initialized with LLM")
+            logger.info("TopicExtractor agent initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to initialize topic extractor LLM: {e}")
+            logger.error(f"Failed to initialize TopicExtractor agent: {e}")
             self.agent = None
-            logger.warning("Will fall back to rule-based topic extraction")
 
     async def extract_topic(self, query: str, context=None) -> Union[str, List[str]]:
         """Extract the main topic from a search query with context handling."""
@@ -53,8 +49,7 @@ class TopicExtractor:
                         
                     logger.debug(f"Analyzing assistant message for topics: {msg_text[:50]}...")
                     
-                    # Use LLM to extract topics from the message
-                    from ..utils.chat_history_manager import extract_topics_from_text
+                    # Use the correctly imported function
                     previous_topics = await extract_topics_from_text(msg_text)
                     
                     if previous_topics:
