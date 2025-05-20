@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Union
 import logging
 import asyncio, re
 
@@ -31,80 +31,61 @@ class TopicExtractor:
             self.agent = None
             logger.warning("Will fall back to rule-based topic extraction")
 
-    async def extract_topic(self, query: str, context=None) -> str:
+    async def extract_topic(self, query: str, context=None) -> Union[str, List[str]]:
         """Extract the main topic from a search query with context handling."""
-        # Check for context references ("that", "it", etc.)
         query_lower = query.lower()
         has_context_reference = any(word in query_lower for word in ["that", "it", "this", "those", "them"])
         
         # If we have context references and context is provided, try to find previous topic
-        previous_topic = None
         if has_context_reference and context and "chat_history" in context:
-            logger.debug("Detected context reference. Searching chat history for previous topic.")
+            logger.info("Detected context reference. Analyzing chat history for topics.")
             chat_history = context.get("chat_history", [])
             
-            # Look for previous conversation about skills or topics
-            for i, msg in enumerate(chat_history):
-                # Skip the current query
-                if i == 0 and msg.get("is_user", False):
-                    continue
-                    
-                msg_text = msg.get("text", "")
-                
-                # Skip empty messages
-                if not msg_text:
-                    continue
-                    
-                logger.debug(f"Examining message: {msg_text[:50]}...")
-                
-                # Check for skill names in assistant messages
+            # Find most recent assistant message
+            for msg in chat_history:
+                # Focus on assistant messages
                 if not msg.get("is_user", True):
-                    # Look for mentions of skills in the assistant's messages
-                    skill_mentions = re.findall(r'(data\s+science|machine\s+learning|ai|programming|python|statistics|visualization|analytics|communication|problem\s+solving)', msg_text.lower())
-                    if skill_mentions:
-                        previous_topic = skill_mentions[0]
-                        logger.info(f"Found previous topic in assistant message: {previous_topic}")
-                        break
+                    msg_text = msg.get("text", "")
                     
-                    # Look for "about X" patterns in assistant response
-                    about_match = re.search(r'about\s+([a-z\s]+skill|[a-z\s]+course|[a-z\s]+programming|[a-z\s]+analytics)', msg_text.lower())
-                    if about_match:
-                        previous_topic = about_match.group(1)
-                        logger.info(f"Found previous topic in assistant message: {previous_topic}")
-                        break
-                
-                # Look for skill mention in user messages
-                skill_mentions = re.findall(r'(data\s+science|machine\s+learning|ai|programming|python|statistics|visualization|analytics|communication|problem\s+solving)', msg_text.lower())
-                if skill_mentions:
-                    previous_topic = skill_mentions[0]
-                    logger.info(f"Found previous topic in user message: {previous_topic}")
+                    # Skip empty messages
+                    if not msg_text:
+                        continue
+                        
+                    logger.debug(f"Analyzing assistant message for topics: {msg_text[:50]}...")
+                    
+                    # Use LLM to extract topics from the message
+                    from ..utils.chat_history_manager import extract_topics_from_text
+                    previous_topics = await extract_topics_from_text(msg_text)
+                    
+                    if previous_topics:
+                        logger.info(f"Found topics in assistant message: {previous_topics}")
+                        
+                        # If multiple topics found, return the list for further handling
+                        if len(previous_topics) > 1:
+                            logger.info(f"Multiple topics found in context: {previous_topics}")
+                            return previous_topics
+                        
+                        # If one topic found, return it
+                        elif len(previous_topics) == 1:
+                            logger.info(f"Using previous topic from context: {previous_topics[0]}")
+                            return previous_topics[0]
                     break
         
-        # If found previous topic, return it
-        if previous_topic:
-            logger.info(f"Using previously discussed topic: {previous_topic}")
-            return previous_topic.strip()
-        
-        # Proceed with standard LLM topic extraction
+        # If no context or no topics found in context, proceed with LLM-based extraction
         try:
-            # Set up system prompt
-            system_prompt = """You are a topic extraction tool. Your task is to identify the main subject
-            or skill the user is interested in learning about. Return ONLY the topic name, nothing else.
-            If the query doesn't specify a clear topic, return an empty string."""
+            # Create a topic extraction prompt
+            system_prompt = """You are an expert at extracting learning topics from user queries.
+            When a user asks about courses or learning materials, identify the specific topic they want to learn.
+            Return ONLY the topic name, no explanation. If no specific topic is mentioned, return an empty string."""
             
-            # Create user prompt
-            user_prompt = f"""Extract the main topic from this course search query: "{query}"
+            user_prompt = f"""Extract the specific learning topic from this query: "{query}"
             
-            Return ONLY the topic name (1-5 words max). If no clear topic is specified, return an empty string.
-            """
+            Return ONLY the topic name as a single word or short phrase. If no clear topic, return an empty string."""
             
             # Initialize agent if needed
             if not self.agent:
-                self.agent = await self._initialize_agent(system_prompt)
-                
-            if not self.agent:
-                logger.error("Failed to initialize LLM for topic extraction")
-                return ""
+                logger.warning("TopicExtractor agent not initialized, falling back to simple extraction")
+                return query.replace("courses", "").replace("about", "").strip()
             
             # Get topic from LLM
             response = await self.agent.arun(user_prompt)
@@ -113,11 +94,11 @@ class TopicExtractor:
             extracted_topic = response.content if hasattr(response, 'content') else str(response)
             extracted_topic = extracted_topic.strip().strip('"\'').strip()
             
-            logger.debug(f"LLM topic extraction candidate: '{extracted_topic}' from query: '{query}'")
+            logger.debug(f"LLM topic extraction result: '{extracted_topic}' from query: '{query}'")
             
             # If empty or invalid, return empty string
             if not extracted_topic or extracted_topic.lower() in ["none", "unclear", "not specified", "n/a"]:
-                logger.info(f"LLM returned empty string for query '{query}', indicating a generic request. Returning empty for clarification.")
+                logger.info("No specific topic found in query")
                 return ""
             
             return extracted_topic
