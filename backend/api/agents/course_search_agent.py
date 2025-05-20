@@ -235,212 +235,107 @@ class CourseSearchAgent(BaseAgent):
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Process a query to find relevant learning resources."""
         logger.info(f"Processing course search query: {query[:60]}...")
+        start_time = time.time()
         
-        # Extract topic from query or context
-        topic = await self.topic_extractor.extract_topic(query, context)
+        # Set up topic extractor if not already done
+        if not hasattr(self, 'topic_extractor'):
+            self.topic_extractor = TopicExtractor()
+        
+        # Extract topic from query using context-aware extraction
+        topic_result = await self.topic_extractor.extract_topic(query, context)
+        
+        # Check if we got multiple topics (list) or a single topic (string)
+        if isinstance(topic_result, list):
+            logger.info(f"Multiple topics found in context: {topic_result}")
+            # Return the multiple topics for the flow to handle clarification
+            return {
+                "found": False,
+                "multiple_topics": topic_result,
+                "needs_clarification": True,
+                "processing_time": time.time() - start_time
+            }
+        
+        # Set topic from either extraction or context
+        topic = topic_result
         flow_context = context.get("flow", {})
-        # If topic is provided in flow, use that instead
+        
+        # If topic is provided in flow context, use that instead
         if flow_context.get("topic"):
             topic = flow_context.get("topic")
+            logger.info(f"Using topic from flow context: {topic}")
         
-        logger.info(f"Effective topic for course search: '{topic}' (from query: '{query}')")
-        
-        # If no topic, return clarification request
-        if not topic:
-            logger.info(f"No specific topic extracted for query '{query}'. Clarification needed.")
+        # If we still don't have a clear topic, return needs_clarification
+        if not topic or len(topic.strip()) < 2:
+            logger.info("No clear topic identified, requesting clarification")
             return {
                 "found": False,
-                "reason": "clarification_needed",  # Use a specific reason code
-                "message": "I'd like to help you find courses, but I need to know what topic you're interested in. Could you please specify the subject or skill you want to learn about?",
-                "needs_clarification": True,  # Add explicit flag for clarification
+                "needs_clarification": True,
+                "processing_time": time.time() - start_time
             }
         
-        # Search for matching courses
-        courses = await self.search_courses(topic)
+        # Now search for courses using the identified topic
+        logger.info(f"Searching for courses on topic: {topic}")
         
-        # Get recommended skill level based on context if available
-        skill_level = self._extract_skill_level(context)
+        # Try to find matching skills knowledge
+        underpinning_knowledge = match_query_to_skills_and_get_underpinning_knowledge(topic)
         
-        if not courses:
-            # Try a more general search with related terms
-            expanded_topic = await self._expand_topic(topic)
-            logger.info(f"No courses found for '{topic}', trying expanded: '{expanded_topic}'")
-            courses = await self.search_courses(expanded_topic)
+        # Search on Class Central
+        search_urls = search_class_central(topic)
         
-        if not courses:
-            logger.warning(f"No courses found for topic: {topic}")
+        if not search_urls:
+            logger.warning(f"No courses found for '{topic}'")
             return {
                 "found": False,
-                "reason": "no_courses",
-                "message": f"I couldn't find specific courses for {topic}. Would you like me to search for a related topic instead?",
-                "topic": topic
+                "topic": topic,
+                "processing_time": time.time() - start_time
             }
         
-        # Filter courses by level if specified
-        if skill_level:
-            courses = self._filter_by_level(courses, skill_level)
+        # Scrape course details
+        courses = []
+        for url in search_urls[:5]:  # Limit to top 5 for performance
+            try:
+                course_data = scrape_class_central(url)
+                if course_data:
+                    # Calculate relevance score if we have underpinning knowledge
+                    if underpinning_knowledge:
+                        relevance = match_course_description_to_underpinning_knowledge(
+                            course_data["description"], underpinning_knowledge
+                        )
+                        course_data["relevance_score"] = relevance
+                    else:
+                        course_data["relevance_score"] = 0.5  # Default mid-score
+                    
+                    courses.append(course_data)
+            except Exception as e:
+                logger.error(f"Error scraping course details: {e}")
         
-        # Sort courses by relevance
-        sorted_courses = self._sort_by_relevance(courses, topic)
+        # Sort by relevance score
+        courses.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
         
-        logger.info(f"Found {len(sorted_courses)} courses for topic: {topic}")
+        # Filter out courses with low relevance
+        relevant_courses = [c for c in courses if c.get("relevance_score", 0) >= self.SIMILARITY_THRESHOLD]
         
+        if not relevant_courses:
+            logger.info(f"Found {len(courses)} courses but none met relevance threshold")
+            # If we found courses but none are relevant enough, return some anyway
+            if courses:
+                return {
+                    "found": True,
+                    "topic": topic,
+                    "courses": courses[:3],  # Return top 3 even if below threshold
+                    "processing_time": time.time() - start_time
+                }
+            else:
+                return {
+                    "found": False,
+                    "topic": topic,
+                    "processing_time": time.time() - start_time
+                }
+        
+        logger.info(f"Found {len(relevant_courses)} relevant courses for '{topic}'")
         return {
             "found": True,
-            "courses": sorted_courses[:5],  # Return top 5 courses
             "topic": topic,
-            "count": len(sorted_courses),
-            "recommended_level": skill_level
+            "courses": relevant_courses,
+            "processing_time": time.time() - start_time
         }
-
-    async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        try:
-            current_similarity_threshold = self.SIMILARITY_THRESHOLD # Initialize with default
-
-    #        Check if we're receiving an extracted topic from the orchestrator
-            extracted_topic_from_context = context.get("extracted_topic") # Renamed for clarity
-            topic = "" # Initialize topic
-            
-            if extracted_topic_from_context and extracted_topic_from_context != query:
-                logger.info(f"Using extracted topic from orchestrator: '{extracted_topic_from_context}' (original query: '{query}')")
-                topic = extracted_topic_from_context
-            else:
-                # Fall back to extracting the topic ourselves
-                logger.info(f"No pre-extracted topic in context or it matches query, extracting from query: '{query}'")
-                topic_extractor = TopicExtractor()
-                topic = await topic_extractor.extract_topic(query)
-                # The TopicExtractor now returns "" if it's generic or unextractable.
-            
-            logger.info(f"Effective topic for course search: '{topic}' (from query: '{query}')")
-
-            if not topic:  # Check if the topic is empty (signaling a generic/unclear request)
-                logger.info(f"No specific topic extracted for query '{query}'. Clarification needed.")
-                return {
-                    'found': False,
-                    'reason': 'clarification_needed',
-                    'message': "It looks like you're asking for courses, but I need a bit more information. What specific topic are you interested in learning about?"
-                }
-            
-            # Log the processing of the query with the extracted topic
-            logger.info(f"Processing query: '{query}' with specific topic: '{topic}'")
-            
-            # First, find the matching skill and its underpinning knowledge
-            # Use the topic for matching instead of the raw query
-            skill_match = match_query_to_skills_and_get_underpinning_knowledge(topic)
-            has_skill_match = skill_match is not None
-            
-            if has_skill_match:
-                logger.info(f"Found matching skill: {skill_match.get('skill_title')}")
-                logger.debug(f"Underpinning knowledge items: {len(skill_match.get('underpinning_knowledge', []))}")
-                current_similarity_threshold = 0.5 # Change threshold if skill match is found
-                logger.info(f"Skill match found. Similarity threshold set to: {current_similarity_threshold}")
-            else:
-                logger.info(f"No matching skill found for topic '{topic}', will use direct title comparison. Threshold remains: {current_similarity_threshold}")
-            
-            # If skill match is found, use underpinning knowledge for comparison
-            # Otherwise, we'll directly compare with the query
-            underpinning_knowledge = []
-            if has_skill_match:
-                underpinning_knowledge = skill_match.get('underpinning_knowledge', [])
-            
-            # Now search for relevant courses
-            logger.info(f"Searching Class Central for courses about '{topic}'...")
-            urls = search_class_central(topic) # This function should use the 'topic'
-            if not urls:
-                logger.warning("No course URLs found from Class Central")
-                return {
-                    'found': False,
-                    'reason': 'no_courses',
-                    'message': f"I couldn't find any courses related to '{topic}' on Class Central."
-                }
-            
-            logger.info(f"Found {len(urls)} course URLs to process")
-
-            all_courses = []
-
-            # Scrape course info and calculate similarity
-            for i, url in enumerate(urls, 1):
-                logger.info(f"Processing course {i}/{len(urls)}: {url}")
-                info = scrape_class_central(url)
-                if info:
-                    logger.debug(f"Scraped course: {info.get('title')}")
-                    similarity = 0.0 # Initialize similarity
-                    
-                    # If we have a skill match, compare course description with underpinning knowledge
-                    if has_skill_match and underpinning_knowledge:
-                        logger.debug("Calculating similarity with underpinning knowledge")
-                        similarity = match_course_description_to_underpinning_knowledge(
-                            info['description'], underpinning_knowledge
-                        )
-                        info['matched_skill'] = skill_match # Keep skill_match info
-                    else:
-                        # Fallback: If no skill match, compare query (or topic) with course title
-                        logger.debug(f"Calculating direct similarity between topic '{topic}' and course title '{info['title']}'")
-                        # Use topic for embedding comparison if no skill match
-                        topic_embedding = get_embedding_for_text(topic) 
-                        title_embedding = get_embedding_for_text(info['title'])
-                        
-                        if topic_embedding and title_embedding:
-                            similarity = cosine_similarity(topic_embedding, title_embedding)
-                            logger.debug(f"Title similarity score: {similarity:.4f}")
-                        else:
-                            logger.warning("Failed to generate embeddings for title similarity comparison")
-                            similarity = 0.0 # Ensure similarity is float
-                    
-                    # Add similarity score to the course
-                    info['similarity_score'] = similarity
-                    if similarity >= current_similarity_threshold: # Use the dynamic threshold
-                        all_courses.append(info)
-                        logger.debug(f"Course '{info.get('title')}' meets similarity threshold ({similarity:.4f} >= {current_similarity_threshold})")
-                    else:
-                        logger.debug(f"Course '{info.get('title')}' below similarity threshold ({similarity:.4f} < {current_similarity_threshold})")
-                else:
-                    logger.warning(f"Failed to scrape course from URL: {url}")
-            
-            logger.info(f"Successfully processed {len(all_courses)} courses above threshold")
-            
-            # Sort courses by similarity score (highest first)
-            sorted_courses = sorted(all_courses, key=lambda x: x.get('similarity_score', 0.0), reverse=True)
-            
-            # Return top 3 courses (or fewer if less than 3 are found)
-            top_courses = sorted_courses[:3]
-            
-            if top_courses:
-                logger.info(f"Returning top {len(top_courses)} courses")
-                for i_course, course in enumerate(top_courses, 1): # Renamed loop variable
-                    logger.debug(f"Top {i_course} course: {course.get('title')} (score: {course.get('similarity_score'):.4f})")
-                
-                result = {
-                    'found': True,
-                    'count': len(top_courses),
-                    'courses': top_courses,
-                }
-                
-                if has_skill_match:
-                    result['matched_skill_title'] = skill_match.get('skill_title') if skill_match else "N/A"
-                    result['message'] = f"Found courses related to the skill: '{result['matched_skill_title']}'."
-                else:
-                    result['direct_topic_match'] = True # Changed from direct_query_match
-                    result['message'] = f"Found courses by comparing their titles to the topic: '{topic}'."
-                
-                return result
-
-            logger.warning(f"No courses met the relevance threshold of {current_similarity_threshold} for topic '{topic}'")
-            # Provide a more informative message if no courses meet the threshold
-            reason_message = f"I found some courses related to '{topic}', but none seemed relevant enough after detailed review."
-            if not urls: # This case is handled earlier, but as a safeguard
-                reason_message = f"I couldn't find any courses related to '{topic}'."
-
-            return {
-                'found': False,
-                'reason': 'no_matching_courses_above_threshold', # More specific reason
-                'message': reason_message
-            }
-
-        except Exception as e:
-            logger.error(f"Error in course search agent: {e}", exc_info=True)
-            return {
-                'found': False,
-                'reason': 'exception',
-                'message': f'An error occurred while trying to find courses: {str(e)}'
-            }

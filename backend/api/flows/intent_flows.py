@@ -152,12 +152,34 @@ class CourseSearchFlow(IntentFlow):
             # Extract any explicit topics/skills
             extracted_skill = conversation_context.get("extracted_entities", {}).get("extracted_skill")
             extracted_topic = ""
+            multiple_topics = conversation_context.get("multiple_topics", [])
+            
+            # If we have multiple topics from context, ask for clarification
+            if multiple_topics and len(multiple_topics) > 1:
+                self.current_stage = FlowStage.CLARIFICATION
+                self.context["multiple_topics"] = multiple_topics
+                return {
+                    "flow_action": "request_topic_selection",
+                    "needs_clarification": True,
+                    "topics": multiple_topics,
+                    "response_format": {"format": "topic_selection"}
+                }
+            
+            # If we have a topic from context, use it
+            elif multiple_topics and len(multiple_topics) == 1:
+                topic = multiple_topics[0]
+                self.current_stage = FlowStage.RECOMMENDATION
+                self.context["search_topic"] = topic
+                return {
+                    "flow_action": "course_search",
+                    "topic": topic
+                }
             
             # If we have a skill, use that
             if extracted_skill:
                 topic = extracted_skill
                 self.current_stage = FlowStage.RECOMMENDATION
-            # If we have an ambiguous reference, set flag for clarification
+            # If we have an ambiguous reference but no context topic, set flag for clarification
             elif has_ambiguous_reference and not extracted_skill:
                 self.current_stage = FlowStage.CLARIFICATION
                 return {
@@ -177,7 +199,28 @@ class CourseSearchFlow(IntentFlow):
                 "topic": self.context["search_topic"]
             }
         
-        # Handle clarification response
+        # Handle topic selection from multiple options
+        elif self.current_stage == FlowStage.CLARIFICATION and "multiple_topics" in self.context:
+            # Try to match user's response to one of the topics
+            selected_topic = self._match_topic_selection(query, self.context["multiple_topics"])
+            
+            if selected_topic:
+                self.current_stage = FlowStage.RECOMMENDATION
+                self.context["search_topic"] = selected_topic
+                return {
+                    "flow_action": "course_search",
+                    "topic": selected_topic
+                }
+            else:
+                # If no match, use the response as a new topic
+                self.current_stage = FlowStage.RECOMMENDATION
+                self.context["search_topic"] = query
+                return {
+                    "flow_action": "course_search",
+                    "topic": query
+                }
+        
+        # Handle regular clarification response
         elif self.current_stage == FlowStage.CLARIFICATION:
             # User has responded to clarification request
             # Their response should contain the topic
@@ -194,6 +237,15 @@ class CourseSearchFlow(IntentFlow):
             return {"flow_action": "suggest_related_courses", "topic": self.context["search_topic"]}
         
         return {"flow_action": "general_response"}
+    
+    def _match_topic_selection(self, user_response: str, topics: List[str]) -> Optional[str]:
+        """Match user's selection to one of the multiple topics."""
+        user_response = user_response.lower()
+        
+        # Check for exact matches
+        for topic in topics:
+            if topic.lower() in user_response:
+                return topic
     
     def get_next_response_format(self) -> Dict[str, Any]:
         if self.current_stage == FlowStage.RECOMMENDATION:

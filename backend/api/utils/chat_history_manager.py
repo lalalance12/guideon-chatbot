@@ -1,5 +1,6 @@
 import logging
 import re
+import json
 import numpy as np
 from asgiref.sync import sync_to_async
 from django.db.models import F
@@ -167,4 +168,61 @@ Your summary:"""
             return None
         except Exception as e:
             logger.error(f"Error extracting topic from text: {e}")
+            return None
+
+    @staticmethod
+    async def extract_topics_from_text(text):
+        """Extract potential topic mentions from text using LLM."""
+        if not text or len(text.strip()) == 0:
+            return None
+            
+        try:
+            # Get the summarization agent
+            agent = await ChatHistoryManager._get_summarization_agent()
+            
+            if not agent:
+                logger.warning("Failed to initialize agent for topic extraction")
+                return None
+            
+            # Create a topic extraction prompt
+            system_prompt = """You are an expert at identifying educational topics in text.
+            Your task is to extract all explicit learning topics or skills mentioned in the text.
+            Return ONLY a JSON array of topics. If no clear topics are mentioned, return an empty array."""
+            
+            user_prompt = f"""Extract all learning topics, skills, or subjects that someone might want to take courses about from this text:
+
+{text}
+
+Return ONLY a JSON array of topics like ["topic1", "topic2"]. Include no other text in your response."""
+            
+            # Get topics from LLM
+            response = await agent.arun(user_prompt)
+            
+            # Extract the response content
+            topics_text = response.content if hasattr(response, 'content') else str(response)
+            
+            # Parse the JSON array
+            try:
+                # Clean the response text to make sure it's valid JSON
+                topics_text = topics_text.strip()
+                if topics_text.startswith("```json"):
+                    topics_text = topics_text[7:]
+                if topics_text.endswith("```"):
+                    topics_text = topics_text[:-3]
+                topics_text = topics_text.strip()
+                
+                topics = json.loads(topics_text)
+                if isinstance(topics, list) and topics:
+                    logger.info(f"Extracted topics using LLM: {topics}")
+                    return topics
+                else:
+                    logger.info("No topics found in text by LLM")
+                    return None
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse LLM response as JSON: {e}")
+                logger.debug(f"Raw LLM response: {topics_text}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error extracting topics with LLM: {e}")
             return None
