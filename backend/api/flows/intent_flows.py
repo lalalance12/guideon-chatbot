@@ -142,13 +142,41 @@ class CourseSearchFlow(IntentFlow):
     
     def process(self, query: str, conversation_context: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"[Flow:CourseSearchFlow] Stage: {self.current_stage} | Query: {query}")
+        extracted_entities = conversation_context.get("extracted_entities", {})
+        extracted_skill = extracted_entities.get("skill") or extracted_entities.get("topic") # Also check for 'topic'
+
         if self.current_stage == FlowStage.INITIAL:
-            self.current_stage = FlowStage.RECOMMENDATION
-            logger.info(f"[Flow:CourseSearchFlow] Transition to RECOMMENDATION stage")
-            extracted_skill = conversation_context.get("extracted_entities", {}).get("skill")
-            self.context["search_topic"] = extracted_skill or query
-            logger.info(f"[Flow:CourseSearchFlow] Action: course_search, topic: {self.context['search_topic']}")
-            return {"flow_action": "course_search", "topic": self.context["search_topic"]}
+            # Try to get skill from current query if not in extracted_entities
+            if not extracted_skill:
+                 # A simple heuristic: if query is short and possibly a skill.
+                 # More sophisticated extraction might be needed in IntentClassifierAgent or here.
+                if len(query.split()) <= 3: # Example: "Python programming"
+                    extracted_skill = query 
+
+            if extracted_skill:
+                self.current_stage = FlowStage.RECOMMENDATION
+                self.context["search_topic"] = extracted_skill
+                logger.info(f"[Flow:CourseSearchFlow] Transition to RECOMMENDATION stage, topic: {extracted_skill}")
+                return {"flow_action": "course_search", "topic": extracted_skill}
+            else:
+                self.current_stage = FlowStage.CLARIFICATION
+                logger.info(f"[Flow:CourseSearchFlow] Transition to CLARIFICATION stage, topic unclear.")
+                return {"flow_action": "clarify_course_topic"}
+
+        elif self.current_stage == FlowStage.CLARIFICATION:
+            # Assume the user's entire query is the topic they want to clarify with.
+            # More sophisticated extraction could be added here.
+            clarified_topic = query
+            if clarified_topic:
+                self.current_stage = FlowStage.RECOMMENDATION
+                self.context["search_topic"] = clarified_topic
+                logger.info(f"[Flow:CourseSearchFlow] Transition to RECOMMENDATION stage from CLARIFICATION, topic: {clarified_topic}")
+                return {"flow_action": "course_search", "topic": clarified_topic}
+            else:
+                # If query is empty or still unclear, ask again.
+                logger.info(f"[Flow:CourseSearchFlow] Remaining in CLARIFICATION stage, topic still unclear.")
+                return {"flow_action": "request_course_topic_details"} # Or re-use clarify_course_topic
+
         elif self.current_stage == FlowStage.RECOMMENDATION:
             self.current_stage = FlowStage.FOLLOW_UP
             logger.info(f"[Flow:CourseSearchFlow] Transition to FOLLOW_UP stage")
@@ -157,7 +185,12 @@ class CourseSearchFlow(IntentFlow):
         return {"flow_action": "general_response"}
     
     def get_next_response_format(self) -> Dict[str, Any]:
-        if self.current_stage == FlowStage.RECOMMENDATION:
+        if self.current_stage == FlowStage.CLARIFICATION:
+            return {
+                "format": "clarification_prompt",
+                "prompt_message": "What specific skill or topic are you looking for courses on? For example, 'Python programming' or 'data analysis'."
+            }
+        elif self.current_stage == FlowStage.RECOMMENDATION:
             return {
                 "format": "course_list",
                 "sections": ["Course Name", "Provider", "Description", "Difficulty", "Link"]
@@ -165,6 +198,11 @@ class CourseSearchFlow(IntentFlow):
         return {"format": "conversational"}
     
     def should_activate_agents(self) -> List[str]:
+        if self.current_stage == FlowStage.CLARIFICATION:
+            # Knowledge agent might help suggest topics if the user is very vague,
+            # but for direct clarification, specific course agent might not be needed yet.
+            # Let's assume the user will provide the topic.
+            return ["knowledge_agent"] 
         return ["knowledge_agent", "course_agent"]
 
 class GeneralConversationFlow(IntentFlow):
