@@ -11,11 +11,11 @@ class GeneralConversationAgent(BaseAgent):
     """
     def __init__(self):
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q2_K", provider="Ollama", host="http://localhost:11434")
+            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0", provider="Ollama", host="http://localhost:11434")
             self.agent = Agent(
                 name="GeneralConversation",
                 model=self.llm,
-                system_message="You are a helpful, friendly AI assistant for general conversation. Respond naturally and conversationally."
+                system_message="You are a helpful, friendly AI assistant for general conversation. Respond naturally and conversationally. Always try to relate it to the PSF-AAI framework if possible.",
             )
             logger.info("General conversation agent initialized with LLM")
         except Exception as e:

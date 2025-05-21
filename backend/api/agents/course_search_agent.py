@@ -164,13 +164,13 @@ def scrape_class_central(course_url: str, retries: int = 3) -> Optional[Dict[str
                 full = []
                 half = []
                 
-            for icon in all_icons:
-                icon_str = str(icon)
-                if 'icon-star-empty' not in icon_str:  # Skip empty stars
-                    if 'icon-star' in icon_str and 'half' not in icon_str:
-                        full.append(icon)
-                    elif 'star-half' in icon_str or 'icon-star-half' in icon_str:
-                        half.append(icon)
+                for icon in all_icons:
+                    icon_str = str(icon)
+                    if 'icon-star-empty' not in icon_str:  # Skip empty stars
+                        if 'icon-star' in icon_str and 'half' not in icon_str:
+                            full.append(icon)
+                        elif 'star-half' in icon_str or 'icon-star-half' in icon_str:
+                            half.append(icon)
                 
                 logger.debug(f"Counted {len(full)} full stars and {len(half)} half stars")
             else:

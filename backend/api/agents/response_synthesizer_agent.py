@@ -63,7 +63,7 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
 """
         try:
             # Initialize the LLM agent
-            self.llm = Ollama(id="llama3.1:8b-instruct-q2_K", # type: ignore
+            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0", # type: ignore
                               provider="Ollama",
                               host="http://localhost:11434")
             self.agent = Agent(
