@@ -26,7 +26,7 @@ class CourseSearchAgent(BaseAgent):
         super().__init__()
         self.ua = UserAgent()
         self.SKILL_EMBEDDINGS = self.load_skill_embeddings()
-        self.SIMILARITY_THRESHOLD = 0.5  # Default threshold for course relevance\
+        self.SIMILARITY_THRESHOLD = 0.1  # Default threshold for course relevance\
 
     def get_headers(self) -> Dict[str, str]:
         """Generate random headers for each request to mimic different browsers."""
@@ -52,9 +52,8 @@ class CourseSearchAgent(BaseAgent):
         topic = await topic_extractor.extract_topic(query)
         return topic
 
-
     def match_query_to_skills_and_get_underpinning_knowledge(self, query: str):
-        """Find the skill that has a skill_title that matches the query (case-insensitive) and return its underpinning knowledge"""
+        """Find the skill that has a skill_title that matches the query(case-insensitive) and return its underpinning knowledge"""
         query_lower = query.lower() # Convert query to lowercase
         for item in self.SKILL_EMBEDDINGS:
             metadata = item.get("metadata", {})
@@ -115,7 +114,7 @@ class CourseSearchAgent(BaseAgent):
             soup = BeautifulSoup(resp.text, 'html.parser')
             cards = soup.find_all('a', {'class': 'color-charcoal course-name'})
             urls = []
-            for card in cards[:10]:
+            for card in cards[:15]:
                 href = card.get('href')
                 if href and '/course/' in href:
                     full = href if href.startswith('http') else base_url + href
@@ -265,7 +264,7 @@ class CourseSearchAgent(BaseAgent):
             if has_skill_match:
                 logger.info(f"Found matching skill: {skill_match.get('skill_title')}")
                 logger.debug(f"Underpinning knowledge items: {len(skill_match.get('underpinning_knowledge', []))}")
-                current_similarity_threshold = 0.5 # Change threshold if skill match is found
+                current_similarity_threshold = 0.1 # Change threshold if skill match is found
                 logger.info(f"Skill match found. Similarity threshold set to: {current_similarity_threshold}")
             else:
                 logger.info(f"No matching skill found for topic '{topic}', will use direct title comparison. Threshold remains: {current_similarity_threshold}")
@@ -334,23 +333,52 @@ class CourseSearchAgent(BaseAgent):
             
             # Sort courses by similarity score (highest first)
             sorted_courses = sorted(all_courses, key=lambda x: x.get('similarity_score', 0.0), reverse=True)
-            
-            # Return top 3 courses (or fewer if less than 3 are found)
+
+            # Step 1: Get the top 3 courses by similarity (regardless of price)
             top_courses = sorted_courses[:3]
+
+            # Step 2: Count how many paid courses are in the top 3
+            paid_in_top = [c for c in top_courses if c.get('price', '').lower() != 'free']
+            num_paid = len(paid_in_top)
+
+            # Step 3: For each paid course in the top 3, add a free course from the rest (not already in top 3)
+            extra_free_courses = []
+            if num_paid > 0:
+                free_candidates = [c for c in sorted_courses if c.get('price', '').lower() == 'free' and c not in top_courses]
+                extra_free_courses = free_candidates[:num_paid]
+
+            # Step 4: Combine the results
+            final_courses = top_courses + extra_free_courses
+
+            # Remove duplicates by URL unless description is different
+            seen = set()
+            descriptions = set()
+            unique_final_courses = []
+            for course in final_courses:
+                url = course.get('url')
+                desc = course.get('description', '').strip()
+                # Allow duplicates if description is the same
+                if url in seen and desc not in descriptions:
+                    continue
+                unique_final_courses.append(course)
+                seen.add(url)
+                descriptions.add(desc)
+
+            final_courses = unique_final_courses
+
+            # Store in context for follow-up reference
+            if final_courses:
+                context['last_courses'] = final_courses
             
-            # After finding top courses, store them in context for follow-up reference
-            if top_courses:
-                context['last_courses'] = top_courses
-            
-            if top_courses:
-                logger.info(f"Returning top {len(top_courses)} courses")
-                for i_course, course in enumerate(top_courses, 1): # Renamed loop variable
+            if final_courses:
+                logger.info(f"Returning top {len(final_courses)} courses")
+                for i_course, course in enumerate(final_courses, 1): # Renamed loop variable
                     logger.debug(f"Top {i_course} course: {course.get('title')} (score: {course.get('similarity_score'):.4f})")
                 
                 result = {
                     'found': True,
-                    'count': len(top_courses),
-                    'courses': top_courses,
+                    'count': len(final_courses),
+                    'courses': final_courses,
                 }
                 
                 if has_skill_match:
