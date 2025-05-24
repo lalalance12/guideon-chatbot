@@ -32,6 +32,8 @@ class Course(models.Model):
     url = models.URLField()
     description = models.TextField(null=True, blank=True)
     rating = models.FloatField(null=True, blank=True)
+    price = models.CharField(max_length=50, null=True, blank=True)
+    matching_skill = models.TextField(null=True, blank=True)
     metadata = models.JSONField(default=dict)      
     learners = models.ManyToManyField(User, through='UserLearnedCourse')
     
@@ -42,7 +44,6 @@ class CourseSearch(models.Model):
     query = models.TextField()
     searched_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='course_searches')
-    price = models.CharField(max_length=50, null=True, blank=True, help_text="Course price (e.g., 'Free', 'Paid', '$49.99')")
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='searches')
     chat = models.ForeignKey(Chat, on_delete=models.SET_NULL, null=True, blank=True, related_name='course_searches')
     
