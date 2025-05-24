@@ -11,6 +11,8 @@ from .learning_path_agent import LearningPathAgent
 from ..utils.intent_classifier import QueryIntent
 from ..flows.intent_flows import FlowController
 from agno.agent import Agent
+from .flow_manager_agent import FlowManagerAgent
+from .general_conversation_agent import GeneralConversationAgent
 
 logger = logging.getLogger(__name__)
 
@@ -23,34 +25,68 @@ class OrchestratorAgent(BaseAgent):
         self.knowledge_agent = PSFKnowledgeAgent()
         self.course_agent = CourseSearchAgent()
         self.learning_path_agent = LearningPathAgent()
-        self.flow_controller = FlowController()
+        self.flow_manager = FlowManagerAgent()  # Add the flow manager
+        self.general_conversation_agent = GeneralConversationAgent()  # Add general conversation agent
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         start = time.time()
         logger.info("Orchestrating query: %s", query[:60])
 
         intent = context.get("intent")
+        previous_intent = context.get("previous_intent")
+        logger.info(f"[Orchestrator] Received intent: {getattr(intent, 'value', intent)}")
         
-        # Get flow-specific instructions
-        flow_instructions = self.flow_controller.process_query(
-            query, intent, context
-        )
+        # First, consult the flow manager agent
+        flow_result = await self.flow_manager.process(query, context)
+        flow_instructions = flow_result.get("flow_instructions", {})
+        logger.info(f"[Orchestrator] Flow instructions: {flow_instructions}")
         
-        # Update context with flow instructions
-        context.update({"flow": flow_instructions})
+        # Update context with flow information
+        context.update({
+            "flow": flow_instructions,
+            "current_flow_state": flow_result.get("current_flow", {}),
+            "previous_intent": previous_intent
+        })
         
         # Determine which agents to activate based on flow
         tasks = []
         agents_to_activate = flow_instructions.get("activate_agents", [])
+        logger.info(f"[Orchestrator] Agents to activate: {agents_to_activate}")
+
+        # If course_search and clarification is needed, skip agent execution
+        if getattr(intent, 'value', intent) == "course_search" and flow_instructions.get('flow_action') in ("clarify_course_topic", "request_course_topic_details"):
+            # No agent execution needed, just return flow info
+            return {
+                "agents_processed": 0,
+                "processing_time": time.time() - start,
+                "context": context
+            }
+        
+        # If switching between general conversation and knowledge base, acknowledge and skip agent execution
+        if flow_instructions.get("flow_action") == "intent_switch_acknowledge":
+            logger.info(f"[Orchestrator] Intent switch acknowledged: {flow_instructions.get('message')}")
+            context["agent_responses"] = {"intent_switch": flow_instructions.get("message")}
+            return {
+                "agents_processed": 0,
+                "processing_time": time.time() - start,
+                "context": context
+            }
         
         if "knowledge_agent" in agents_to_activate:
+            logger.info("[Orchestrator] Activating knowledge_agent")
             tasks.append(self._execute_agent(self.knowledge_agent, query, context, "knowledge_base"))
         
         if "learning_path_agent" in agents_to_activate:
+            logger.info("[Orchestrator] Activating learning_path_agent")
             tasks.append(self._execute_agent(self.learning_path_agent, query, context, "learning_path"))
         
         if "course_agent" in agents_to_activate:
+            logger.info("[Orchestrator] Activating course_agent")
             tasks.append(self._execute_agent(self.course_agent, query, context, "course_search"))
+        
+        if "general_conversation_agent" in agents_to_activate:
+            logger.info("[Orchestrator] Activating general_conversation_agent")
+            tasks.append(self._execute_agent(self.general_conversation_agent, query, context, "general_conversation"))
 
         # If no specialized agents are needed, still collect basic information
         if not tasks:
@@ -78,6 +114,7 @@ class OrchestratorAgent(BaseAgent):
                 
             # Add each agent's response to the collection
             agent_name = result.get("agent_name", f"agent_{i}")
+            logger.info(f"[Orchestrator] Result from {agent_name}: {result}")
             agent_responses[agent_name] = result
         
         # Update context with agent responses

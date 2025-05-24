@@ -95,10 +95,23 @@ def search_similar_content(query_text, limit=5, section=None):
         formatted_results = []
         for result in results:
             metadata = result.metadata if isinstance(result.metadata, dict) else {}
+            
+            # Extract important fields for ranking/filtering
+            skill_type = metadata.get('skill_category')
+            chunk_type = metadata.get('type', '')
+            # Add nextGrade/nextRoles if present for career map domain
+            next_grade = metadata.get('nextGrade') if 'nextGrade' in metadata else None
+            next_roles = metadata.get('nextRoles') if 'nextRoles' in metadata else None
+            
+            # Include more detailed info in results
             formatted_results.append({
                 "text": result.text,
                 "metadata": metadata,
-                "distance": float(result.distance) if hasattr(result, 'distance') and result.distance is not None else 1.0
+                "distance": float(result.distance) if hasattr(result, 'distance') and result.distance is not None else 1.0,
+                "skill_type": skill_type,
+                "chunk_type": chunk_type,
+                "nextGrade": next_grade,
+                "nextRoles": next_roles
             })
 
         search_time = time.time() - start_time
@@ -156,10 +169,14 @@ async def search_similar_content_async(query_text, limit=5, section=None):
         formatted_results = []
         for result in results:
             metadata = result.metadata if isinstance(result.metadata, dict) else {}
+            next_grade = metadata.get('nextGrade') if 'nextGrade' in metadata else None
+            next_roles = metadata.get('nextRoles') if 'nextRoles' in metadata else None
             formatted_results.append({
                 "text": result.text,
                 "metadata": metadata,
-                "distance": float(result.distance) if hasattr(result, 'distance') and result.distance is not None else 1.0
+                "distance": float(result.distance) if hasattr(result, 'distance') and result.distance is not None else 1.0,
+                "nextGrade": next_grade,
+                "nextRoles": next_roles
             })
 
         search_time = time.time() - start_time
@@ -171,42 +188,67 @@ async def search_similar_content_async(query_text, limit=5, section=None):
         return {"error": f"An error occurred during search: {e}"}
 
 def create_fallback_content(query_text):
-    """Provides generic fallback content if vector search fails or yields no results."""
-    logger.warning("Providing fallback content for query: {query_text}")
-    if any(term in query_text.lower() for term in ["ai", "machine learning", "artificial intelligence", "ml"]):
+    """Provides PSF-AAI specific fallback content if vector search fails or yields no results."""
+    logger.warning(f"Providing fallback content for query: {query_text}")
+    query_lower = query_text.lower()
+    
+    if any(term in query_lower for term in ["ai", "machine learning", "artificial intelligence", "ml"]):
         return [
             {
-                "text": "AI Engineering typically requires skills in machine learning algorithms, data preprocessing, model development, MLOps, and deployment techniques. Key competencies include Python programming, understanding of neural networks, and knowledge of frameworks like TensorFlow and PyTorch.",
+                "text": "The Philippine Skills Framework for Analytics and AI defines various AI Engineering skills including Machine Learning, Neural Networks, Deep Learning, and MLOps. These skills are required for roles such as AI Engineer, Machine Learning Engineer, and Data Scientist.",
                 "metadata": {
                     "type": "fallback",
-                    "title": "AI Engineering Skills"
-                },
-                "distance": 0.5  # Default distance for fallback content
-            },
-            {
-                "text": "Career progression in AI often involves starting as a Junior AI Engineer, then moving to AI Engineer, Senior AI Engineer, and eventually AI Architect or AI Research Scientist positions.",
-                "metadata": {
-                    "type": "fallback",
-                    "title": "AI Career Progression"
-                },
-                "distance": 0.6
-            }
-        ]
-    elif any(term in query_text.lower() for term in ["data science", "data scientist", "analytics"]):
-        return [
-            {
-                "text": "Data Scientists need skills in statistical analysis, machine learning, data visualization, and domain knowledge. They should be proficient in Python, R, SQL, and tools like Tableau or PowerBI.",
-                "metadata": {
-                    "type": "fallback",
-                    "title": "Data Science Skills"
+                    "title": "AI Engineering Skills in PSF-AAI",
+                    "skill_category": "functional"
                 },
                 "distance": 0.5
             },
             {
-                "text": "Career paths in data science typically start with Data Analyst roles, progressing to Junior Data Scientist, Data Scientist, Senior Data Scientist, and then to Lead Data Scientist or Data Science Manager.",
+                "text": "AI career paths in the PSF-AAI framework typically progress from Junior AI Engineer or AI Developer to Senior AI Engineer and AI Architect. Professionals may specialize in areas like Computer Vision, NLP, or Reinforcement Learning.",
                 "metadata": {
                     "type": "fallback",
-                    "title": "Data Science Career Path"
+                    "title": "AI Career Progression in PSF-AAI",
+                    "psf_section": "career_map"
+                },
+                "distance": 0.6
+            }
+        ]
+    elif any(term in query_lower for term in ["data science", "data scientist", "analytics"]):
+        return [
+            {
+                "text": "According to the PSF-AAI framework, Data Science professionals need functional skills in Statistical Analysis, Data Visualization, Machine Learning, and SQL. They also require enabling skills like Problem Solving, Critical Thinking, and Communication.",
+                "metadata": {
+                    "type": "fallback",
+                    "title": "Data Science Skills in PSF-AAI",
+                    "skill_category": "functional"
+                },
+                "distance": 0.5
+            },
+            {
+                "text": "The PSF-AAI career framework outlines progression from Data Analyst to Junior Data Scientist, Data Scientist, Senior Data Scientist, and Lead Data Scientist or Analytics Manager roles.",
+                "metadata": {
+                    "type": "fallback",
+                    "title": "Data Science Career Path in PSF-AAI",
+                    "psf_section": "job_roles"
+                },
+                "distance": 0.6
+            }
+        ]
+    elif any(term in query_lower for term in ["skills", "competencies", "proficiency"]):
+        return [
+            {
+                "text": "The PSF-AAI divides skills into Functional Skills (technical competencies) and Enabling Skills (soft skills/transversal competencies). Each skill has multiple proficiency levels with specific knowledge requirements and behavioral indicators.",
+                "metadata": {
+                    "type": "fallback",
+                    "title": "PSF-AAI Skill Framework Structure"
+                },
+                "distance": 0.5
+            },
+            {
+                "text": "Functional skills in the PSF-AAI include Data Engineering, Data Analysis, Machine Learning, and AI Engineering. Enabling skills include Problem Solving, Communication, Ethics, and Business Acumen.",
+                "metadata": {
+                    "type": "fallback",
+                    "title": "PSF-AAI Skill Categories"
                 },
                 "distance": 0.6
             }
@@ -214,18 +256,18 @@ def create_fallback_content(query_text):
     else:
         return [
             {
-                "text": "Technology careers in analytics and AI require a foundation in programming, mathematics, and domain knowledge. Key technical skills include Python, SQL, cloud technologies, and data structures.",
+                "text": "The Philippine Skills Framework for Analytics and AI (PSF-AAI) provides comprehensive guidance on skills, proficiency levels, and career paths for data and AI professionals in the Philippines.",
                 "metadata": {
                     "type": "fallback",
-                    "title": "Tech Career Foundations"
+                    "title": "About PSF-AAI"
                 },
                 "distance": 0.5
             },
             {
-                "text": "Career progression in tech usually involves moving from junior roles to senior positions, then to lead or architect roles, and potentially into management or executive positions.",
+                "text": "PSF-AAI covers job roles across multiple domains including Data Engineering, Data Analysis, Machine Learning, and AI Engineering, with clear progression paths from entry-level to leadership positions.",
                 "metadata": {
                     "type": "fallback",
-                    "title": "Tech Career Progression"
+                    "title": "PSF-AAI Career Framework"
                 },
                 "distance": 0.6
             }

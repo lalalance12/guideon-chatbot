@@ -335,125 +335,27 @@ class ChatView(APIView):
             logger.info(f"Using chat with ID: {chat.id}")
             
             try:
-                # Save the user message (messages are saved in query_ollama too, but we need this for special cases)
-                user_message = Message.objects.create(
-                    chat=chat,
-                    role='user',
-                    content=prompt
-                )
+                # Process the message using our centralized service
+                # Note: Messages are now saved inside the service
+                result = query_ollama(prompt, chat_id=str(chat.id)) 
                 
-                # First, try to classify intent locally for efficient course search handling
-                try:
-                    intent_result = classify_intent(prompt)
-                    intent = intent_result["intent"]
-                    confidence = intent_result["confidence"]
-                    extracted_entities = intent_result.get("extracted_entities", {})
-                    
-                    # Special handling for course search intent only
-                    if intent == QueryIntent.COURSE_SEARCH:
-                        # Create context for course search
-                        context = {
-                            'intent': intent,
-                            'confidence': confidence,
-                            **extracted_entities
-                        }
-                        
-                        # Use CourseSearchAgent to find relevant courses
-                        agent = CourseSearchAgent()
-                        course_result = asyncio.run(agent.process(prompt, context))
-                        
-                        if course_result.get('found', False) and course_result.get('courses', []):
-                            courses = course_result.get('courses', [])
-                            logger.info(f"Found {len(courses)} courses")
-                            
-                            # Generate a response message
-                            response_text = "Based on your query, here are some recommended courses that might help you:"
-                            
-                            # Save the assistant's message
-                            assistant_message = Message.objects.create(
-                                chat=chat,
-                                role='assistant',
-                                content=response_text
-                            )
-
-                        # Save courses to the database
-                        logger.info(f"Saving {len(courses)} courses to database")
-                        saved_courses = []
-                        user = request.user if request.user.is_authenticated else None
-                        
-                        try:
-                            for i, course_info in enumerate(courses):
-                                logger.info(f"Processing course {i+1}/{len(courses)}: {course_info.get('title')}")
-                                
-                                # Check if course with the same URL already exists
-                                course, created = Course.objects.get_or_create(
-                                    url=course_info['url'],
-                                    defaults={
-                                        'title': course_info['title'],
-                                        'provider': course_info['provider'],
-                                        'price': course_info.get('price', ''),
-                                        'description': course_info.get('description', ''),
-                                        'rating': course_info.get('rating', 0.0),
-                                        'metadata': {
-                                            'similarity_score': course_info.get('similarity_score', 0.0),
-                                            'matched_skill': course_info.get('matched_skill', {})
-                                        }
-                                    }
-                                )
-                                
-                                logger.info(f"Course {'created' if created else 'already exists'}: {course.id}")
-                                
-                                # Record this search if user is authenticated
-                                if user:
-                                    course_search = CourseSearch.objects.create(
-                                        query=prompt,
-                                        user=user,
-                                        course=course,
-                                        chat=chat
-                                    )
-                                    logger.info(f"CourseSearch record created: {course_search.id}")
-                                
-                                # Update the saved courses list
-                                saved_courses.append({
-                                    'title': course.title,
-                                    'provider': course.provider,
-                                    'rating': course.rating if course.rating is not None else 0.0,
-                                    'price': course_info.get('price', ''),
-                                    'description': course.description,
-                                    'url': course.url
-                                })
-                            
-                            # Log database stats after saving
-                            db_course_count = Course.objects.count()
-                            db_search_count = CourseSearch.objects.filter(query=prompt).count()
-                            logger.info(f"After saving: {db_course_count} total courses, {db_search_count} searches for this query")
-                            
-                        except Exception as save_error:
-                            logger.error(f"Error saving courses to database: {str(save_error)}", exc_info=True)
-                            # Continue with the response even if saving fails
-                        
-
-                            # Return the response with courses
-                            response_data = {
-                                'chat_id': chat.id,
-                                'response': response_text,
-                                'courses': courses
-                            }
-                            logger.info(f"Returning response with {len(courses)} courses")
-                            return Response(response_data, status=status.HTTP_200_OK)
-                except Exception as e:
-                    logger.warning(f"Intent classification failed, falling back to regular processing: {str(e)}")
-                
-                # For all other cases, use the regular chat flow
-                # Note: query_ollama will save the messages to the database
-                response = query_ollama(prompt, chat_id=str(chat.id))
-                
-                # Return the response
-                response_data = {
-                    'chat_id': chat.id,
-                    'response': response
-                }
-                return Response(response_data, status=status.HTTP_200_OK)
+                # Check if we got course results
+                if 'courses' in result:
+                    # Return response with courses
+                    response_data = {
+                        'chat_id': chat.id,
+                        'response': result['response'],
+                        'courses': result['courses']
+                    }
+                    logger.info(f"Returning response with courses")
+                    return Response(response_data, status=status.HTTP_200_OK)
+                else:
+                    # Return standard text response
+                    response_data = {
+                        'chat_id': chat.id,
+                        'response': result['response']
+                    }
+                    return Response(response_data, status=status.HTTP_200_OK)
                 
             except Exception as e:
                 logger.error(f"Error processing chat request: {str(e)}", exc_info=True)

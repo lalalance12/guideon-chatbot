@@ -26,13 +26,17 @@ def determine_section_type(metadata):
     chunk_type = metadata.get("type", "unknown")
     skill_category = metadata.get("skill_category", "")
     
-    if "fs_" in chunk_type or skill_category == "functional":
+    # More specific matching for functional skills
+    if chunk_type.startswith("fs_") or skill_category == "functional":
         return "functional_skills"
-    elif "esc_" in chunk_type or skill_category == "enabling":
+    # More specific matching for enabling skills
+    elif chunk_type.startswith("esc_") or chunk_type == "enabling_skill" or skill_category == "enabling":
         return "enabling_skills"
-    elif "role_" in chunk_type or chunk_type == "whole_role":
+    # More specific matching for roles
+    elif chunk_type.startswith("role_") or chunk_type == "whole_role":
         return "job_roles"
-    elif "career_map" in chunk_type:
+    # More specific matching for career map
+    elif chunk_type.startswith("career_map"):
         return "career_map"
     else:
         return "general"

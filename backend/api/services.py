@@ -1,15 +1,19 @@
-import logging
-import asyncio
 from django.conf import settings
 from agno.agent import Agent
 from agno.models.ollama import Ollama
 from .agents.intent_classifier_agent import IntentClassifierAgent
 from .agents.orchestrator_agent import OrchestratorAgent
 from .agents.response_synthesizer_agent import ResponseSynthesizerAgent
+from .agents.course_search_agent import CourseSearchAgent
 from .models import Chat, Message
 from .utils.embeddings import generate_embedding
-# Import the ChatHistoryManager at the top of the file
 from .utils.chat_history_manager import ChatHistoryManager
+import logging
+import asyncio
+import json
+from .agents.flow_manager_agent import FlowManagerAgent
+
+
 logger = logging.getLogger(__name__)
 
 class GuideonChatService:
@@ -17,10 +21,13 @@ class GuideonChatService:
         self.intent_agent = IntentClassifierAgent()
         self.orchestrator = OrchestratorAgent()
         self.synthesizer = ResponseSynthesizerAgent()
+        self.course_search_agent = CourseSearchAgent()
+        self.flow_manager = FlowManagerAgent()
         self.agno_agent = None
         self._init_agent()
 
     def _init_agent(self):
+        # Initialization code remains unchanged
         try:
             llama_model = Ollama(id="llama3.1:8b-instruct-q8_0", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
@@ -33,137 +40,140 @@ class GuideonChatService:
             self.agno_agent = None
             logger.warning("AGNO agent not available - will use fallback responses")
 
-    async def process_message(self, user_query: str, chat_id=None) -> str:
+    async def process_message(self, user_query: str, chat_id=None):
         """
         Process a user message through the complete agent pipeline:
-        Intent Classification → Orchestration → Response Synthesis
-        
-        Args:
-            user_query: The user's message text
-            chat_id: Optional ID to retrieve chat history
-            
-        Returns:
-            Guideon's response text
+        Intent Classification → (Course Search Flow) → Course Search Agent (if needed)
         """
-        # Initialize context
         context = {'chat_id': chat_id}
-    
-        # Get chat history if available
         if chat_id:
             try:
-                # Pass the user_query to get semantically relevant history
                 chat_history = await self._get_chat_history(chat_id, user_query)
-                if chat_history:
-                    context['chat_history'] = chat_history
-                    logger.info(f"Retrieved {len(chat_history)} message(s) for chat history")
-                    # Log a sample to help debugging
-                    if len(chat_history) > 0:
-                        logger.debug(f"First message: {chat_history[0].get('text')[:50]}...")
-                else:
-                    logger.info("No chat history found")
+                context['chat_history'] = chat_history
+                logger.info(f"Retrieved chat history for chat ID {chat_id}: {len(chat_history)} messages")
             except Exception as e:
-                logger.error(f"Error retrieving chat history: {e}")
-        
-        try:
-            # Step 1: Determine user intent using the LLM-based classifier
-            intent_result = await self.intent_agent.process(user_query, context)
-            
-            # Update context with intent classification results
-            context['intent'] = intent_result['intent']
-            context['intent_confidence'] = intent_result['confidence']
-            context['extracted_entities'] = intent_result.get('extracted_entities', {})
-            
-            logger.info(f"Classified intent: {context['intent']} (confidence: {context['intent_confidence']})")
-            
-            # Step 2: Orchestrate specialized agents based on intent
-            orchestrator_result = await self.orchestrator.process(user_query, context)
-            
-            # Make sure we have the updated context with flow information
-            if isinstance(orchestrator_result, dict) and 'context' in orchestrator_result:
-                context = orchestrator_result['context']
-            else:
-                # Just update context with whatever we got
-                context.update(orchestrator_result)
-            
-            # Step 3: Synthesize the final response
-            response_result = await self.synthesizer.process(user_query, context)
-            
-            # Extract the actual response text
-            if isinstance(response_result, dict):
-                response_text = response_result.get('response_text', str(response_result))
-            else:
-                response_text = str(response_result)
+                logger.error(f"Error retrieving chat history: {e}", exc_info=True)
+                context['chat_history'] = []
 
-            # Save messages to database if chat_id provided
+        try:
+            # Step 1: Determine user intent using the IntentClassifierAgent
+            intent_result = await self.intent_agent.process(user_query, context)
+            context.update(intent_result)
+            intent_name = getattr(intent_result.get('intent'), 'value', None)
+            if not intent_name and isinstance(intent_result.get('intent'), str):
+                intent_name = intent_result.get('intent')
+            confidence = intent_result.get('confidence', 0.0)
+
+            # Always use orchestrator for all intents (including course_search)
+            logger.info(f"Processing with orchestrator using intent: {intent_name}")
+            orchestrator_result = await self.orchestrator.process(user_query, context)
+            context.update(orchestrator_result)
+
+            # If the flow is course_search and the flow action is clarification, return the clarification prompt directly
+            flow = context.get('flow', {})
+            flow_action = flow.get('flow_action')
+            response_format = flow.get('response_format', {})
+            if intent_name == "course_search":
+                # If clarification is needed
+                if flow_action in ('clarify_course_topic', 'request_course_topic_details'):
+                    prompt = response_format.get('prompt_message', "What specific skill or topic are you looking for courses on?")
+                    if chat_id:
+                        chat = await self._get_or_create_chat(chat_id)
+                        await self._save_message(chat, 'user', user_query)
+                        await self._save_message(chat, 'assistant', prompt)
+                    return {
+                        'response': prompt,
+                        'clarification': True
+                    }
+                # If we have course cards, return them directly (skip synthesis)
+                agent_responses = context.get('agent_responses', {})
+                course_result = agent_responses.get('course_search', {})
+                if course_result.get('found', False) and course_result.get('courses', []):
+                    courses = course_result.get('courses', [])
+                    response_text = "Based on your query, here are some recommended courses that might help you:"
+                    if chat_id:
+                        chat = await self._get_or_create_chat(chat_id)
+                        await self._save_message(chat, 'user', user_query)
+                        await self._save_message(chat, 'assistant', response_text)
+                    return {
+                        'response': response_text,
+                        'courses': courses
+                    }
+                # If no courses found, return the message from the agent
+                if course_result.get('message'):
+                    if chat_id:
+                        chat = await self._get_or_create_chat(chat_id)
+                        await self._save_message(chat, 'user', user_query)
+                        await self._save_message(chat, 'assistant', course_result['message'])
+                    return {
+                        'response': course_result['message']
+                    }
+
+            # For all other intents, use the synthesizer
+            logger.info("Generating final response with synthesizer")
+            synthesizer_result = await self.synthesizer.process(user_query, context)
+            response_text = synthesizer_result.get('response') or synthesizer_result.get('response_text') or 'I apologize, but I could not generate a proper response.'
+            if chat_id:
+                chat = await self._get_or_create_chat(chat_id)
+                await self._save_message(chat, 'user', user_query)
+                await self._save_message(chat, 'assistant', response_text)
+            return {
+                'response': response_text
+            }
+        except Exception as e:
+            logger.error(f"Error processing message: {e}", exc_info=True)
+            fallback_response = self._fallback_response(user_query)
             if chat_id:
                 try:
-                    # Get or create chat
-                    chat, created = await Chat.objects.aget_or_create(id=chat_id)
-                    
-                    # Generate embeddings for both messages
-                    user_embedding = await generate_embedding(user_query)
-                    response_embedding = await generate_embedding(response_text)
-                    
-                    # Create user message with embedding
-                    await Message.objects.acreate(
-                        chat=chat,
-                        content=user_query,
-                        role="user",
-                        embedding=user_embedding
-                    )
-                    
-                    # Create assistant message with embedding
-                    await Message.objects.acreate(
-                        chat=chat,
-                        content=response_text,
-                        role="assistant",
-                        embedding=response_embedding
-                    )
-                    
-                    logger.info(f"Stored messages with embeddings in database for chat {chat_id}")
-                except Exception as e:
-                    logger.error(f"Failed to store messages in database: {e}")
-            
-            return response_text
-            
-        except Exception as e:  
-            logger.error(f"Error processing message: {e}", exc_info=True)
-            return self._fallback_response(user_query)
+                    chat = await self._get_or_create_chat(chat_id)
+                    await self._save_message(chat, 'user', user_query)
+                    await self._save_message(chat, 'assistant', fallback_response)
+                except Exception as save_error:
+                    logger.error(f"Error saving fallback message: {save_error}")
+            return {
+                'response': fallback_response
+            }
 
+    # Helper methods remain the same
+    async def _get_or_create_chat(self, chat_id):
+        """Get or create a chat object by its ID"""
+        from django.db import transaction
+        from asgiref.sync import sync_to_async
+        
+        @sync_to_async
+        def get_or_create():
+            with transaction.atomic():
+                try:
+                    return Chat.objects.get(id=chat_id)
+                except Chat.DoesNotExist:
+                    # Create a new chat with the given ID if possible
+                    return Chat.objects.create(id=chat_id)
+        
+        return await get_or_create()
+
+    async def _save_message(self, chat, role, content):
+        """Save a message to the chat"""
+        from asgiref.sync import sync_to_async
+        
+        @sync_to_async
+        def save():
+            message = Message(chat=chat, role=role, content=content)
+            message.save()
+            return message
+        
+        return await save()
 
     async def _get_chat_history(self, chat_id, user_query=None):
-        """Retrieve chat history for context building from database"""
+        """Retrieve last 4 chat messages (user, assistant, user, assistant) for context building from database"""
         try:
-            if not chat_id:
-                return []
-                
-            # Use simple history approach instead of semantic/hybrid
-            chat_history = await ChatHistoryManager.get_simple_history(chat_id=chat_id)
-            logger.info(f"Retrieved {len(chat_history)} messages using simple history approach")
-            return chat_history
-            
+            # Get the last 4 turns (excluding the latest user prompt)
+            return await ChatHistoryManager.get_last_n_turns(chat_id, n=4)
         except Exception as e:
-            logger.error(f"Error retrieving chat history: {e}")
-            return []           
-    def _extract_entities(self, text):
-        entities = []
-        if "level" in text.lower():
-            import re
-            level_matches = re.findall(r'level\s*(\d+)', text.lower())
-            if level_matches:
-                entities.append(f"level_{level_matches[0]}")
-        key_terms = [
-            "data", "analytics", "AI", "artificial intelligence", "machine learning",
-            "career", "path", "role", "skill", "competency", "framework",
-            "junior", "senior", "lead", "manager", "director",
-            "analyst", "scientist", "engineer", "developer"
-        ]
-        for term in key_terms:
-            if term.lower() in text.lower():
-                entities.append(term.lower())
-        return entities
+            logger.error(f"Error retrieving chat history: {e}", exc_info=True)
+            return []
 
     def _fallback_response(self, query):
+        # Existing fallback method unchanged
         return f"""I apologize, but I encountered an issue while processing your question about "{query}".
 
 I'm Guideon, specialized in the Philippine Skills Framework for Analytics & AI (PSF-AAI), and I can help with:
@@ -175,9 +185,16 @@ Please try asking your question in a different way, or ask me about specific asp
 
 _service = GuideonChatService()
 
-def query_ollama(user_prompt: str, chat_id=None) -> str:
+def query_ollama(user_prompt: str, chat_id=None):
+    """
+    Process a user message through the GuideonChatService
+    
+    Returns a dict with response and optionally courses
+    """
     try:
         return asyncio.run(_service.process_message(user_prompt, chat_id=chat_id))
     except Exception as e:
         logging.exception("query_ollama failed")
-        return f"Sorry, I encountered an error while processing your query: {str(e)}"
+        return {
+            'response': f"Sorry, I encountered an error while processing your query: {str(e)}"
+        }
