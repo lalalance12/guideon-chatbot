@@ -14,6 +14,10 @@ class LearningPathAgent(BaseAgent):
     Generates personalized learning pathways based on career aspirations.
     Provides information about roles, required skills, and progression paths.
     """
+    
+    def __init__(self, llm=None):
+        """Initialize the learning path agent with an optional LLM."""
+        super().__init__(llm=llm)
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Process queries related to learning pathways and career progression"""

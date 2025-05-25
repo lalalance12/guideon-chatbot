@@ -14,8 +14,8 @@ class FlowManagerAgent(BaseAgent):
     # Class variable to store flow controllers by chat ID
     _flow_controllers = {}  # Map of chat_id -> FlowController
     
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, llm=None) -> None:
+        super().__init__(llm=llm)
         self.name = "FlowManagerAgent"
     
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:

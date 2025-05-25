@@ -18,18 +18,25 @@ class IntentClassifierAgent(BaseAgent):
     Provides more sophisticated intent classification than keyword matching.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, llm=None) -> None:
         """Initialize the intent classifier with an LLM."""
+        super().__init__(llm=llm)
+        
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0",
-                              provider="Ollama", 
-                              host="http://localhost:11434")
+            # Use provided LLM if available, otherwise initialize own
+            if not self.llm:
+                self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
+                                provider="Ollama", 
+                                host="http://localhost:11434")
+                logger.info("Intent classifier initialized with its own LLM")
+            else:
+                logger.info("Intent classifier using shared LLM instance")
+                
             self.agent = Agent(
                 name="IntentClassifier", 
                 model=self.llm,
                 system_message="You are an intent classification assistant that analyzes user queries."
             )
-            logger.info("Intent classifier initialized with LLM")
         except Exception as e:
             logger.error(f"Failed to initialize intent classifier LLM: {e}")
             self.agent = None

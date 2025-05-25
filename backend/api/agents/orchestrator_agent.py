@@ -21,12 +21,21 @@ logger = logging.getLogger(__name__)
 class OrchestratorAgent(BaseAgent):
     """Coordinates the execution of specialised agents based on intent."""
 
-    def __init__(self) -> None:
-        self.knowledge_agent = PSFKnowledgeAgent()
-        self.course_agent = CourseSearchAgent()
-        self.learning_path_agent = LearningPathAgent()
-        self.flow_manager = FlowManagerAgent()  # Add the flow manager
-        self.general_conversation_agent = GeneralConversationAgent()  # Add general conversation agent
+    SYSTEM_PROMPT = (
+        "You are an AI orchestrator for the Guideon Chatbot. "
+        "Your primary role is to understand the user's intent and the ongoing conversation flow. "
+        "Based on this, you will intelligently route the user's query to the most appropriate specialized agent "
+        "(e.g., PSFKnowledgeAgent, CourseSearchAgent, LearningPathAgent, GeneralConversationAgent) "
+        "or manage the conversational flow transitions. Ensure seamless and contextually relevant interactions."
+    )
+
+    def __init__(self, llm=None) -> None:
+        super().__init__(llm=llm)
+        self.knowledge_agent = PSFKnowledgeAgent(llm=llm)
+        self.course_agent = CourseSearchAgent(llm=llm)
+        self.learning_path_agent = LearningPathAgent(llm=llm)
+        self.flow_manager = FlowManagerAgent(llm=llm)
+        self.general_conversation_agent = GeneralConversationAgent(llm=llm)
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         start = time.time()

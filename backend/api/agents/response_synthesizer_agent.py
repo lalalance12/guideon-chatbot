@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 class ResponseSynthesizerAgent(BaseAgent):
     """Synthesizes a coherent response from multiple agent outputs."""
 
-    def __init__(self) -> None:
+    def __init__(self, llm=None) -> None:
         """Initialize the response synthesizer with an LLM."""
+        super().__init__(llm=llm)
 
         self.system_prompt = """
 # Guideon: PSF-AAI Career Guide
@@ -62,10 +63,15 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
 - Note: Give what the user wants to put extra stuff in the response
 """
         try:
-            # Initialize the LLM agent
-            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0", # type: ignore
-                              provider="Ollama",
-                              host="http://localhost:11434")
+            # Use provided LLM if available, otherwise initialize own
+            if not self.llm:
+                self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", # type: ignore
+                                provider="Ollama",
+                                host="http://localhost:11434")
+                logger.info("Response synthesizer initialized with its own LLM")
+            else:
+                logger.info("Response synthesizer using shared LLM instance")
+                
             self.agent = Agent(
                 name="Synthesizer",
                 model=self.llm, # type: ignore

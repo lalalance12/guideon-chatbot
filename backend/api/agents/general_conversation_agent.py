@@ -9,15 +9,22 @@ class GeneralConversationAgent(BaseAgent):
     """
     Handles general conversation, chit-chat, jokes, greetings, and non-PSF-AAI queries.
     """
-    def __init__(self):
+    def __init__(self, llm=None):
+        super().__init__(llm=llm)
+        
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0", provider="Ollama", host="http://localhost:11434")
+            # Use provided LLM if available, otherwise initialize own
+            if not self.llm:
+                self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
+                logger.info("General conversation agent initialized with its own LLM")
+            else:
+                logger.info("General conversation agent using shared LLM instance")
+                
             self.agent = Agent(
                 name="GeneralConversation",
                 model=self.llm,
                 system_message="You are a helpful, friendly AI assistant for general conversation. Respond naturally and conversationally. Always try to relate it to the PSF-AAI framework if possible.",
             )
-            logger.info("General conversation agent initialized with LLM")
         except Exception as e:
             logger.error(f"Failed to initialize general conversation LLM: {e}")
             self.agent = None
