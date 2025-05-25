@@ -34,6 +34,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
   console.log('Course data:', course); // Debug log
 
   const handleTakeCourse = async () => {
+    if (!window.confirm("Are you sure you want to enroll in this course?")) {
+      return;
+    }
     try {
       const token = localStorage.getItem(ACCESS_TOKEN);
       const response = await fetch('/api/take-course/', {
