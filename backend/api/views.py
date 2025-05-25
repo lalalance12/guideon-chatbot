@@ -465,3 +465,58 @@ class KnowledgeChunkView(generics.ListCreateAPIView):
     queryset = KnowledgeChunk.objects.all()
     serializer_class = KnowledgeChunkSerializer
     permission_classes = [AllowAny]
+
+class TakeCourseView(APIView):
+    """
+    API endpoint for users to take a course and store course details.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Extract course details from request
+        course_data = request.data.get('course')
+        if not course_data:
+            return Response({"error": "Course data is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        url = course_data.get('url')
+        if not url:
+            return Response({"error": "Course URL is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if course exists, else create
+        course, created = Course.objects.get_or_create(
+            url=url,
+            defaults={
+                'title': course_data.get('title', ''),
+                'provider': course_data.get('provider', ''),
+                'description': course_data.get('description', ''),
+                'rating': course_data.get('rating', None),
+                'price': course_data.get('price', ''),
+                'matching_skill': course_data.get('matching_skill', ''),
+                'metadata': course_data.get('metadata', {})
+            }
+        )
+
+        # Create CourseSearch entry
+        CourseSearch.objects.create(
+            query=course_data.get('query', ''),
+            user=request.user,
+            course=course,
+            chat_id=course_data.get('chat_id', None)
+        )
+
+        # Create or update UserLearnedCourse
+        user_course, _ = UserLearnedCourse.objects.get_or_create(
+            user=request.user,
+            course=course,
+            defaults={
+                'status': 'in_progress',
+                'skill_text': course_data.get('matching_skill', '')
+            }
+        )
+
+        return Response({
+            'success': True,
+            'course_id': course.id,
+            'user_course_id': user_course.id,
+            'course_title': course.title
+        }, status=status.HTTP_201_CREATED)
