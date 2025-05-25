@@ -13,17 +13,26 @@ class TopicExtractor:
     Extracts the specific topic that a user wants to learn about from their query.
     This is used to pass a clean topic string to the CourseSearchAgent.
     """
+    SYSTEM_PROMPT = (
+        "You are an AI assistant specialized in topic extraction for a learning platform. "
+        "Your goal is to identify the specific subject, skill, or concept a user wants to learn about from their query. "
+        "Focus on extracting the core learning topic, omitting conversational fluff or generic phrases like 'I want to learn about'. "
+        "If the query is too vague or doesn't specify a clear topic, return an empty string. "
+        "For example, if the query is 'Tell me about data science courses', extract 'data science'. "
+        "If the query is 'What is Python?', extract 'Python'. "
+        "If the query is 'courses' or 'something to learn', return an empty string."
+    )
 
     def __init__(self) -> None:
         """Initialize with LLM for topic extraction."""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0",
+            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
                               provider="Ollama", 
                               host="http://localhost:11434")
             self.agent = Agent(
                 name="TopicExtractor", 
                 model=self.llm,
-                system_message="You are an assistant that extracts learning topics from user queries."
+                system_message=self.SYSTEM_PROMPT
             )
             logger.info("Topic extractor initialized with LLM")
         except Exception as e:
