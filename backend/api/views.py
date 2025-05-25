@@ -520,3 +520,60 @@ class TakeCourseView(APIView):
             'user_course_id': user_course.id,
             'course_title': course.title
         }, status=status.HTTP_201_CREATED)
+
+class UserCoursesView(APIView):
+    """
+    API endpoint to get all courses the current user has enrolled in, with course details and status.
+    Supports filtering by status (?status=ongoing|completed).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status')
+        user_courses = UserLearnedCourse.objects.filter(user=request.user)
+        if status_filter:
+            user_courses = user_courses.filter(status=status_filter)
+        # Prefetch related course details
+        user_courses = user_courses.select_related('course')
+        data = [
+            {
+                'id': uc.id,
+                'status': uc.status,
+                'learned_at': uc.learned_at,
+                'skill_text': uc.skill_text,
+                'course': {
+                    'id': uc.course.id,
+                    'title': uc.course.title,
+                    'provider': uc.course.provider,
+                    'url': uc.course.url,
+                    'description': uc.course.description,
+                    'rating': uc.course.rating,
+                    'price': uc.course.price,
+                    'matching_skill': uc.course.matching_skill,
+                    'metadata': uc.course.metadata,
+                }
+            }
+            for uc in user_courses
+        ]
+        return Response(data, status=status.HTTP_200_OK)
+
+class CompleteCourseView(APIView):
+    """
+    API endpoint to mark a user's course as completed.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_course_id = request.data.get('user_course_id')
+        if not user_course_id:
+            return Response({"error": "user_course_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user_course = UserLearnedCourse.objects.get(id=user_course_id, user=request.user)
+            user_course.status = 'completed'
+            user_course.save()
+            return Response({"success": True, "message": "Course marked as completed."}, status=status.HTTP_200_OK)
+        except UserLearnedCourse.DoesNotExist:
+            return Response({"error": "User course not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error completing course: {str(e)}", exc_info=True)
+            return Response({"error": f"Failed to complete course: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
