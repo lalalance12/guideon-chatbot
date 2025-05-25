@@ -41,7 +41,7 @@ class Course(models.Model):
         return f"{self.title} by {self.provider}"
 
 class CourseSearch(models.Model):
-    query = models.TextField()
+    query = models.TextField(null=True, blank=True)
     searched_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='course_searches')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='searches')
