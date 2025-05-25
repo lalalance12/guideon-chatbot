@@ -18,27 +18,33 @@ logger = logging.getLogger(__name__)
 
 class GuideonChatService:
     def __init__(self):
-        self.intent_agent = IntentClassifierAgent()
-        self.orchestrator = OrchestratorAgent()
-        self.synthesizer = ResponseSynthesizerAgent()
-        self.course_search_agent = CourseSearchAgent()
-        self.flow_manager = FlowManagerAgent()
+        # Initialize a centralized LLM first
+        self.llm = None
         self.agno_agent = None
-        self._init_agent()
+        self._init_llm()
+        
+        # Initialize agents with the centralized LLM
+        self.intent_agent = IntentClassifierAgent(llm=self.llm)
+        self.orchestrator = OrchestratorAgent(llm=self.llm)
+        self.synthesizer = ResponseSynthesizerAgent(llm=self.llm)
+        self.course_search_agent = CourseSearchAgent(llm=self.llm)
+        # FlowManager doesn't need LLM for its core functionality
+        self.flow_manager = FlowManagerAgent()
 
-    def _init_agent(self):
-        # Initialization code remains unchanged
+    def _init_llm(self):
+        """Initialize a centralized LLM for all agents to use"""
         try:
-            llama_model = Ollama(id="llama3.1:8b-instruct-q8_0", provider="Ollama", host="http://localhost:11434")
+            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",
-                model=llama_model,
+                model=self.llm,
             )
-            logger.info("AGNO agent initialized successfully with Llama 3.1")
+            logger.info("Centralized LLM initialized successfully with Llama 3.1")
         except Exception as e:
             logger.error(f"Failed to initialize Llama model: {e}", exc_info=True)
+            self.llm = None
             self.agno_agent = None
-            logger.warning("AGNO agent not available - will use fallback responses")
+            logger.warning("Centralized LLM not available - agents will use fallback mechanisms")
 
     async def process_message(self, user_query: str, chat_id=None):
         """
