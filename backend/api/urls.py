@@ -1,7 +1,7 @@
 # filepath: c:\Users\Asus\Desktop\guideon-chatbot\backend\api\urls.py
 from django.urls import path
 # Updated view import
-from .views import CreateUserView, ContextRetrieverView, LoginView, CurrentUserView, SemanticCourseSearchView, UserCourseTakeView
+from .views import CreateUserView, ContextRetrieverView, LoginView, CurrentUserView, SemanticCourseSearchView, TakeCourseView
 
 urlpatterns = [
     # path('users/', CreateUserView.as_view(), name='create_user'),
@@ -12,5 +12,5 @@ urlpatterns = [
     #path('courses/search/', CourseSearchView.as_view(), name='search-courses'),
     path('retrieve-context/', ContextRetrieverView.as_view(), name='retrieve-context'),
     path('course-search/', SemanticCourseSearchView.as_view(), name='course-search'),
-    path('courses/take/', UserCourseTakeView.as_view(), name='take-course'),
+    path('take-course/', TakeCourseView.as_view(), name='take-course'),
 ]
