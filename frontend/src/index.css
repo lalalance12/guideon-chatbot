@@ -50,6 +50,11 @@ body {
   animation-delay: 0.4s;
 }
 
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.2s ease-in-out;
+}
+
 /* Chat bubble styling */
 .chat-bubble {
   position: relative;

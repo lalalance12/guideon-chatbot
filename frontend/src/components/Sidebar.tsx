@@ -9,6 +9,7 @@ import {
 import { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { authService, User } from "../services/auth";
+import UserPreferencesModal from "./UserPreferencesModal";
 
 interface SidebarContextProps {
   expanded: boolean;
@@ -26,6 +27,7 @@ export default function Sidebar({ children }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -39,6 +41,14 @@ export default function Sidebar({ children }: SidebarProps) {
 
     fetchUser();
   }, []);
+  
+  const handleOpenPreferencesModal = () => {
+    setIsPreferencesModalOpen(true);
+  };
+
+  const handleClosePreferencesModal = () => {
+    setIsPreferencesModalOpen(false);
+  };
 
   const handleLogout = () => {
     authService.logout();
@@ -108,16 +118,16 @@ export default function Sidebar({ children }: SidebarProps) {
             <div className="leading-4">
               <h4 className="font-semibold text-gray-800">{currentUser?.fullName || '-'}</h4>
               <span className="text-xs text-gray-500">{currentUser?.email || ''}</span>
-            </div>
-            <button
+            </div>            <button
+              onClick={handleOpenPreferencesModal}
               className="p-1 rounded-full hover:bg-gray-100 transition-smooth"
               aria-label="User menu options"
             >
               <MoreVertical size={18} className="text-gray-500" />
             </button>
           </div>
-        </div>
-      </nav>
+        </div>      </nav>
+      <UserPreferencesModal isOpen={isPreferencesModalOpen} onClose={handleClosePreferencesModal} />
     </aside>
   );
 }
