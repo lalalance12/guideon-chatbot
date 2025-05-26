@@ -93,11 +93,15 @@ class OrchestratorAgent(BaseAgent):
             "course_agent": self.course_agent,
             "general_conversation_agent": self.general_conversation_agent
         }
-        
-        # Activate only the specified agent (should be only one now)
+          # Activate only the specified agent (should be only one now)
         for agent_name in agents_to_activate:
             if agent_name in agent_map:
                 logger.info(f"[Orchestrator] Activating agent: {agent_name}")
+                # Log if user_id is present in context
+                if 'user_id' in context:
+                    logger.info(f"[Orchestrator] Passing user_id: {context.get('user_id')} to {agent_name}")
+                else:
+                    logger.warning(f"[Orchestrator] No user_id found in context to pass to {agent_name}")
                 agent = agent_map[agent_name]
                 tasks.append(self._execute_agent(agent, query, context, agent_name))
             else:
@@ -188,21 +192,25 @@ class OrchestratorAgent(BaseAgent):
                         "intent": context.get("intent"),
                         "context": context
                     }
-        
-        # Return orchestrated results if no direct action was taken
+          # Return orchestrated results if no direct action was taken
         logger.info("[Orchestrator] No direct action response from specialized agents, proceeding to general processing for synthesizer.")
         return {
             "agents_processed": len(agent_responses),
             "processing_time": time.time() - start,
             "context": context
         }
-
+    
     async def _execute_agent(self, agent: BaseAgent, query: str, 
                             context: Dict[str, Any], key: str) -> Dict[str, Any]:
         """Execute a single agent and wrap its response with metadata."""
         start = time.time()
         
         try:
+            # Log the context keys being passed to the agent
+            logger.info(f"[Orchestrator] Executing {agent.__class__.__name__} with context keys: {list(context.keys())}")
+            if 'user_id' in context:
+                logger.info(f"[Orchestrator] Context contains user_id: {context['user_id']}")
+            
             result = await agent.process(query, context)
             
             # Ensure result is a dictionary
