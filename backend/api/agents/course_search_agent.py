@@ -17,16 +17,17 @@ logger = logging.getLogger(__name__)
 class CourseSearchAgent(BaseAgent):
     """Agent responsible for finding relevant courses based on user query."""
 
-    # Minimum similarity threshold for considering a course relevant
+    # Configuration constants
     OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
     EMBEDDING_MODEL = "bge-m3"
     SKILL_EMBEDDINGS_PATH = os.path.join(os.path.dirname(__file__), '../data/courses/role_skill_knowledge_embeddings.json')
+    SIMILARITY_THRESHOLD = 0.58  # Default threshold for course relevance
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, llm=None):
+        """Initialize the course search agent with an optional LLM."""
+        super().__init__(llm=llm)
         self.ua = UserAgent()
         self.SKILL_EMBEDDINGS = self.load_skill_embeddings()
-        self.SIMILARITY_THRESHOLD = 0.1  # Default threshold for course relevance\
 
     def get_headers(self) -> Dict[str, str]:
         """Generate random headers for each request to mimic different browsers."""
@@ -225,21 +226,31 @@ class CourseSearchAgent(BaseAgent):
             return avg_similarity
         return 0
 
-class CourseSearchAgent(BaseAgent):
-    """Agent responsible for finding relevant courses based on user query."""
+    def get_skill_match_and_adjusted_threshold(self, topic: str):
+        """Determine the skill match and adjust the threshold based on the topic."""
+        # First, find the matching skill and its underpinning knowledge
+        # Use the topic for matching instead of the raw query
+        skill_match = self.match_query_to_skills_and_get_underpinning_knowledge(topic)
+        has_skill_match = skill_match is not None
+        
+        # Initialize the threshold with the default value
+        current_similarity_threshold = self.SIMILARITY_THRESHOLD
+        
+        if has_skill_match:
+            logger.info(f"Found matching skill: {skill_match.get('skill_title')}")
+            logger.debug(f"Underpinning knowledge items: {len(skill_match.get('underpinning_knowledge', []))}")
+            current_similarity_threshold = 0.1 # Change threshold if skill match is found
+            logger.info(f"Skill match found. Similarity threshold set to: {current_similarity_threshold}")
+        else:
+            logger.info(f"No matching skill found for topic '{topic}', will use direct title comparison. Threshold remains: {current_similarity_threshold}")
 
-    # Minimum similarity threshold for considering a course relevant
-    SIMILARITY_THRESHOLD = 0.58
-    
-    def __init__(self, llm=None):
-        """Initialize the course search agent with an optional LLM."""
-        super().__init__(llm=llm)
+        return skill_match, current_similarity_threshold
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
             current_similarity_threshold = self.SIMILARITY_THRESHOLD # Initialize with default
 
-    #        Check if we're receiving an extracted topic from the orchestrator
+            # Check if we're receiving an extracted topic from the orchestrator
             extracted_topic_from_context = context.get("extracted_topic") # Renamed for clarity
             topic = "" # Initialize topic
             
@@ -251,8 +262,24 @@ class CourseSearchAgent(BaseAgent):
                 logger.info(f"No pre-extracted topic in context or it matches query, extracting from query: '{query}'")
                 topic_extractor = TopicExtractor()
                 topic = await topic_extractor.extract_topic(query)
-                # The TopicExtractor now returns "" if it's generic or unextractable.
-            
+        
+            # VALIDATION: If topic extraction returned explanatory text or is too long, extract directly
+            if topic and (len(topic.split()) > 8 or any(phrase in topic.lower() for phrase in [
+                "this is", "extracted", "specific topic", "answer", "let me know", "attempt", 
+                "would like", "i've", "i have", "please"
+            ])):
+                logger.warning(f"Topic extraction appears to have returned explanatory text: '{topic}'")
+                # Attempt direct extraction from query pattern
+                query_lower = query.lower()
+                if "courses for " in query_lower:
+                    direct_topic = query_lower.split("courses for ", 1)[1].strip().rstrip("?!.,;:")
+                    logger.info(f"Direct extraction found topic: '{direct_topic}'")
+                    topic = direct_topic
+                elif "about " in query_lower:
+                    direct_topic = query_lower.split("about ", 1)[1].strip().rstrip("?!.,;:")
+                    logger.info(f"Direct extraction found topic: '{direct_topic}'")
+                    topic = direct_topic
+        
             logger.info(f"Effective topic for course search: '{topic}' (from query: '{query}')")
 
             if not topic:  # Check if the topic is empty (signaling a generic/unclear request)
@@ -266,18 +293,9 @@ class CourseSearchAgent(BaseAgent):
             # Log the processing of the query with the extracted topic
             logger.info(f"Processing query: '{query}' with specific topic: '{topic}'")
             
-            # First, find the matching skill and its underpinning knowledge
-            # Use the topic for matching instead of the raw query
-            skill_match = self.match_query_to_skills_and_get_underpinning_knowledge(topic)
+            # Determine skill match and adjusted threshold based on the topic
+            skill_match, current_similarity_threshold = self.get_skill_match_and_adjusted_threshold(topic)
             has_skill_match = skill_match is not None
-            
-            if has_skill_match:
-                logger.info(f"Found matching skill: {skill_match.get('skill_title')}")
-                logger.debug(f"Underpinning knowledge items: {len(skill_match.get('underpinning_knowledge', []))}")
-                current_similarity_threshold = 0.1 # Change threshold if skill match is found
-                logger.info(f"Skill match found. Similarity threshold set to: {current_similarity_threshold}")
-            else:
-                logger.info(f"No matching skill found for topic '{topic}', will use direct title comparison. Threshold remains: {current_similarity_threshold}")
             
             # If skill match is found, use underpinning knowledge for comparison
             # Otherwise, we'll directly compare with the query
