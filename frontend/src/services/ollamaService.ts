@@ -27,7 +27,7 @@ export const checkApiConnection = async (): Promise<boolean> => {
  * @param chatId - Optional chat ID for continuing a conversation
  * @returns The response from the backend API including chat_id
  */
-export const queryOllama = async (userPrompt: string, chatId?: string): Promise<{response: string, chat_id: string, courses?: any[]}> => {
+export const queryOllama = async (userPrompt: string, chatId?: string): Promise<any> => {
   try {
     console.log("Frontend: Sending request to backend API");
     const requestData = chatId 
@@ -41,15 +41,15 @@ export const queryOllama = async (userPrompt: string, chatId?: string): Promise<
     console.log("Frontend: Received response from backend");
     console.log("Response data:", response.data);
     
-    // Extract the response and courses if they exist
-    const responseText = response.data.response;
-    const courses = response.data.courses;
+    // Explicitly log career button information if present
+    if (response.data.show_goto_career_button) {
+      console.log("CAREER BUTTON FOUND IN RESPONSE!");
+      console.log("goto_career_role:", response.data.goto_career_role);
+      console.log("show_goto_career_button:", response.data.show_goto_career_button);
+    }
     
-    return {
-      response: responseText,
-      chat_id: response.data.chat_id,
-      courses: courses
-    };
+    // Return the complete response object without modification
+    return response.data;
   } catch (error) {
     console.error("Error querying backend:", error);
     if (axios.isAxiosError(error)) {
@@ -120,13 +120,17 @@ export const useOllamaQuery = () => {
       // Return the full result including courses if available
       if (result.courses && result.courses.length > 0) {
         return {
+          ...result,  // Keep all other properties from result
           response: result.response,
           courses: result.courses
         };
+      } else if (typeof result === 'object' && result !== null) {
+        // If it's an object without courses, return the full object
+        return result;
+      } else {
+        // Only if it's not an object, return as string
+        return result;
       }
-      
-      // Otherwise just return the response string
-      return result.response;
         
     } catch (err) {
       console.error("Error in sendQuery:", err);
