@@ -238,9 +238,45 @@ class CourseSearchAgent(BaseAgent):
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
+            # Get user ID from context if available
+            user_id = context.get("user_id")
+            
+            # Initialize user preferences
+            user_preferences = {
+                "course_level": None,
+                "programming_languages": [],
+                "development_areas": []
+            }
+            
+            # Retrieve user preferences if user_id is available
+            if user_id:
+                try:
+                    # Use Django ORM instead of direct database connection
+                    from api.models import UserPreference
+                    from django.db import transaction
+                    
+                    # Query user preferences using the Django ORM
+                    with transaction.atomic():
+                        user_preference = UserPreference.objects.filter(user_id=user_id).first()
+                        
+                        if user_preference:
+                            user_preferences = {
+                                "course_level": user_preference.course_level,
+                                "programming_languages": user_preference.programming_languages,
+                                "development_areas": user_preference.development_areas
+                            }
+                            logger.info(f"Retrieved user preferences for user {user_id}: {user_preferences}")
+                        else:
+                            logger.info(f"No preferences found for user {user_id}")
+                            
+                except Exception as e:
+                    logger.error(f"Error retrieving user preferences: {e}")
+            else:
+                logger.info("No user_id in context, proceeding without user preferences")
+
             current_similarity_threshold = self.SIMILARITY_THRESHOLD # Initialize with default
 
-    #        Check if we're receiving an extracted topic from the orchestrator
+            #        Check if we're receiving an extracted topic from the orchestrator
             extracted_topic_from_context = context.get("extracted_topic") # Renamed for clarity
             topic = "" # Initialize topic
             
@@ -342,6 +378,58 @@ class CourseSearchAgent(BaseAgent):
             
             logger.info(f"Successfully processed {len(all_courses)} courses above threshold")
             
+            # After scraping all courses but before returning results, filter based on user preferences
+            if all_courses:
+                filtered_courses = []
+                for course in all_courses:
+                    should_include = True
+                    
+                    # Filter by course level if specified
+                    if user_preferences["course_level"] and user_preferences["course_level"] != "all":
+                        # This assumes the course info has a "level" field
+                        # You might need to adapt this based on how course levels are stored
+                        if "level" in course and course["level"] != user_preferences["course_level"]:
+                            logger.debug(f"Filtering out course '{course.get('title')}' due to level preference")
+                            should_include = False
+                    
+                    # Filter by programming languages if specified
+                    if user_preferences["programming_languages"]:
+                        # Check if any of the preferred languages are mentioned in the course title or description
+                        has_preferred_language = False
+                        for lang in user_preferences["programming_languages"]:
+                            if (lang.lower() in course.get('title', '').lower() or 
+                                lang.lower() in course.get('description', '').lower()):
+                                has_preferred_language = True
+                                break
+                        
+                        if not has_preferred_language:
+                            logger.debug(f"Filtering out course '{course.get('title')}' as it doesn't match preferred programming languages")
+                            should_include = False
+                    
+                    # Filter by development areas if specified
+                    if user_preferences["development_areas"]:
+                        # Check if any of the preferred dev areas are mentioned in the title or description
+                        has_preferred_area = False
+                        for area in user_preferences["development_areas"]:
+                            if (area.lower() in course.get('title', '').lower() or 
+                                area.lower() in course.get('description', '').lower()):
+                                has_preferred_area = True
+                                break
+                        
+                        if not has_preferred_area:
+                            logger.debug(f"Filtering out course '{course.get('title')}' as it doesn't match preferred development areas")
+                            should_include = False
+                    
+                    if should_include:
+                        filtered_courses.append(course)
+                
+                # Log how many courses were filtered out
+                if len(filtered_courses) < len(all_courses):
+                    logger.info(f"Filtered out {len(all_courses) - len(filtered_courses)} courses based on user preferences")
+                
+                # Replace all_courses with the filtered list
+                all_courses = filtered_courses
+
             # Sort courses by similarity score (highest first)
             sorted_courses = sorted(all_courses, key=lambda x: x.get('similarity_score', 0.0), reverse=True)
             
@@ -369,6 +457,28 @@ class CourseSearchAgent(BaseAgent):
                 else:
                     result['direct_topic_match'] = True # Changed from direct_query_match
                     result['message'] = f"Found courses by comparing their titles to the topic: '{topic}'."
+                
+                # Update the returned message to mention user preferences were applied
+                if user_id and (user_preferences["course_level"] != "all" or 
+                               user_preferences["programming_languages"] or 
+                               user_preferences["development_areas"]):
+                    result['filtered_by_preferences'] = True
+                    pref_parts = []
+                    
+                    if user_preferences["course_level"] and user_preferences["course_level"] != "all":
+                        pref_parts.append(f"course level: {user_preferences['course_level']}")
+                        
+                    if user_preferences["programming_languages"]:
+                        lang_list = ', '.join(user_preferences["programming_languages"])
+                        pref_parts.append(f"programming languages: {lang_list}")
+                        
+                    if user_preferences["development_areas"]:
+                        area_list = ', '.join(user_preferences["development_areas"])
+                        pref_parts.append(f"development areas: {area_list}")
+                    
+                    if pref_parts:
+                        pref_text = ", ".join(pref_parts)
+                        result['message'] += f" Results filtered by your preferences ({pref_text})."
                 
                 return result
 
