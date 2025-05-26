@@ -25,7 +25,7 @@ class IntentClassifierAgent(BaseAgent):
         try:
             # Use provided LLM if available, otherwise initialize own
             if not self.llm:
-                self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
+                self.llm = Ollama(id="llama3.1:8b-instruct-q2_K",
                                 provider="Ollama", 
                                 host="http://localhost:11434")
                 logger.info("Intent classifier initialized with its own LLM")

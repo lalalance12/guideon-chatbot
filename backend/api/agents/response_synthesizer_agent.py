@@ -65,7 +65,7 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
         try:
             # Use provided LLM if available, otherwise initialize own
             if not self.llm:
-                self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", # type: ignore
+                self.llm = Ollama(id="llama3.1:8b-instruct-q2_K", # type: ignore
                                 provider="Ollama",
                                 host="http://localhost:11434")
                 logger.info("Response synthesizer initialized with its own LLM")

@@ -34,7 +34,7 @@ class GuideonChatService:
     def _init_llm(self):
         """Initialize a centralized LLM for all agents to use"""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
+            self.llm = Ollama(id="llama3.1:8b-instruct-q2_K", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",
                 model=self.llm,
