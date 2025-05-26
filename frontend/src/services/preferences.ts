@@ -38,8 +38,13 @@ export const preferenceService = {
     return data;
   },
 
-  async checkFirstLogin(): Promise<{ has_preferences: boolean }> {
-    const { data } = await api.get<{ has_preferences: boolean }>('/api/preferences/check/');
-    return data;
+  checkFirstLogin: async () => {
+    try {
+      const response = await api.get('/api/preferences/check/');
+      return response.data;
+    } catch (error) {
+      console.error('Error checking first login status:', error);
+      throw error;
+    }
   }
-}; 
+};

@@ -23,7 +23,16 @@ const Auth: React.FC = () => {
         await authService.login({ email, password });
         // Check if user has preferences
         const { has_preferences } = await preferenceService.checkFirstLogin();
-        navigate(has_preferences ? "/chat" : "/preferences");
+
+        // Add logging to debug the response
+        console.log("Preference check response:", { has_preferences });
+
+        // Navigate based on whether they have preferences
+        if (has_preferences) {
+          navigate("/chat");
+        } else {
+          navigate("/preferences");
+        }
       } else {
         const fullName = formData.get("fullName") as string;
         await authService.register({ email, password, fullName });

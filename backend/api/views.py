@@ -373,8 +373,26 @@ class FirstLoginCheckView(APIView):
     def get(self, request):
         """Check if the user has completed their preferences setup"""
         try:
+            user_id = request.user.id
+            logger.info(f"Checking first login status for user: {user_id}")
+            
             # Check if preferences exist for this user
-            has_preferences = UserPreference.objects.filter(user=request.user).exists()
+            preferences = UserPreference.objects.filter(user=request.user).first()
+            has_preferences = preferences is not None
+            
+            # Check if the preferences have actual values set
+            if has_preferences:
+                # Consider preferences as "set" only if user has selected something
+                programming_languages = preferences.programming_languages or []
+                development_areas = preferences.development_areas or []
+                has_actual_preferences = (
+                    (preferences.course_level and preferences.course_level != "all") or
+                    len(programming_languages) > 0 or
+                    len(development_areas) > 0
+                )
+                has_preferences = has_actual_preferences
+                
+            logger.info(f"User {user_id} has preferences: {has_preferences}")
             return Response({"has_preferences": has_preferences})
         except Exception as e:
             logger.error(f"Error checking first login status: {str(e)}", exc_info=True)
