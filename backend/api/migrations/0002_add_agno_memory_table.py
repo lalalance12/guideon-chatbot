@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 session_id TEXT NOT NULL,
                 content TEXT NOT NULL,
                 metadata JSONB,
-                embedding VECTOR(1536),
+                embedding VECTOR(1024),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 summarized BOOLEAN DEFAULT FALSE
             );

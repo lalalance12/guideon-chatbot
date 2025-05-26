@@ -1,4 +1,3 @@
-# filepath: c:\Users\Asus\Desktop\guideon-chatbot\backend\api\views.py
 from django.shortcuts import render
 from django.contrib.auth.models import User
 import logging
@@ -138,50 +137,6 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-# class CourseSearchView(APIView):
-#     """
-#     API endpoint for searching courses using the new CourseSearchAgent
-#     """
-#     permission_classes = [AllowAny]
-
-#     def get(self, request):
-#         query = request.query_params.get('q', '')
-#         if not query:
-#             return Response(
-#                 {"error": "Please provide a search query using the 'q' parameter"},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-        
-#         try:
-#             # Create a context dict with education_advice intent
-#             context = {
-#                 'intent': QueryIntent.EDUCATION_ADVICE,
-#                 'confidence': 0.8
-#             }
-            
-#             # Use our new CourseSearchAgent
-#             agent = CourseSearchAgent()
-#             result = asyncio.run(agent.process(query, context))
-            
-#             if not result.get('found', False):
-#                 return Response(
-#                     {"error": result.get('message', 'No courses found')},
-#                     status=status.HTTP_404_NOT_FOUND
-#                 )
-            
-#             # Return the courses found
-#             return Response(
-#                 {"courses": result.get('courses', [])},
-#                 status=status.HTTP_200_OK
-#             )
-            
-#         except Exception as e:
-#             logger.error(f"Error in course search: {str(e)}")
-#             return Response(
-#                 {"error": f"Failed to search for courses: {str(e)}"},
-#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
-#             )
-
 class SemanticCourseSearchView(APIView):
     """
     API endpoint for semantic course search using only a query and context.
@@ -238,72 +193,28 @@ class ChatView(APIView):
                 
             logger.info(f"Using chat with ID: {chat.id}")
             
-            # Save user message
-            user_message = Message.objects.create(
-                chat=chat,
-                role='user',
-                content=prompt
-            )
-
             try:
-                # Classify the intent of the user's message
-                intent_result = classify_intent(prompt)
-                intent = intent_result["intent"]
-                confidence = intent_result["confidence"]
-                extracted_entities = intent_result.get("extracted_entities", {})
-
-                # Handle course search intent
-                if intent == QueryIntent.COURSE_SEARCH:
-                    # Create context for course search
-                    context = {
-                        'intent': intent,
-                        'confidence': confidence,
-                        **extracted_entities
+                # Process the message using our centralized service
+                # Note: Messages are now saved inside the service
+                result = query_ollama(prompt, chat_id=str(chat.id)) 
+                
+                # Check if we got course results
+                if 'courses' in result:
+                    # Return response with courses
+                    response_data = {
+                        'chat_id': chat.id,
+                        'response': result['response'],
+                        'courses': result['courses']
                     }
-                    
-                    # Use CourseSearchAgent to find relevant courses
-                    agent = CourseSearchAgent()
-                    course_result = asyncio.run(agent.process(prompt, context))
-                    
-                    if course_result.get('found', False):
-                        courses = course_result.get('courses', [])
-                        logger.info(f"Found {len(courses)} courses")
-                        
-                        # Generate a response message
-                        response_text = "Based on your query, here are some recommended courses that might help you:"
-                        
-                        # Save the assistant's message
-                        assistant_message = Message.objects.create(
-                            chat=chat,
-                            role='assistant',
-                            content=response_text
-                        )
-                        
-                        # Return the response with courses
-                        response_data = {
-                            'chat_id': chat.id,
-                            'response': response_text,
-                            'courses': courses
-                        }
-                        logger.info(f"Returning response with {len(courses)} courses")
-                        return Response(response_data, status=status.HTTP_200_OK)
-                
-                # For other intents, use the regular chat flow
-                response = query_ollama(prompt)
-                
-                # Save the assistant's message
-                assistant_message = Message.objects.create(
-                    chat=chat,
-                    role='assistant',
-                    content=response
-                )
-                
-                # Return the response
-                response_data = {
-                    'chat_id': chat.id,
-                    'response': response
-                }
-                return Response(response_data, status=status.HTTP_200_OK)
+                    logger.info(f"Returning response with courses")
+                    return Response(response_data, status=status.HTTP_200_OK)
+                else:
+                    # Return standard text response
+                    response_data = {
+                        'chat_id': chat.id,
+                        'response': result['response']
+                    }
+                    return Response(response_data, status=status.HTTP_200_OK)
                 
             except Exception as e:
                 logger.error(f"Error processing chat request: {str(e)}", exc_info=True)

@@ -67,7 +67,7 @@ class ChatRequestSerializer(serializers.Serializer):
 
 class ChatResponseSerializer(serializers.Serializer):
     response = serializers.CharField()
-    chat_id = serializers.IntegerField()
+    chat_id = serializers.UUIDField()
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -90,9 +90,41 @@ class KnowledgeSourceSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'source_type', 'metadata']
 
 class KnowledgeChunkSerializer(serializers.ModelSerializer):
+    source_name = serializers.CharField(source='source.name', read_only=True)
+    psf_section = serializers.CharField(source='metadata.psf_section', read_only=True)
+    
     class Meta:
         model = KnowledgeChunk
-        fields = ['id', 'text', 'metadata', 'embedding', 'source']
+        fields = ['id', 'text', 'metadata', 'category', 'source', 'source_name', 'psf_section']
+        # Exclude embedding field as it's typically not needed in API responses
+
+class KnowledgeChunkDetailSerializer(serializers.ModelSerializer):
+    source_name = serializers.CharField(source='source.name', read_only=True)
+    source_type = serializers.CharField(source='source.source_type', read_only=True)
+    
+    class Meta:
+        model = KnowledgeChunk
+        fields = ['id', 'text', 'metadata', 'category', 'source', 'source_name', 'source_type']
+        # Exclude embedding field as it's typically not needed in API responses
+
+class KnowledgeChunkSearchResultSerializer(serializers.Serializer):
+    """Serializer for knowledge chunk search results, including distance metric"""
+    id = serializers.UUIDField()
+    text = serializers.CharField()
+    metadata = serializers.JSONField()
+    distance = serializers.FloatField()
+    source_name = serializers.CharField(required=False)
+    psf_section = serializers.CharField(required=False)
+    skill_type = serializers.CharField(required=False)
+    chunk_type = serializers.CharField(required=False)
+
+# Update the ContextResponseSerializer to use the new search result serializer
+class ContextResponseSerializer(serializers.Serializer):
+    query = serializers.CharField()
+    context = KnowledgeChunkSearchResultSerializer(many=True, help_text="List of relevant context items found via vector search")
+    count = serializers.IntegerField(help_text="Number of context items returned")
+    section_filter = serializers.CharField(required=False, help_text="Section filter applied if any")
+
 
 class UserLearnedCourseSerializer(serializers.ModelSerializer):
     class Meta:

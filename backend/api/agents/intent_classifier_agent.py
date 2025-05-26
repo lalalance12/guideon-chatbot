@@ -8,6 +8,7 @@ from .base_agent import BaseAgent
 from ..utils.intent_classifier import QueryIntent, classify_intent
 from agno.agent import Agent
 from agno.models.ollama import Ollama
+from .flow_manager_agent import FlowManagerAgent
 
 logger = logging.getLogger(__name__)
 
@@ -17,40 +18,102 @@ class IntentClassifierAgent(BaseAgent):
     Provides more sophisticated intent classification than keyword matching.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, llm=None) -> None:
         """Initialize the intent classifier with an LLM."""
+        super().__init__(llm=llm)
+        
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0",
-                              provider="Ollama", 
-                              host="http://localhost:11434")
+            # Use provided LLM if available, otherwise initialize own
+            if not self.llm:
+                self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
+                                provider="Ollama", 
+                                host="http://localhost:11434")
+                logger.info("Intent classifier initialized with its own LLM")
+            else:
+                logger.info("Intent classifier using shared LLM instance")
+                
             self.agent = Agent(
-                name="Synthesizer", 
+                name="IntentClassifier", 
                 model=self.llm,
                 system_message="You are an intent classification assistant that analyzes user queries."
             )
-            logger.info("Intent classifier initialized with LLM")
         except Exception as e:
             logger.error(f"Failed to initialize intent classifier LLM: {e}")
             self.agent = None
             logger.warning("Will fall back to rule-based classification")
 
+    def _get_last_assistant_message(self, chat_history: list) -> str:
+        # Find the most recent assistant message in the chat history
+        for item in reversed(chat_history):
+            if not item.get("is_user", False):
+                return item.get("text", "")
+        return ""
+
+    def _is_general_conversation(self, query: str, chat_history: list) -> bool:
+        # Simple greeting/banter detection
+        q = query.lower().strip()
+        greetings = [
+            "hi", "hello", "hey", "what's up", "how are you", "good morning", "good afternoon", "good evening",
+            "how's it going", "how are you doing", "what's new", "what's up guideon", "who are you", "tell me a joke", "what is your name"
+        ]
+        for g in greetings:
+            if g in q:
+                return True
+        # If the query is short and not semantically related to the last assistant message, treat as general conversation
+        if len(q.split()) <= 6:
+            last_assistant = self._get_last_assistant_message(chat_history)
+            if last_assistant:
+                # Use a simple similarity check (can be improved with embeddings)
+                if not any(word in last_assistant.lower() for word in q.split() if len(word) > 2):
+                    return True
+        return False
+
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Process the user query to determine the primary intent.
-        """
         start = time.time()
         logger.info(f"Classifying intent for query: {query[:60]}...")
-        
-        # Fall back to rule-based if LLM not available
+        chat_history = context.get("chat_history", [])
+        use_history = not self._is_general_conversation(query, chat_history)
+        chat_history_for_llm = chat_history if use_history else []
+        context_for_llm = dict(context)
+        context_for_llm["chat_history"] = chat_history_for_llm
+
         if not self.agent:
             logger.warning("Using rule-based intent classification (LLM unavailable)")
-            classification = self._rule_based_classification(query, context)
-            classification["processing_time"] = time.time() - start
-            return classification
+            classification = self._rule_based_classification(query, context_for_llm)
+        else:
+            classification = await self._llm_classification(query, context_for_llm)
+        
+        # Check with flow manager for flow continuity
+        chat_id = context.get('chat_id')
+        if chat_id:
+            # Create flow manager instance 
+            flow_manager = FlowManagerAgent()
+            
+            # Check if we should continue an existing flow
+            flow_check = await flow_manager.check_flow_transition(
+                query, classification.get("intent"), context
+            )
+            
+            # If flow manager recommends continuing the flow, update the intent
+            if flow_check.get("should_continue_flow", False):
+                classification["intent"] = flow_check.get("continue_with_intent", classification.get("intent"))
+                classification["flow_continued"] = True
+        
+        # Only add previous_intent for explicit follow-up/clarification queries
+        if self._is_vague_followup(query, chat_history):
+            previous_intent = context.get("intent")
+            classification["previous_intent"] = previous_intent
+        # Otherwise, do not add previous_intent to avoid sticky context
+        classification["processing_time"] = time.time() - start
+        return classification
+
+    async def _llm_classification(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Classify intent using the LLM."""
+        start = time.time()
         
         # Prepare conversation history if available
         chat_history = self._format_chat_history(context.get("chat_history", []))
-        
+        print(f"{chat_history}, this is chat history" )
         # Construct the classification prompt
         prompt = self._construct_prompt(query, chat_history)
             
@@ -97,10 +160,27 @@ class IntentClassifierAgent(BaseAgent):
     def _construct_prompt(self, query: str, chat_history: str = "") -> str:
         """Build a prompt for the LLM to classify the intent."""
         intent_descriptions = {
-            QueryIntent.KNOWLEDGE_BASE_QUERY: "Questions about PSF-AAI framework, including roles, skills, career paths, proficiency levels, or any information contained in the PSF-AAI knowledge base",
-            QueryIntent.LEARNING_PATHWAY: "Questions about career roles, progression paths, or how to develop skills for specific roles within the PSF-AAI framework",
-            QueryIntent.COURSE_SEARCH: "Questions about specific courses, training, or education resources to learn particular skills",
-            QueryIntent.GENERAL_CONVERSATION: "General conversation or topics unrelated to PSF-AAI or professional development",
+            QueryIntent.KNOWLEDGE_BASE_QUERY: (
+                "Questions seeking factual information, definitions, descriptions, or overviews directly from the PSF-AAI knowledge base. "
+                "Includes queries about what a skill or role is, details about proficiency levels, or the structure of the PSF-AAI framework. "
+                "Example: 'What is the PSF-AAI?', 'Describe the Data Engineer role', 'What are enabling skills?'"
+            ),
+            QueryIntent.LEARNING_PATHWAY: (
+                "Questions about career progression, upskilling, or learning paths within the PSF-AAI framework. "
+                "Includes queries about how to move from one role to another, what skills or courses are needed for advancement, "
+                "and steps to achieve a specific job title. Example: 'How do I become a Data Scientist?', "
+                "How to be <role>? "
+                "'What is the learning path for Machine Learning?', 'What skills do I need to move to Senior AI Engineer?'"
+            ),
+            QueryIntent.COURSE_SEARCH: (
+                "Questions requesting specific courses, training, or educational resources to learn a skill or prepare for a role. "
+                "Includes queries mentioning course names, levels, or asking where to study a particular topic. "
+                "Example: 'Find courses for Data Visualization', 'Are there Level 3 courses for Applications Development?', 'Recommend training for AI Engineering'"
+            ),
+            QueryIntent.GENERAL_CONVERSATION: (
+                "General conversation, short or topics unrelated to PSF-AAI or professional/career development. "
+                "Example: 'How's the weather?', 'Tell me a joke', 'What is your name?'"
+            ),
         }
         
         # Build the intent descriptions section
@@ -114,10 +194,10 @@ You are an AI assistant specializing in the Philippine Skills Framework for Anal
 ## Available Intents:
 {descriptions}
 
+{f'## Recent Conversation History:\n{chat_history}\n' if chat_history else ''}
+
 ## User Query:
 "{query}"
-
-{f'## Recent Conversation History:\n{chat_history}\n' if chat_history else ''}
 
 ## Instructions:
 1. Analyze the query and determine the SINGLE most appropriate intent
@@ -214,3 +294,17 @@ Only respond with this exact format!
         result = classify_intent(query, context.get("chat_history"))
         logger.info(f"Rule-based classification: {result.get('intent').value} ({result.get('confidence'):.2f})")
         return result
+
+    def _is_vague_followup(self, query: str, chat_history: list) -> bool:
+        # Detect vague follow-up queries (e.g., 'what about that?', 'tell me more', etc.)
+        vague_phrases = [
+            "what about that", "what about it", "tell me more", "more info", "can you explain more", "what else", "and that", "what about the last one", "the previous one", "the last course", "the second course", "the first course"
+        ]
+        q = query.lower().strip()
+        for phrase in vague_phrases:
+            if phrase in q:
+                return True
+        # If the query is very short and refers to 'that', 'it', etc.
+        if len(q.split()) <= 5 and any(word in q for word in ["that", "it", "one", "this"]):
+            return True
+        return False

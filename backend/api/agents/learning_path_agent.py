@@ -14,64 +14,90 @@ class LearningPathAgent(BaseAgent):
     Generates personalized learning pathways based on career aspirations.
     Provides information about roles, required skills, and progression paths.
     """
+    
+    def __init__(self, llm=None):
+        """Initialize the learning path agent with an optional LLM."""
+        super().__init__(llm=llm)
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Process queries related to learning pathways and career progression"""
-        
-        # Extract flow context and action
         flow_context, flow_action, _ = self.get_flow_context(context)
         intent = context.get("intent")
-        
-        # Only process learning pathway intents
+        PSF_AAI_ROLES = [
+            "associate data analyst",
+            "data analyst",
+            "associate data engineer",
+            "business intelligence analyst",
+            "data engineer",
+            "machine learning engineer",
+            "applied data/ai researcher",
+            "senior business intelligence analyst",
+            "data quality specialist",
+            "senior data engineer",
+            "data scientist",
+            "ai engineer",
+            "senior applied data/ai researcher",
+            "business analytics manager",
+            "data governance manager",
+            "data architect",
+            "senior data scientist",
+            "senior ai engineer",
+            "research manager",
+            "business analytics director",
+            "data governance officer",
+            "chief data architect",
+            "chief data scientist",
+            "chief ai engineer",
+            "director of research",
+            "chief business function officer",
+            "chief data officer",
+            "chief information officer",
+            "chief analytics officer",
+            "chief technology officer",
+            "chief scientific officer"
+        ]
         if intent != QueryIntent.LEARNING_PATHWAY:
             return {
                 "found": False,
                 "reason": "not_learning_pathway_intent",
                 "message": "No learning path information for this query type."
             }
-        
         try:
-            # Check if a specific role was mentioned
             extracted_entities = context.get("extracted_entities", {})
-            role = extracted_entities.get("extracted_role")
-            
-            # Case 1: No specific role mentioned - show available roles
-            if not role and flow_action in ["list_available_roles", "suggest_common_roles"]:
-                # Get all available roles from the knowledge base
-                roles = await self._get_available_roles()
+            possible_entities = []
+            if "extracted_role" in extracted_entities:
+                if isinstance(extracted_entities["extracted_role"], list):
+                    possible_entities.extend([r for r in extracted_entities["extracted_role"] if r])
+                elif extracted_entities["extracted_role"]:
+                    possible_entities.append(extracted_entities["extracted_role"])
+            # Only consider roles in PSF_AAI_ROLES
+            filtered_entities = [e for e in possible_entities if e and e.lower() in PSF_AAI_ROLES]
+            if len(filtered_entities) == 0:
                 return {
-                    "found": True,
-                    "roles": roles,
-                    "action": "list_available_roles"
+                    "found": False,
+                    "reason": "no_valid_entity_specified",
+                    "message": "Please select one of the available PSF-AAI career roles for learning pathways.",
+                    "available_roles": PSF_AAI_ROLES
                 }
-            
-            # Case 2: Specific role mentioned - show skills for that role
-            elif role or flow_action == "role_skills":
-                # If role came from flow context, use that
-                specified_role = role or flow_context.get("role")
-                if not specified_role:
-                    return {
-                        "found": False,
-                        "reason": "no_role_specified",
-                        "message": "No specific role was mentioned."
-                    }
-                
-                # Get skills for the specified role
-                skills = await self._get_role_skills(specified_role)
+            elif len(filtered_entities) == 1:
+                entity = filtered_entities[0]
+                # Fetch both the career map (overview) and the skills for the role
+                career_map = await self._get_career_map(entity)
+                skills = await self._get_role_skills(entity)
                 return {
                     "found": True,
-                    "role": specified_role,
+                    "entity": entity,
+                    "career_map": career_map,
                     "skills": skills,
-                    "action": "role_skills"
+                    "action": "career_map_and_skills"
                 }
-            
-            # Default action
-            return {
-                "found": False,
-                "reason": "unknown_action",
-                "message": "Not sure what information to provide about learning pathways."
-            }
-            
+            else:
+                return {
+                    "found": False,
+                    "reason": "multiple_entities_found",
+                    "entities": filtered_entities,
+                    "message": f"Multiple possible roles/entities found: {', '.join(filtered_entities)}. Which one would you like a career overview for?"
+                }
         except Exception as e:
             logger.exception(f"Error in learning path agent: {str(e)}")
             return {
@@ -79,6 +105,40 @@ class LearningPathAgent(BaseAgent):
                 "reason": "exception",
                 "message": f"Error retrieving learning path information: {str(e)}"
             }
+
+    async def _get_career_map(self, entity: str) -> str:
+        """Fetch the career map/overview for a given role/entity from the knowledge base, using only relevant chunk types."""
+        try:
+            # Only consider relevant chunk types for career map
+            results = await search_similar_content_async(
+                f"{entity} career map overview PSF-AAI progression path",
+                limit=3
+            )
+            # Filter for relevant chunk types
+            for item in results:
+                meta = item.get("metadata", {})
+                chunk_type = meta.get("type", "")
+                if chunk_type in ["career_map_overview", "career_map_domain", "career_map_grade", "whole_role"]:
+                    return item.get("text", "No career map found for this role.")
+            return f"No career map found for {entity}."
+        except Exception as e:
+            logger.error(f"Error retrieving career map for {entity}: {e}")
+            return f"Error retrieving career map for {entity}."
+
+    async def _get_career_overview(self, entity: str) -> str:
+        """Fetch the career overview for a given role/entity from the knowledge base."""
+        try:
+            # Search for the role/entity overview in the vector database
+            results = await search_similar_content_async(
+                f"{entity} role overview career description responsibilities PSF-AAI", 
+                limit=1
+            )
+            if results and isinstance(results, list) and results[0].get("text"):
+                return results[0]["text"]
+            return f"No career overview found for {entity}."
+        except Exception as e:
+            logger.error(f"Error retrieving career overview for {entity}: {e}")
+            return f"Error retrieving career overview for {entity}."
 
     async def _get_available_roles(self) -> List[Dict[str, str]]:
         """Return available roles with descriptions from PSF-AAI framework"""
@@ -127,78 +187,41 @@ class LearningPathAgent(BaseAgent):
             ]
 
     async def _get_role_skills(self, role: str) -> Dict[str, List[str]]:
-        """Get functional and enabling skills for a specific role"""
+        """Get functional and enabling skills for a specific role using only relevant chunk types."""
         try:
-            # Search for functional skills
-            functional_results = await search_similar_content_async(
-                f"{role} functional skills technical competencies requirements", 
-                limit=10
+            # Search for role skills using only relevant chunk types
+            results = await search_similar_content_async(
+                f"{role} functional skills enabling skills requirements",
+                limit=5
             )
-            
-            # Search for enabling skills
-            enabling_results = await search_similar_content_async(
-                f"{role} enabling skills soft skills competencies", 
-                limit=10
-            )
-            
-            # Process the results to extract skills
             functional_skills = []
             enabling_skills = []
-            
-            # Extract skills from functional results
-            for item in functional_results:
-                metadata = item.get("metadata", {})
-                item_type = metadata.get("type", "")
-                
-                # If it's explicitly a functional skill, add it
-                if item_type == "functional_skill":
-                    skill = metadata.get("title", "").strip()
-                    if skill and skill not in functional_skills:
-                        functional_skills.append(skill)
-                
-                # Try to extract skills from the text using simple patterns
-                text = item.get("text", "").lower()
-                if "functional skill" in text or "technical skill" in text:
-                    lines = text.split('\n')
-                    for line in lines:
-                        if line.strip() and ":" not in line and len(line) > 5 and not line.startswith("("):
-                            skill = line.strip().capitalize()
+            for item in results:
+                meta = item.get("metadata", {})
+                chunk_type = meta.get("type", "")
+                # Only use relevant chunk types
+                if chunk_type in ["whole_role", "role_skills", "fs_complete_overview", "esc_complete_overview"]:
+                    # Extract functional skills
+                    if "required_functional_skills" in meta:
+                        for fs in meta["required_functional_skills"]:
+                            skill = fs.get("skill")
                             if skill and skill not in functional_skills:
                                 functional_skills.append(skill)
-            
-            # Extract skills from enabling results
-            for item in enabling_results:
-                metadata = item.get("metadata", {})
-                item_type = metadata.get("type", "")
-                
-                # If it's explicitly an enabling skill, add it
-                if item_type == "enabling_skill":
-                    skill = metadata.get("title", "").strip()
-                    if skill and skill not in enabling_skills:
-                        enabling_skills.append(skill)
-                
-                # Try to extract skills from the text using simple patterns
-                text = item.get("text", "").lower()
-                if "enabling skill" in text or "soft skill" in text:
-                    lines = text.split('\n')
-                    for line in lines:
-                        if line.strip() and ":" not in line and len(line) > 5 and not line.startswith("("):
-                            skill = line.strip().capitalize()
+                    # Extract enabling skills
+                    if "required_enabling_skills" in meta:
+                        for es in meta["required_enabling_skills"]:
+                            skill = es.get("skill")
                             if skill and skill not in enabling_skills:
                                 enabling_skills.append(skill)
-            
-            # If we still didn't find enough skills, use fallbacks
+            # Fallback if not enough found
             if len(functional_skills) < 3:
                 functional_skills = self._get_fallback_functional_skills(role)
-                
             if len(enabling_skills) < 3:
                 enabling_skills = self._get_fallback_enabling_skills(role)
-            
             return {
                 "functional_skills": functional_skills[:7],
                 "enabling_skills": enabling_skills[:7]
             }
-            
         except Exception as e:
             logger.error(f"Error retrieving skills for {role}: {e}")
             return {
