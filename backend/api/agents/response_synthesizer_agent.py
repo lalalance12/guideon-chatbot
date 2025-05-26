@@ -117,6 +117,12 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
         flow_action = flow_context.get("flow_action", "general_response")
         intent = context.get("intent")
 
+        # **NEW: Check if chat history should be used based on intent classifier decision**
+        should_use_history = context.get("used_context", False)  # From intent classifier
+        chat_history = context.get("chat_history", []) if should_use_history else []
+        
+        logger.info(f"Response synthesis: using_chat_history={should_use_history}, history_length={len(chat_history)}")
+
         # Enhanced knowledge base response handling
         kb_response = agent_responses.get("knowledge_agent", {})
         if intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
@@ -149,16 +155,17 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
             }
 
         # Enhanced prompt building based on format and connectivity
+        # **MODIFIED: Pass chat_history and should_use_history to prompt builders**
         if response_format.get("format") == "structured":
-            prompt = self._build_enhanced_structured_prompt(query, context, response_format)
+            prompt = self._build_enhanced_structured_prompt(query, context, response_format, chat_history, should_use_history)
         elif response_format.get("format") == "role_profile":
-            prompt = self._build_enhanced_role_profile_prompt(query, context, response_format)
+            prompt = self._build_enhanced_role_profile_prompt(query, context, response_format, chat_history, should_use_history)
         elif response_format.get("format") == "career_map":
-            prompt = self._build_enhanced_career_map_prompt(query, context, response_format)
+            prompt = self._build_enhanced_career_map_prompt(query, context, response_format, chat_history, should_use_history)
         elif response_format.get("format") == "connectivity_view":
-            prompt = self._build_connectivity_exploration_prompt(query, context, response_format)
+            prompt = self._build_connectivity_exploration_prompt(query, context, response_format, chat_history, should_use_history)
         else:
-            prompt = self._build_enhanced_standard_prompt(query, context)
+            prompt = self._build_enhanced_standard_prompt(query, context, chat_history, should_use_history)
 
         try:
             # Use enhanced agent with connectivity awareness
@@ -172,16 +179,25 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
                 "format_used": response_format.get("format"),
                 "flow_action": flow_action,
                 "connectivity_features_used": self._extract_connectivity_features_used(kb_response),
-                "enhanced_processing": True
+                "enhanced_processing": True,
+                "used_chat_history": should_use_history  # **NEW: Track if history was used**
             }
         except Exception as e:
             logger.error(f"Error in enhanced response synthesis: {e}")
             return self._enhanced_fallback_response(query, context)
 
-    def _build_enhanced_standard_prompt(self, query: str, context: Dict[str, Any]) -> str:
-        """Build an enhanced standard prompt with connectivity awareness."""
-        chat_history = context.get("chat_history", [])
-        history_text = self._format_chat_history(chat_history)
+    def _build_enhanced_standard_prompt(self, query: str, context: Dict[str, Any], 
+                                      chat_history: List[Dict[str, Any]] = None, 
+                                      use_history: bool = False) -> str:
+        """Build an enhanced standard prompt with intelligent chat history usage."""
+        
+        # **MODIFIED: Only format history if we should use it**
+        history_text = ""
+        if use_history and chat_history:
+            history_text = self._format_chat_history(chat_history)
+            logger.debug(f"Including {len(chat_history)} chat history messages in prompt")
+        else:
+            logger.debug("Processing query without chat history context")
         
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_agent", {})
@@ -240,12 +256,27 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
 - {connectivity_info['career_progression_items']} items with career progression info
 """
 
+        # **MODIFIED: Context instructions based on whether history is being used**
+        context_instructions = ""
+        if use_history and history_text:
+            context_instructions = """
+## Context Awareness:
+This query appears to reference previous conversation. Use the conversation history to understand contextual references like "that", "it", "this", etc.
+"""
+        else:
+            context_instructions = """
+## Context Awareness:
+This query appears to be standalone and self-contained. Process it independently without needing additional context.
+"""
+
         prompt = f"""# Enhanced Response Generation Task with Connectivity Intelligence
 
 ## User Query:
 "{query}"
 
 {history_text}
+
+{context_instructions}
 
 ## Enhanced Knowledge Base Results:
 {knowledge_text}
@@ -280,10 +311,15 @@ End your response with an enhanced encouragement that leverages connectivity fea
 """
         return prompt
 
-    def _build_enhanced_structured_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
-        """Build an enhanced structured prompt with connectivity awareness."""
-        chat_history = context.get("chat_history", [])
-        history_text = self._format_chat_history(chat_history)
+    def _build_enhanced_structured_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any],
+                                        chat_history: List[Dict[str, Any]] = None, 
+                                        use_history: bool = False) -> str:
+        """Build an enhanced structured prompt with intelligent chat history usage."""
+        
+        # **MODIFIED: Only include history if needed**
+        history_text = ""
+        if use_history and chat_history:
+            history_text = self._format_chat_history(chat_history)
 
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_agent", {})
@@ -321,12 +357,27 @@ End your response with an enhanced encouragement that leverages connectivity fea
         connectivity_text = "\n- ".join(connectivity_features) if connectivity_features else "No specific connections identified."
         sections_text = ", ".join(sections)
 
+        # **MODIFIED: Context instructions based on history usage**
+        context_instructions = ""
+        if use_history and history_text:
+            context_instructions = """
+## Context Awareness:
+This query may reference previous conversation. Use the conversation history to understand what the user is referring to.
+"""
+        else:
+            context_instructions = """
+## Context Awareness:
+This query appears to be standalone. Process it as a self-contained request.
+"""
+
         prompt = f"""# Enhanced Structured Educational Response with Connectivity
 
 ## User Query:
 "{query}"
 
 {history_text}
+
+{context_instructions}
 
 ## Enhanced Knowledge Base Results:
 {knowledge_text}
@@ -354,10 +405,15 @@ Create a structured educational response that leverages connectivity intelligenc
 """
         return prompt
 
-    def _build_enhanced_role_profile_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
-        """Build an enhanced role profile prompt with connectivity features."""
-        chat_history = context.get("chat_history", [])
-        history_text = self._format_chat_history(chat_history)
+    def _build_enhanced_role_profile_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any],
+                                          chat_history: List[Dict[str, Any]] = None, 
+                                          use_history: bool = False) -> str:
+        """Build an enhanced role profile prompt with intelligent chat history usage."""
+        
+        # **MODIFIED: Only include history if needed**
+        history_text = ""
+        if use_history and chat_history:
+            history_text = self._format_chat_history(chat_history)
 
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_agent", {})
@@ -408,12 +464,27 @@ Create a structured educational response that leverages connectivity intelligenc
             if connectivity_analysis.get('skill_mappings'):
                 connectivity_summary += f"- **Skill Requirements**: {len(connectivity_analysis['skill_mappings'])} mapped competencies\n"
 
+        # **MODIFIED: Context instructions based on history usage**
+        context_instructions = ""
+        if use_history and history_text:
+            context_instructions = """
+## Context Awareness:
+This query may reference previous conversation about roles or career paths.
+"""
+        else:
+            context_instructions = """
+## Context Awareness:
+This query appears to be about a specific role. Process it as a standalone role inquiry.
+"""
+
         prompt = f"""# Enhanced Role Profile Generation with Career Connectivity
 
 ## User Query:
 "{query}"
 
 {history_text}
+
+{context_instructions}
 
 ## Role Being Analyzed:
 {role_info.get('title', role)} (Grade: {role_info.get('grade', 'N/A')}, Domain: {role_info.get('domain', 'N/A')})
@@ -447,10 +518,15 @@ Create a comprehensive role profile that leverages connectivity intelligence wit
 """
         return prompt
 
-    def _build_enhanced_career_map_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
-        """Build an enhanced career map prompt with comprehensive connectivity."""
-        chat_history = context.get("chat_history", [])
-        history_text = self._format_chat_history(chat_history)
+    def _build_enhanced_career_map_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any],
+                                        chat_history: List[Dict[str, Any]] = None, 
+                                        use_history: bool = False) -> str:
+        """Build an enhanced career map prompt with intelligent chat history usage."""
+        
+        # **MODIFIED: Only include history if needed**
+        history_text = ""
+        if use_history and chat_history:
+            history_text = self._format_chat_history(chat_history)
 
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_agent", {})
@@ -510,12 +586,27 @@ Create a comprehensive role profile that leverages connectivity intelligence wit
             if progression_paths:
                 connectivity_summary += f"- **Progression Paths**: {len(progression_paths)} specific advancement routes\n"
 
+        # **MODIFIED: Context instructions based on history usage**
+        context_instructions = ""
+        if use_history and history_text:
+            context_instructions = """
+## Context Awareness:
+This query may reference previous conversation about career paths or framework navigation.
+"""
+        else:
+            context_instructions = """
+## Context Awareness:
+This query appears to be about career mapping. Process it as a standalone career exploration request.
+"""
+
         prompt = f"""# Enhanced Career Map Visualization with Connectivity Intelligence
 
 ## User Query:
 "{query}"
 
 {history_text}
+
+{context_instructions}
 
 ## Enhanced Career Map Information:
 {career_map_text}
@@ -551,10 +642,15 @@ Create a comprehensive career map visualization that leverages connectivity inte
 """
         return prompt
 
-    def _build_connectivity_exploration_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any]) -> str:
+    def _build_connectivity_exploration_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any],
+                                             chat_history: List[Dict[str, Any]] = None, 
+                                             use_history: bool = False) -> str:
         """Build a prompt specifically for connectivity exploration responses."""
-        chat_history = context.get("chat_history", [])
-        history_text = self._format_chat_history(chat_history)
+        
+        # **MODIFIED: Only include history if needed**
+        history_text = ""
+        if use_history and chat_history:
+            history_text = self._format_chat_history(chat_history)
 
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_agent", {})
@@ -609,12 +705,27 @@ Create a comprehensive career map visualization that leverages connectivity inte
         connectivity_summary = "\n- ".join(connectivity_insights) if connectivity_insights else "No connectivity patterns identified."
         high_connectivity_text = "\n- ".join(high_connectivity_items) if high_connectivity_items else "No highly connected items found."
 
+        # **MODIFIED: Context instructions based on history usage**
+        context_instructions = ""
+        if use_history and history_text:
+            context_instructions = """
+## Context Awareness:
+This query may reference previous conversation about connections or relationships within the PSF-AAI framework.
+"""
+        else:
+            context_instructions = """
+## Context Awareness:
+This query appears to be about exploring connections. Process it as a standalone connectivity exploration request.
+"""
+
         prompt = f"""# Advanced Connectivity Exploration Response
 
 ## User Query:
 "{query}"
 
 {history_text}
+
+{context_instructions}
 
 ## Knowledge Base Results:
 {knowledge_text}
