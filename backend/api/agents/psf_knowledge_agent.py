@@ -9,372 +9,460 @@ from ..utils.intent_classifier import QueryIntent
 logger = logging.getLogger(__name__)
 
 class PSFKnowledgeAgent(BaseAgent):
-    """Retrieves PSF-AAI knowledge-base information."""
+    """Retrieves PSF-AAI knowledge-base information with enhanced connectivity features."""
     
     def __init__(self, llm=None):
         """Initialize the PSF knowledge agent with an optional LLM."""
         super().__init__(llm=llm)
+        self.name = "knowledge_agent"  # Consistent naming for correct result mapping
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Process a knowledge base query and return relevant information with enhanced connectivity."""
         intent = context.get("intent")
         extracted_entities = context.get("extracted_entities", {})
         extracted_level = extracted_entities.get("extracted_level") or context.get("extracted_level")
-        extracted_role = extracted_entities.get("extracted_role")
-        limit = 5
-
+        extracted_role = extracted_entities.get("extracted_role") or context.get("extracted_role")
         flow_context = context.get("flow", {})
         flow_action = flow_context.get("flow_action")
-        logger.debug("KB search: %s | intent=%s level=%s role=%s flow_action=%s",
+        
+        logger.debug("Enhanced KB search: %s | intent=%s level=%s role=%s flow_action=%s",
                      query, getattr(intent, "value", intent), extracted_level, 
                      extracted_role, flow_action)
 
-        # --- Section filter logic ---
-        section_filter = None
-        # If the user is asking about a career map or progression
-        if flow_action in ("provide_career_map", "retrieve_career_map") or (
-            isinstance(query, str) and any(term in query.lower() for term in ["career map", "career path", "job progression", "domains", "vertical tracks", "horizontal levels", "job grades", "career domains"])):
-            section_filter = "career_map"
-        # If the user is asking about a specific role
-        elif (flow_action in ("role_information", "provide_role_info") or extracted_role):
-            section_filter = "job_roles"
-        # If the user is asking about functional/enabling skills
-        elif (flow_action in ("provide_knowledge_info", "retrieve_knowledge") or (isinstance(query, str) and any(term in query.lower() for term in ["functional skill", "technical skill", "enabling skill", "soft skill", "competency", "proficiency"]))):
-            # Try to distinguish between functional and enabling
-            if any(term in query.lower() for term in ["functional skill", "technical skill", "technical competency"]):
-                section_filter = "functional_skills"
-            elif any(term in query.lower() for term in ["enabling skill", "soft skill", "transversal"]):
-                section_filter = "enabling_skills"
-            else:
-                section_filter = None
-        # If the user is asking for general PSF-AAI info
-        elif intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
-            section_filter = None  # Search all sections for general info
-        # If the user is asking for a learning pathway
-        elif intent == QueryIntent.LEARNING_PATHWAY:
-            section_filter = None  # Pathways may span multiple sections
-        # If the user is searching for courses
-        elif intent == QueryIntent.COURSE_SEARCH:
-            section_filter = None  # Course search may need all sections
-
-        # --- Build search query ---
-        search_query = query
-        if section_filter == "career_map":
-            search_query = "career map domains job grades vertical tracks horizontal levels psf-aai"
-            limit = 8
-        elif section_filter == "job_roles" and extracted_role:
-            search_query = f"{extracted_role} role description responsibilities skills requirements"
-            limit = 8
-        elif section_filter == "functional_skills":
-            search_query = f"{query} functional skills technical competencies"
-            limit = 6
-        elif section_filter == "enabling_skills":
-            search_query = f"{query} enabling skills soft skills behavioral competencies"
-            limit = 6
-        elif intent == QueryIntent.LEARNING_PATHWAY and extracted_role:
-            search_query = f"{extracted_role} career progression learning pathway skills development"
-            limit = 8
-        elif intent == QueryIntent.COURSE_SEARCH:
-            search_query = f"{query} skill development learning training education"
-            limit = 6
-        else:
-            search_query = f"{query} psf-aai framework knowledge description definition"
-            limit = 5
+        # Determine section filter and build enhanced search query
+        section_filter = self._determine_section_filter(intent, flow_action, flow_context)
+        search_query, limit = self._build_enhanced_search_query(
+            intent, query, extracted_level, extracted_role, 5, flow_action, flow_context
+        )
 
         try:
+            # Perform enhanced vector search with connectivity awareness
             results = await search_similar_content_async(
                 search_query, limit=limit, section=section_filter
             )
+            
+            if isinstance(results, dict) and results.get("error"):
+                logger.error(f"Vector search error: {results['error']}")
+                return self._fail("search_error", f"Error searching knowledge base: {results['error']}")
+                
+            # Enhanced results processing with connectivity information
+            items = results.get("items", [])
+            result_metadata = results.get("metadata", {})
+            
+            if not items:
+                logger.warning("No results found for query: %s", query)
+                return self._fail("no_results", "No information found for this query.")
+                
+            # Enhanced filtering and prioritization with connectivity awareness
+            filtered_items, result_types, connectivity_stats = self._filter_results_enhanced(
+                intent, extracted_level, extracted_role, items, result_metadata
+            )
+            
+            if not filtered_items:
+                logger.warning("No relevant results after filtering for query: %s", query)
+                return self._fail("low_relevance", "Information found but not relevant enough.")
+                
+            # Return enhanced results with connectivity information
+            return {
+                "found": True,
+                "items": filtered_items[:limit],
+                "metadata": {
+                    "query_intent": getattr(intent, "value", intent),
+                    "extracted_level": extracted_level,
+                    "extracted_role": extracted_role,
+                    "result_count": len(filtered_items),
+                    "result_types": list(result_types),
+                    "flow_action": flow_action,
+                    "search_query": search_query,
+                    "section_filter": section_filter,
+                    "connectivity_stats": connectivity_stats,
+                    "query_intent_detected": result_metadata.get("query_intent"),
+                    "connectivity_features": result_metadata.get("connectivity_features", {})
+                },
+                "count": len(filtered_items[:limit]),
+                "agent_name": self.name,
+                "agent_class": self.__class__.__name__,
+                "processing_time": results.get("processing_time", 0),
+                "enhanced_features": {
+                    "connectivity_aware": True,
+                    "intent_detection": True,
+                    "cross_reference_support": True
+                }
+            }
+            
         except Exception as exc:
-            logger.error(f"Error during vector search: {exc}")
+            logger.error(f"Error during enhanced vector search: {exc}")
             return self._fail("exception", f"Error accessing knowledge base: {exc}")
 
-        if isinstance(results, dict) and "error" in results:
-            logger.error(f"Vector search error: {results['error']}")
-            return self._fail("search_error", f"Error searching knowledge base: {results['error']}")
-        if not results:
-            logger.warning("No results found for query: %s", query)
-            return self._fail("no_results", "No information found for this query.")
-
-        # Filter results: Only include those with high relevance and matching the section if set
-        filtered = []
-        types = set()
-        for item in results:
-            meta = item.get("metadata", {})
-            item_type = meta.get("type", "")
-            distance = item.get("distance", 1.0)
-            if section_filter and meta.get("psf_section") != section_filter:
-                continue
-            if distance >= 0.78:
-                continue
-            types.add(item_type)
-            filtered.append({
-                "title": meta.get("title", "Information"),
-                "type": item_type,
-                "text": item.get("text", ""),
-                "content": item.get("text", ""),
-                "relevance": f"{(1 - distance) * 100:.1f}%",
-                "metadata": meta,
-                "skill_category": meta.get("skill_category", ""),
-                "distance": distance
-            })
-
-        if not filtered:
-            logger.warning("No relevant results after filtering for query: %s", query)
-            return self._fail("low_relevance", "Information found but not relevant enough.")
-
-        return {
-            "found": True,
-            "items": filtered[:limit],
-            "metadata": {
-                "query_intent": getattr(intent, "value", intent),
-                "extracted_level": extracted_level,
-                "extracted_role": extracted_role,
-                "result_count": len(filtered),
-                "result_types": list(types),
-                "flow_action": flow_action,
-                "search_query": search_query,
-                "section_filter": section_filter
-            },
-            "count": len(filtered[:limit]),
-        }
-
     def _determine_section_filter(self, intent, flow_action, flow_context):
-        """Determine which PSF-AAI section to filter by based on intent and flow context"""
+        """Enhanced section filtering with connectivity awareness"""
         
+        # Flow action based filtering with enhanced connectivity
         if flow_action == "retrieve_career_map":
             return "career_map"
         elif flow_action == "role_information":
             return "job_roles"
+        elif flow_action == "retrieve_knowledge" and flow_context.get("sections"):
+            sections = flow_context.get("sections", [])
+            if len(sections) == 1:
+                section_map = {
+                    "functional_skills": "functional_skills",
+                    "enabling_skills": "enabling_skills",
+                    "job_roles": "job_roles",
+                    "career_map": "career_map"
+                }
+                return section_map.get(sections[0])
             
-        # Intent-based filtering
+        # Intent-based filtering with enhanced logic
         if isinstance(intent, str):
             intent_str = intent
         else:
             intent_str = getattr(intent, "value", "")
             
-        if intent_str == "learning_pathway":
-            return None  # Need to search across sections for comprehensive pathways
-        elif "course_search" in intent_str:
-            return None  # Course search needs to pull from all sections
-            
-        # Check sections specified in flow context
-        if flow_context and "sections" in flow_context:
-            sections = flow_context.get("sections", [])
-            if "functional_skills" in sections:
-                return "functional_skills"
-            elif "enabling_skills" in sections:
-                return "enabling_skills"
-            elif "job_roles" in sections:
-                return "job_roles"
-            
-        # Default: no section filter
+        # Enhanced intent mapping
+        intent_section_map = {
+            "learning_pathway": None,  # Need cross-section search for pathways
+            "course_search": None,     # Course search needs all sections
+            "career_progression": "career_map",  # Focus on career progression
+            "skill_requirements": None,  # Need both skill types
+            "role_connections": "job_roles"  # Focus on roles
+        }
+        
+        if intent_str in intent_section_map:
+            return intent_section_map[intent_str]
+        
+        # Enhanced skill type detection
+        if isinstance(intent, str):
+            intent_str = intent.lower()
+        else:
+            intent_str = getattr(intent, "value", "").lower()
+    
+        skill_indicators = {
+            "enabling_skills": ["enabling skill", "soft skill", "behavioral", "interpersonal"],
+            "functional_skills": ["functional skill", "technical skill", "hard skill", "programming"]
+        }
+        
+        for section, indicators in skill_indicators.items():
+            if any(indicator in intent_str for indicator in indicators):
+                return section
+    
+        # Default: no section filter for comprehensive search
         return None
 
-    def _build_search_query(self, intent, query, level, role, limit, flow_action=None, flow_context=None):
-        """Build an optimized search query based on intent and extracted entities"""
+    def _build_enhanced_search_query(self, intent, query, level, role, limit, flow_action=None, flow_context=None):
+        """Build enhanced search query leveraging connectivity features"""
         search_query = query
+        query_lower = query.lower()
         
-        # Flow-specific queries take precedence
+        # Enhanced flow-specific queries with connectivity context
         if flow_action == "retrieve_career_map":
-            search_query = "career map domains job grades vertical tracks horizontal levels psf-aai"
-            limit *= 2
+            search_query = "career progression domains job grades vertical specialization horizontal advancement analytics AI framework"
+            limit = 8
         elif flow_action == "role_information" and role:
-            search_query = f"{role} role description responsibilities skills requirements"
-            limit *= 2
+            search_query = f"{role} responsibilities tasks skills requirements career progression next roles"
+            limit = 8
         elif flow_action == "generate_pathway" and role:
-            search_query = f"{role} career progression learning pathway skills development"
-            limit *= 2
-        elif flow_action == "retrieve_knowledge" and flow_context.get("sections"):
+            search_query = f"{role} career progression pathway skills development advancement next roles"
+            limit = 8
+        elif flow_action == "retrieve_knowledge" and flow_context and flow_context.get("sections"):
             sections = flow_context.get("sections", [])
-            section_terms = []
             
-            if "functional_skills" in sections:
-                section_terms.append("functional skills technical competencies")
-            if "enabling_skills" in sections:
-                section_terms.append("enabling skills soft skills")
-            if "job_roles" in sections:
-                section_terms.append("job roles positions career")
-                
+            # Enhanced section-specific queries with connectivity
+            section_queries = {
+                "functional_skills": "functional skills technical competencies proficiency levels role requirements",
+                "enabling_skills": "enabling skills soft skills behavioral competencies role applications",
+                "job_roles": "job roles positions responsibilities career progression skills requirements",
+                "career_map": "career map progression domains grades advancement pathways"
+            }
+            
+            section_terms = [section_queries.get(section, section) for section in sections]
             if section_terms:
-                section_str = " ".join(section_terms)
-                search_query = f"{query} {section_str}"
+                search_query = f"{query} {' '.join(section_terms)}"
+                limit = 6
             
-        # Intent-based query building
-        elif intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
-            # Extract entities to help focus the search
-            query_lower = query.lower()
-            
-            # Check for role-related queries
-            if any(term in query_lower for term in ["career map", "career path", "job progression", 
-                                            "domains", "vertical tracks", "horizontal levels",
-                                            "job grades", "career domains"]):
-                search_query = f"{query} career map domain job grades progression psf-aai framework"
-                limit *= 2
-            
-            # Check for role-specific queries
-            elif role or any(kw in query_lower for kw in ["role", "job", "position", "responsibilities"]):
-                if role:
-                    search_query = f"{role} role description responsibilities tasks requirements skills"
-                else:
-                    search_query = f"{query} role description responsibilities tasks"
-                limit *= 1.5
-            
-            # Check for skill-level specific queries
-            elif level and any(kw in query_lower for kw in ["level", "proficiency", "competency"]):
-                search_query = f"{query} level {level} proficiency competency"
-                limit *= 1.5
-            
-            # Check for skill progression queries
-            elif any(kw in query_lower for kw in ["progression", "advance", "improve", "develop"]):
-                search_query = f"{query} progression levels path development improvement"
-                limit *= 1.5
-            
-            # Check for functional skill queries
-            elif any(kw in query_lower for kw in ["functional skill", "technical skill", "technical competency"]):
-                search_query = f"{query} functional skills technical competencies"
-                limit *= 1.5
-                
-            # Check for enabling skill queries
-            elif any(kw in query_lower for kw in ["enabling skill", "soft skill", "transversal"]):
-                search_query = f"{query} enabling skills soft skills behavioral competencies"
-                limit *= 1.5
-                
-            # General knowledge queries
+        # Enhanced skill-specific queries with role connectivity
+        elif any(skill_type in query_lower for skill_type in ["enabling skill", "soft skill"]):
+            if role:
+                search_query = f"{role} enabling skills soft skills behavioral competencies required"
             else:
-                search_query = f"{query} psf-aai framework knowledge description definition"
+                search_query = f"{query} enabling skills behavioral competencies role applications"
+            limit = 6
+        
+        elif any(skill_type in query_lower for skill_type in ["functional skill", "technical skill"]):
+            if role:
+                search_query = f"{role} functional skills technical competencies required"
+            else:
+                search_query = f"{query} functional skills technical competencies role requirements"
+            limit = 6
+    
+        # Enhanced intent-based query building with connectivity
+        elif intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
+            query_enhancements = {
+                "career": ["career map", "progression", "advancement", "domains", "grades"],
+                "role": ["responsibilities", "tasks", "skills", "requirements", "progression"],
+                "skill": ["competencies", "proficiency", "levels", "applications"],
+                "progression": ["advancement", "pathway", "development", "next roles"],
+                "level": ["proficiency", "competency", "requirements", "applications"]
+            }
+            
+            # Detect query type and enhance accordingly
+            for category, keywords in query_enhancements.items():
+                if any(keyword in query_lower for keyword in keywords):
+                    enhancement = " ".join(keywords)
+                    search_query = f"{query} {enhancement}"
+                    if role:
+                        search_query += f" {role}"
+                    if level:
+                        search_query += f" level {level}"
+                    break
                     
         elif intent == QueryIntent.LEARNING_PATHWAY:
-            # Optimize for learning pathway queries
+            # Enhanced pathway queries with comprehensive connectivity
             if role:
-                search_query = f"{role} career progression learning pathway skills requirements development"
-                limit *= 2
+                search_query = f"{role} career progression pathway skills development requirements next roles advancement"
+                limit = 8
             else:
-                search_query = f"{query} career pathway progression job roles skills development"
-                limit *= 1.5
+                search_query = f"{query} career pathway progression skills development role advancement"
+                limit = 6
                     
         elif intent == QueryIntent.COURSE_SEARCH:
-            # For course searches, focus on skills and learning
-            search_query = f"{query} skill development learning training education"
-            limit *= 1.2
-            
-        # Default case - just use the query as is with a small context hint
+            # Enhanced course search with skill-role connectivity
+            search_query = f"{query} skills development learning training education competencies"
+            limit = 6
+        
+        # Default enhancement with PSF-AAI context
         else:
-            search_query = f"{query} psf-aai information"
+            search_query = f"{query} PSF-AAI analytics AI framework"
             
         return search_query, limit
     
-    def _filter_results(self, intent, level, role, raw):
-        """Filter and prioritize search results based on intent and metadata"""
-        filtered: List[Dict[str, str]] = []
-        types: Set[str] = set()
+    def _filter_results_enhanced(self, intent, level, role, raw_results, result_metadata):
+        """Enhanced filtering with connectivity awareness and cross-reference support"""
+        filtered = []
+        types = set()
+        
+        # Enhanced connectivity statistics
+        connectivity_stats = {
+            "items_with_role_connections": 0,
+            "items_with_career_progression": 0,
+            "items_with_skill_mappings": 0,
+            "high_connectivity_items": 0,
+            "cross_referenced_items": 0
+        }
 
-        # Determine sub-intent for KNOWLEDGE_BASE_QUERY to prioritize results
-        sub_intent = None
-        if intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
-            # Analyze first few results to guess sub-intent
-            top_types = {}
-            for item in raw[:3]:
-                item_type = item.get("metadata", {}).get("type", "")
-                if item_type:
-                    top_types[item_type] = top_types.get(item_type, 0) + 1
-            
-            # Use most common type as sub-intent
-            if top_types:
-                sub_intent = max(top_types, key=top_types.get)
-                logger.debug(f"Detected sub-intent: {sub_intent}")
+        # Detect sub-intent for enhanced prioritization
+        sub_intent = self._detect_sub_intent(intent, raw_results)
+        
+        # Enhanced relevance threshold based on connectivity
+        base_threshold = 0.75
+        if result_metadata.get("connectivity_features", {}).get("avg_connectivity_score", 0) > 2:
+            base_threshold = 0.78  # More lenient for highly connected content
 
-        for item in raw:
+        for item in raw_results:
             meta = item.get("metadata", {})
             item_type = meta.get("type", "")
             distance = item.get("distance", 1.0)
             lvl_match = meta.get("level")
             skill_category = meta.get("skill_category", "")
+            connectivity_score = meta.get("connectivity_score", 0)
             
-            # Extract used_in_roles for comparison
+            # Enhanced connectivity features
             used_in_roles = meta.get("used_in_roles", [])
+            connected_roles = item.get("connected_roles", [])
+            career_progression = item.get("career_progression", [])
+            skill_requirements = item.get("skill_requirements", [])
             
             if item_type:
                 types.add(item_type)
                 
-            # Adjust threshold based on intent
-            threshold = 0.75
+            # Enhanced threshold adjustment based on intent and connectivity
+            threshold = base_threshold
             if intent == QueryIntent.LEARNING_PATHWAY:
-                # More lenient for learning pathways as we need broader context
-                threshold = 0.8
-            elif intent == QueryIntent.KNOWLEDGE_BASE_QUERY and sub_intent:
-                # More lenient if we have a specific sub-intent detected
-                threshold = 0.78
+                threshold = 0.8  # More lenient for pathways
+            elif connectivity_score > 3:
+                threshold = 0.8  # More lenient for highly connected content
+            elif sub_intent and item_type == sub_intent:
+                threshold = 0.78  # More lenient for matching sub-intent
             
             if distance >= threshold:
                 continue
                 
-            # Build a clean result object
+            # Enhanced result object with connectivity information
             result = {
                 "title": meta.get("title", "Information"),
                 "type": item_type,
                 "text": item.get("text", ""),
-                "content": item.get("text", ""),
+                "content": item.get("content", item.get("text", "")),
                 "relevance": f"{(1 - distance) * 100:.1f}%",
                 "metadata": meta,
                 "skill_category": skill_category,
-                "distance": distance
+                "distance": distance,
+                "connectivity_score": connectivity_score
             }
             
-            # Prioritization logic - insert high-priority items at the front
-            should_prioritize = False
-            
-            # Role-specific prioritization
-            if role and isinstance(role, str) and role.strip():
-                # Check if this result mentions the exact role
-                if role.lower() in meta.get("title", "").lower():
-                    should_prioritize = True
-                # Check if this result is for a skill used by the role
-                elif role in used_in_roles:
-                    should_prioritize = True
-            
-            # Level-specific prioritization  
-            if level is not None and str(lvl_match) == str(level):
-                should_prioritize = True
+            # Add enhanced connectivity information
+            if connected_roles:
+                result["connected_roles"] = connected_roles
+                connectivity_stats["items_with_role_connections"] += 1
                 
-            # Intent-based prioritization
-            if intent == QueryIntent.KNOWLEDGE_BASE_QUERY and sub_intent and item_type == sub_intent:
-                should_prioritize = True
-            elif intent == QueryIntent.LEARNING_PATHWAY and ("role" in item_type or "career_map" in item_type):
-                should_prioritize = True
+            if career_progression:
+                result["career_progression"] = career_progression
+                connectivity_stats["items_with_career_progression"] += 1
                 
-            # Insert at appropriate position
-            if should_prioritize:
-                filtered.insert(0, result)
-            else:
-                filtered.append(result)
+            if skill_requirements:
+                result["skill_requirements"] = skill_requirements
+                connectivity_stats["items_with_skill_mappings"] += 1
+                
+            if connectivity_score > 3:
+                connectivity_stats["high_connectivity_items"] += 1
+                
+            # Enhanced prioritization with connectivity awareness
+            priority_score = self._calculate_priority_score(
+                result, intent, role, level, sub_intent, used_in_roles
+            )
+            result["priority_score"] = priority_score
+            
+            # Insert based on priority score
+            insert_index = 0
+            for i, existing in enumerate(filtered):
+                if existing.get("priority_score", 0) > priority_score:
+                    insert_index = i + 1
+                else:
+                    break
+            filtered.insert(insert_index, result)
 
-        return filtered, types
+        # Update cross-reference statistics
+        connectivity_stats["cross_referenced_items"] = sum(
+            1 for item in filtered 
+            if (item.get("connected_roles") or item.get("career_progression") or 
+                item.get("skill_requirements"))
+        )
+
+        return filtered, types, connectivity_stats
+
+    def _detect_sub_intent(self, intent, raw_results):
+        """Enhanced sub-intent detection for better result prioritization"""
+        if intent != QueryIntent.KNOWLEDGE_BASE_QUERY or not raw_results:
+            return None
+            
+        # Analyze top results to detect sub-intent patterns
+        type_frequency = {}
+        connectivity_patterns = {}
+        
+        for item in raw_results[:5]:  # Analyze top 5 results
+            item_type = item.get("metadata", {}).get("type", "")
+            if item_type:
+                type_frequency[item_type] = type_frequency.get(item_type, 0) + 1
+                
+            # Analyze connectivity patterns
+            meta = item.get("metadata", {})
+            if meta.get("has_career_progression"):
+                connectivity_patterns["career_focus"] = connectivity_patterns.get("career_focus", 0) + 1
+            if meta.get("has_role_connections"):
+                connectivity_patterns["role_focus"] = connectivity_patterns.get("role_focus", 0) + 1
+        
+        # Determine sub-intent based on patterns
+        if connectivity_patterns.get("career_focus", 0) >= 2:
+            return "career_progression_path"
+        elif connectivity_patterns.get("role_focus", 0) >= 2:
+            return "whole_role"
+        elif type_frequency:
+            return max(type_frequency, key=type_frequency.get)
+            
+        return None
+
+    def _calculate_priority_score(self, result, intent, role, level, sub_intent, used_in_roles):
+        """Calculate enhanced priority score based on connectivity and relevance"""
+        score = 0
+        meta = result.get("metadata", {})
+        
+        # Base relevance score
+        distance = result.get("distance", 1.0)
+        score += (1 - distance) * 100
+        
+        # Enhanced connectivity bonuses
+        connectivity_score = result.get("connectivity_score", 0)
+        score += min(10, connectivity_score * 2)  # Up to 10 bonus points
+        
+        # Role-specific bonuses
+        if role and isinstance(role, str) and role.strip():
+            if role.lower() in meta.get("title", "").lower():
+                score += 15  # Exact role match
+            elif used_in_roles and role in used_in_roles:
+                score += 10  # Role uses this skill
+            elif result.get("connected_roles") and role in result.get("connected_roles", []):
+                score += 8   # Role connection
+        
+        # Level-specific bonuses
+        if level is not None and str(meta.get("level")) == str(level):
+            score += 12
+        
+        # Intent and sub-intent bonuses
+        if sub_intent and result.get("type") == sub_intent:
+            score += 8
+        
+        # Enhanced connectivity feature bonuses
+        if result.get("career_progression"):
+            score += 5
+        if result.get("skill_requirements"):
+            score += 4
+        if meta.get("has_career_progression") and intent == QueryIntent.LEARNING_PATHWAY:
+            score += 10
+            
+        return score
 
     def _fail(self, reason: str, message: str) -> Dict[str, Any]:
+        """Return enhanced failure response with connectivity-aware PSF-AAI information."""
         return {
             "found": False,
             "reason": reason,
             "message": message,
-            "psf_aai_info": self._get_psf_aai_info(),
+            "psf_aai_info": self._get_enhanced_psf_aai_info(),
+            "agent_name": self.name,
+            "agent_class": self.__class__.__name__,
+            "enhanced_features": {
+                "connectivity_aware": True,
+                "intent_detection": True,
+                "cross_reference_support": True
+            }
         }
     
-    def _get_psf_aai_info(self):
-        """Returns standard information about PSF-AAI to use when KB doesn't have specific answers"""
+    def _get_enhanced_psf_aai_info(self):
+        """Returns enhanced PSF-AAI information with connectivity features"""
         return {
             "name": "Philippine Skills Framework for Analytics & Artificial Intelligence (PSF-AAI)",
-            "description": "A structured competency map developed collaboratively by the Analytics & Artificial Intelligence Association of the Philippines (AAP) and the Department of Information and Communications Technology (DICT).",
-            "purpose": "Guides education, training, and career development in data analytics and AI across the Philippines.",
+            "description": "A comprehensive, interconnected competency framework with enhanced career progression pathways and skill connectivity mapping.",
+            "purpose": "Provides structured guidance for education, training, and career development in data analytics and AI with detailed role relationships and skill mappings.",
+            "enhanced_features": [
+                "Interconnected career progression pathways",
+                "Cross-referenced skill-role mappings",
+                "Multi-domain career tracks",
+                "Competency level progressions with role connections",
+                "Intent-aware knowledge retrieval",
+                "Connectivity-based recommendations"
+            ],
             "components": [
-                "Career roles and job profiles",
-                "Functional skills with proficiency levels 1-6",
-                "Enabling skills and competencies",
-                "Career progression pathways"
+                "Career roles with detailed progression paths",
+                "Functional skills (Levels 1-6) with role mappings",
+                "Enabling skills with behavioral competencies",
+                "Domain-specific career tracks",
+                "Grade-level advancement pathways",
+                "Cross-referenced skill requirements"
             ],
             "applications": [
-                "Curriculum design and education planning",
-                "Credentialing and skills assessment",
-                "Workforce development and planning",
-                "Industry-led upskilling and microcredentialing"
+                "Personalized career pathway planning",
+                "Skills gap analysis and development",
+                "Curriculum design with role alignment",
+                "Workforce planning and competency mapping",
+                "Industry-led training and microcredentialing",
+                "AI-powered career guidance and recommendations"
             ],
-            "more_info": "Visit psf-aai.vercel.app or contact the Analytics & AI Association of the Philippines (AAP)"
+            "connectivity_features": [
+                "Role-to-skill relationship mapping",
+                "Career progression pathway tracking",
+                "Cross-domain skill transferability",
+                "Competency-based role recommendations",
+                "Skills-to-career pathway alignment"
+            ],
+            "more_info": "Visit psf-aai.vercel.app or contact the Analytics & AI Association of the Philippines (AAP) for comprehensive career guidance"
         }

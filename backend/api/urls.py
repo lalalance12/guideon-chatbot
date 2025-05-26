@@ -2,7 +2,7 @@
 from django.urls import path
 # Updated view import
 from .views import (
-    CompleteCourseView,
+    CompleteCourseView, SkillCoursesView,  # <-- add this import
     CreateUserView, ContextRetrieverView, LoginView, CurrentUserView, SemanticCourseSearchView, TakeCourseView,
     UserCoursesView, 
     UserPreferenceView, FirstLoginCheckView
@@ -22,5 +22,5 @@ urlpatterns = [
     path('complete-course/', CompleteCourseView.as_view(), name='complete-course'),
     path('preferences/', UserPreferenceView.as_view(), name='user-preferences'),
     path('preferences/check/', FirstLoginCheckView.as_view(), name='check-preferences'),
-
+    path('skill-courses/', SkillCoursesView.as_view(), name='skill-courses'),
 ]

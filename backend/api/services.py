@@ -34,7 +34,7 @@ class GuideonChatService:
     def _init_llm(self):
         """Initialize a centralized LLM for all agents to use"""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q2_K", provider="Ollama", host="http://localhost:11434")
+            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",
                 model=self.llm,
@@ -201,10 +201,10 @@ class GuideonChatService:
         return await save()
 
     async def _get_chat_history(self, chat_id, user_query=None):
-        """Retrieve last 4 chat messages (user, assistant, user, assistant) for context building from database"""
+        """Retrieve simple chat history for context building from database"""
         try:
-            # Get the last 4 turns (excluding the latest user prompt)
-            return await ChatHistoryManager.get_last_n_turns(chat_id, n=4)
+            # Use simple history instead of turn-based history
+            return await ChatHistoryManager.get_simple_history(chat_id)
         except Exception as e:
             logger.error(f"Error retrieving chat history: {e}", exc_info=True)
             return []

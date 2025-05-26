@@ -28,7 +28,7 @@ class TopicExtractor:
     def __init__(self) -> None:
         """Initialize with LLM for topic extraction."""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q2_K",
+            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
                               provider="Ollama", 
                               host="http://localhost:11434")
             self.agent = Agent(
