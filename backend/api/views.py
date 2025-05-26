@@ -334,9 +334,18 @@ class ChatView(APIView):
             logger.info(f"Using chat with ID: {chat.id}")
             
             try:
+                # Extract user_id with improved error handling
+                user_id = None
+                if request.user and request.user.is_authenticated:
+                    user_id = request.user.id
+                    logger.info(f"Request has authenticated user with ID: {user_id}")
+                else:
+                    logger.info("Request has no authenticated user")
+                
                 # Process the message using our centralized service
                 # Note: Messages are now saved inside the service
-                result = query_ollama(prompt, chat_id=str(chat.id)) 
+                logger.info(f"Calling query_ollama with user_id={user_id}, chat_id={str(chat.id)}")
+                result = query_ollama(prompt, chat_id=str(chat.id), user_id=user_id)
                 
                 # Check if we got course results
                 if 'courses' in result:
