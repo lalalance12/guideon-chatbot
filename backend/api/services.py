@@ -34,7 +34,7 @@ class GuideonChatService:
     def _init_llm(self):
         """Initialize a centralized LLM for all agents to use"""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
+            self.llm = Ollama(id="llama3.1:8b-instruct-q2_K", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",
                 model=self.llm,
@@ -73,51 +73,82 @@ class GuideonChatService:
             # Always use orchestrator for all intents (including course_search)
             logger.info(f"Processing with orchestrator using intent: {intent_name}")
             orchestrator_result = await self.orchestrator.process(user_query, context)
+            # Update context with results from the orchestrator.
+            # If orchestrator decided on a direct response (e.g., from LearningPathAgent),
+            # those flags and data will be in orchestrator_result.
+            # Otherwise, orchestrator_result contains the payload for the synthesizer.
             context.update(orchestrator_result)
 
-            # If the flow is course_search and the flow action is clarification, return the clarification prompt directly
-            flow = context.get('flow', {})
-            flow_action = flow.get('flow_action')
-            response_format = flow.get('response_format', {})
-            if intent_name == "course_search":
-                # If clarification is needed
-                if flow_action in ('clarify_course_topic', 'request_course_topic_details'):
-                    prompt = response_format.get('prompt_message', "What specific skill or topic are you looking for courses on?")
-                    if chat_id:
-                        chat = await self._get_or_create_chat(chat_id)
-                        await self._save_message(chat, 'user', user_query)
-                        await self._save_message(chat, 'assistant', prompt)
-                    return {
-                        'response': prompt,
-                        'clarification': True
-                    }
-                # If we have course cards, return them directly (skip synthesis)
-                agent_responses = context.get('agent_responses', {})
-                course_result = agent_responses.get('course_search', {})
-                if course_result.get('found', False) and course_result.get('courses', []):
-                    courses = course_result.get('courses', [])
-                    response_text = "Based on your query, here are some recommended courses that might help you:"
-                    if chat_id:
-                        chat = await self._get_or_create_chat(chat_id)
-                        await self._save_message(chat, 'user', user_query)
-                        await self._save_message(chat, 'assistant', response_text)
-                    return {
-                        'response': response_text,
-                        'courses': courses
-                    }
-                # If no courses found, return the message from the agent
-                if course_result.get('message'):
-                    if chat_id:
-                        chat = await self._get_or_create_chat(chat_id)
-                        await self._save_message(chat, 'user', user_query)
-                        await self._save_message(chat, 'assistant', course_result['message'])
-                    return {
-                        'response': course_result['message']
-                    }
+            # Check for direct action flags now present in 'context' (merged from orchestrator_result)
+            # Log what we received from the orchestrator to debug
+            logger.info(f"[Service] Orchestrator result: {orchestrator_result}")
 
-            # For all other intents, use the synthesizer
-            logger.info("Generating final response with synthesizer")
-            synthesizer_result = await self.synthesizer.process(user_query, context)
+            if orchestrator_result.get("show_goto_career_button"):
+                logger.info("[Service] Direct action from Orchestrator/LearningPathAgent: show_goto_career_button")
+                response_text = orchestrator_result.get("response") 
+                goto_career_role = orchestrator_result.get("goto_career_role")
+                
+                if chat_id:
+                    chat = await self._get_or_create_chat(chat_id)
+                    await self._save_message(chat, 'user', user_query)
+                    await self._save_message(chat, 'assistant', response_text)
+                
+                # Make sure to return these values at the TOP LEVEL of the response
+                return {
+                    'response': response_text,
+                    'goto_career_role': goto_career_role,
+                    'show_goto_career_button': True,
+                    'chat_id': chat_id
+                }
+
+            if context.get("show_role_selection_button"):
+                logger.info("[Service] Direct action from Orchestrator/LearningPathAgent: show_role_selection_button")
+                response_text = context.get("response") # Message from LearningPathAgent via Orchestrator
+                available_roles = context.get("available_roles")
+                if chat_id:
+                    chat = await self._get_or_create_chat(chat_id)
+                    await self._save_message(chat, 'user', user_query)
+                    await self._save_message(chat, 'assistant', response_text)
+                return {
+                    'response': response_text,
+                    'available_roles': available_roles,
+                    'show_role_selection_button': True
+                }
+
+            if context.get("show_course_suggestions") or (
+                context.get("courses") and isinstance(context.get("courses"), list) and len(context.get("courses")) > 0
+            ):
+                logger.info("[Service] Direct action from Orchestrator/CourseSearchAgent: show_course_suggestions")
+                response_text = context.get("response", "Based on your query, here are some recommended courses:")
+                courses = context.get("courses", [])
+                if chat_id:
+                    chat = await self._get_or_create_chat(chat_id)
+                    await self._save_message(chat, 'user', user_query)
+                    await self._save_message(chat, 'assistant', response_text)
+                return {
+                    'response': response_text,
+                    'courses': courses,
+                    'show_course_suggestions': True
+                }
+            
+            if context.get("needs_clarification"): # This is for course agent's clarification
+                logger.info("[Service] Direct action from Orchestrator/CourseSearchAgent: needs_clarification")
+                response_text = context.get("response") # Message from CourseSearchAgent via Orchestrator
+                clarification_options = context.get("clarification_options")
+                if chat_id:
+                    chat = await self._get_or_create_chat(chat_id)
+                    await self._save_message(chat, 'user', user_query)
+                    await self._save_message(chat, 'assistant', response_text)
+                return {
+                    'response': response_text,
+                    'needs_clarification': True, 
+                    'clarification_options': clarification_options
+                }
+
+            # If no direct action flags were handled, proceed to synthesizer.
+            # 'context' now contains the full payload from orchestrator intended for the synthesizer.
+            logger.info(f"[Service] No direct action from specialized agents via orchestrator. Proceeding to synthesizer. Intent: {intent_name}")
+            synthesizer_result = await self.synthesizer.process(user_query, context) # Pass the updated context
             response_text = synthesizer_result.get('response') or synthesizer_result.get('response_text') or 'I apologize, but I could not generate a proper response.'
             if chat_id:
                 chat = await self._get_or_create_chat(chat_id)

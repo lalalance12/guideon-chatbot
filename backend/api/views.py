@@ -14,7 +14,7 @@ import asyncio
 from .agents.course_search_agent import CourseSearchAgent
 logger = logging.getLogger(__name__)
 from .services import query_ollama
-from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk, UserPreference
+from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk, UserPreference, UserLearnedCourse
 from api.utils.intent_classifier import QueryIntent, classify_intent
 
 # Create logger
@@ -141,7 +141,93 @@ class SemanticCourseSearchView(APIView):
     """
     API endpoint for semantic course search using only a query and context.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        query = request.query_params.get('q', '')
+        if not query:
+            return Response(
+                {"error": "Please provide a search query using the 'q' parameter"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Create a context dict with education_advice intent
+            context = {
+                'intent': QueryIntent.EDUCATION_ADVICE,
+                'confidence': 0.8
+            }
+            
+            # Use our CourseSearchAgent
+            agent = CourseSearchAgent()
+            import asyncio
+            result = asyncio.run(agent.process(query, context))
+            
+            if not result.get('found', False):
+                return Response(
+                    {"error": result.get('message', 'No courses found')},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Save matched courses to the database
+            courses_data = []
+            user = request.user
+            chat_id = request.query_params.get('chat_id', None)
+            chat = None
+            
+            if chat_id:
+                try:
+                    chat = Chat.objects.get(id=chat_id)
+                except Chat.DoesNotExist:
+                    pass
+            
+            for course_info in result.get('courses', []):
+                # Check if course with the same URL already exists
+                course, created = Course.objects.get_or_create(
+                    url=course_info['url'],
+                    defaults={
+                        'title': course_info['title'],
+                        'provider': course_info['provider'],
+                        'description': course_info.get('description', ''),
+                        'rating': course_info.get('rating', 0.0),
+                        'metadata': {
+                            'price': course_info.get('price', ''),
+                            'similarity_score': course_info.get('similarity_score', 0.0),
+                            'matched_skill': course_info.get('matched_skill', {})
+                        }
+                    }
+                )
+                
+                # Record this search
+                CourseSearch.objects.create(
+                    query=query,
+                    user=user,
+                    course=course,
+                    chat=chat
+                )
+                
+                # Add to response data
+                courses_data.append({
+                    'title': course.title,
+                    'provider': course.provider,
+                    'rating': course.rating if course.rating is not None else 0.0,
+                    'price': course_info.get('price', ''),
+                    'description': course.description,
+                    'url': course.url
+                })
+            
+            # Return the courses found
+            return Response(
+                {"courses": courses_data},
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f"Error in course search: {str(e)}", exc_info=True)
+            return Response(
+                {"error": f"Failed to search for courses: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def post(self, request):
         query = request.data.get('query')
@@ -162,6 +248,60 @@ class SemanticCourseSearchView(APIView):
             logger.error(f"Error in semantic course search: {str(e)}")
             return Response(
                 {"error": f"Failed to search for courses: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class UserCourseTakeView(APIView):
+    """
+    API endpoint for users to add courses they want to take
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        course_id = request.data.get('course_id')
+        if not course_id:
+            return Response(
+                {"error": "course_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            course = Course.objects.get(id=course_id)
+            
+            # Create or update user-course relationship
+            user_course, created = UserLearnedCourse.objects.get_or_create(
+                user=request.user,
+                course=course,
+                defaults={
+                    'status': 'in_progress'
+                }
+            )
+            
+            if not created:
+                # If the relationship already existed, we just return it without changes
+                pass
+                
+            return Response({
+                'success': True,
+                'message': 'Course added to your learning path',
+                'user_course': {
+                    'id': user_course.id,
+                    'course_id': course.id,
+                    'course_title': course.title,
+                    'status': user_course.status,
+                    'learned_at': user_course.learned_at
+                }
+            }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+            
+        except Course.DoesNotExist:
+            return Response(
+                {"error": "Course not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error taking course: {str(e)}", exc_info=True)
+            return Response(
+                {"error": f"Failed to take course: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -214,6 +354,13 @@ class ChatView(APIView):
                         'chat_id': chat.id,
                         'response': result['response']
                     }
+
+                    # Add these lines to include the career button properties
+                    if 'goto_career_role' in result:
+                        response_data['goto_career_role'] = result['goto_career_role']
+                    if 'show_goto_career_button' in result:
+                        response_data['show_goto_career_button'] = result['show_goto_career_button']
+
                     return Response(response_data, status=status.HTTP_200_OK)
                 
             except Exception as e:
@@ -324,6 +471,118 @@ class KnowledgeChunkView(generics.ListCreateAPIView):
     queryset = KnowledgeChunk.objects.all()
     serializer_class = KnowledgeChunkSerializer
     permission_classes = [AllowAny]
+
+class TakeCourseView(APIView):
+    """
+    API endpoint for users to take a course and store course details.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Extract course details from request
+        course_data = request.data.get('course')
+        if not course_data:
+            return Response({"error": "Course data is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        url = course_data.get('url')
+        if not url:
+            return Response({"error": "Course URL is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if course exists, else create
+        course, created = Course.objects.get_or_create(
+            url=url,
+            defaults={
+                'title': course_data.get('title', ''),
+                'provider': course_data.get('provider', ''),
+                'description': course_data.get('description', ''),
+                'rating': course_data.get('rating', None),
+                'price': course_data.get('price', ''),
+                'matching_skill': course_data.get('matching_skill', ''),
+                'metadata': course_data.get('metadata', {})
+            }
+        )
+
+        # Create CourseSearch entry
+        CourseSearch.objects.create(
+            query=course_data.get('query', ''),
+            user=request.user,
+            course=course,
+            chat_id=course_data.get('chat_id', None)
+        )
+
+        # Create or update UserLearnedCourse
+        user_course, _ = UserLearnedCourse.objects.get_or_create(
+            user=request.user,
+            course=course,
+            defaults={
+                'status': 'in_progress',
+                'skill_text': course_data.get('matching_skill', '')
+            }
+        )
+
+        return Response({
+            'success': True,
+            'course_id': course.id,
+            'user_course_id': user_course.id,
+            'course_title': course.title
+        }, status=status.HTTP_201_CREATED)
+
+class UserCoursesView(APIView):
+    """
+    API endpoint to get all courses the current user has enrolled in, with course details and status.
+    Supports filtering by status (?status=ongoing|completed).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status')
+        user_courses = UserLearnedCourse.objects.filter(user=request.user)
+        if status_filter:
+            user_courses = user_courses.filter(status=status_filter)
+        # Prefetch related course details
+        user_courses = user_courses.select_related('course')
+        data = [
+            {
+                'id': uc.id,
+                'status': uc.status,
+                'learned_at': uc.learned_at,
+                'skill_text': uc.skill_text,
+                'course': {
+                    'id': uc.course.id,
+                    'title': uc.course.title,
+                    'provider': uc.course.provider,
+                    'url': uc.course.url,
+                    'description': uc.course.description,
+                    'rating': uc.course.rating,
+                    'price': uc.course.price,
+                    'matching_skill': uc.course.matching_skill,
+                    'metadata': uc.course.metadata,
+                }
+            }
+            for uc in user_courses
+        ]
+        return Response(data, status=status.HTTP_200_OK)
+
+class CompleteCourseView(APIView):
+    """
+    API endpoint to mark a user's course as completed.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_course_id = request.data.get('user_course_id')
+        if not user_course_id:
+            return Response({"error": "user_course_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user_course = UserLearnedCourse.objects.get(id=user_course_id, user=request.user)
+            user_course.status = 'completed'
+            user_course.save()
+            return Response({"success": True, "message": "Course marked as completed."}, status=status.HTTP_200_OK)
+        except UserLearnedCourse.DoesNotExist:
+            return Response({"error": "User course not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error completing course: {str(e)}", exc_info=True)
+            return Response({"error": f"Failed to complete course: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UserPreferenceView(APIView):
     """

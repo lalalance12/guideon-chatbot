@@ -65,6 +65,10 @@ export default function Sidebar({ children }: SidebarProps) {
     navigate("/learning-pathways");
   };
 
+  const handleNavigateToCourses = () => {
+    navigate('/courses');
+  };
+
   const handleNavigateToChat = () => {
     navigate("/chat");
   };
@@ -89,7 +93,12 @@ export default function Sidebar({ children }: SidebarProps) {
                 }
                 onClick={handleNavigateToChat}
               />
-              <SidebarItem icon={<Compass size={18} />} text="Explore Topics" />
+              <SidebarItem
+                icon={<Compass size={18} />}
+                text="Courses"
+                onClick={handleNavigateToCourses}
+                active={location.pathname === '/courses'}
+              />
               <SidebarItem
                 icon={<BookOpen size={18} />}
                 text="Learning Paths"

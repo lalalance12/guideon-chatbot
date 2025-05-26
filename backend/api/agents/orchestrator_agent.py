@@ -16,8 +16,6 @@ from .general_conversation_agent import GeneralConversationAgent
 
 logger = logging.getLogger(__name__)
 
-# Initialize AGNO agent - keep existing code here
-
 class OrchestratorAgent(BaseAgent):
     """Coordinates the execution of specialised agents based on intent."""
 
@@ -60,7 +58,13 @@ class OrchestratorAgent(BaseAgent):
         # Determine which agents to activate based on flow
         tasks = []
         agents_to_activate = flow_instructions.get("activate_agents", [])
-        logger.info(f"[Orchestrator] Agents to activate: {agents_to_activate}")
+        
+        # Ensure we only activate one agent
+        if len(agents_to_activate) > 1:
+            logger.warning(f"[Orchestrator] Multiple agents specified: {agents_to_activate}. Using only the first one.")
+            agents_to_activate = [agents_to_activate[0]]
+            
+        logger.info(f"[Orchestrator] Agent to activate: {agents_to_activate}")
 
         # If course_search and clarification is needed, skip agent execution
         if getattr(intent, 'value', intent) == "course_search" and flow_instructions.get('flow_action') in ("clarify_course_topic", "request_course_topic_details"):
@@ -81,21 +85,23 @@ class OrchestratorAgent(BaseAgent):
                 "context": context
             }
         
-        if "knowledge_agent" in agents_to_activate:
-            logger.info("[Orchestrator] Activating knowledge_agent")
-            tasks.append(self._execute_agent(self.knowledge_agent, query, context, "knowledge_base"))
+        # Map agent names to actual agent instances
+        agent_map = {
+            "knowledge_agent": self.knowledge_agent,
+            "knowledge_base": self.knowledge_agent,
+            "learning_path_agent": self.learning_path_agent,
+            "course_agent": self.course_agent,
+            "general_conversation_agent": self.general_conversation_agent
+        }
         
-        if "learning_path_agent" in agents_to_activate:
-            logger.info("[Orchestrator] Activating learning_path_agent")
-            tasks.append(self._execute_agent(self.learning_path_agent, query, context, "learning_path"))
-        
-        if "course_agent" in agents_to_activate:
-            logger.info("[Orchestrator] Activating course_agent")
-            tasks.append(self._execute_agent(self.course_agent, query, context, "course_search"))
-        
-        if "general_conversation_agent" in agents_to_activate:
-            logger.info("[Orchestrator] Activating general_conversation_agent")
-            tasks.append(self._execute_agent(self.general_conversation_agent, query, context, "general_conversation"))
+        # Activate only the specified agent (should be only one now)
+        for agent_name in agents_to_activate:
+            if agent_name in agent_map:
+                logger.info(f"[Orchestrator] Activating agent: {agent_name}")
+                agent = agent_map[agent_name]
+                tasks.append(self._execute_agent(agent, query, context, agent_name))
+            else:
+                logger.warning(f"[Orchestrator] Unknown agent: {agent_name}")
 
         # If no specialized agents are needed, still collect basic information
         if not tasks:
@@ -108,7 +114,7 @@ class OrchestratorAgent(BaseAgent):
                 "context": context
             }
 
-        # Execute all selected agents in parallel
+        # Execute the selected agent
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         # Process results
@@ -128,8 +134,63 @@ class OrchestratorAgent(BaseAgent):
         
         # Update context with agent responses
         context["agent_responses"] = agent_responses
+
+        current_intent_value = getattr(context.get("intent"), 'value', None)
+
+        # If learning_pathway intent and learning_path_agent has a direct action response
+        if current_intent_value == QueryIntent.LEARNING_PATHWAY.value:
+            # Log the agent responses to check what's available
+            logger.info(f"[Orchestrator] Agent responses for learning pathway: {agent_responses}")
+            
+            # Look for the response using both possible keys
+            learning_path_response = agent_responses.get("learning_path", {})
+            if not learning_path_response:
+                learning_path_response = agent_responses.get("learning_path_agent", {})
+                
+            # Log the found response
+            logger.info(f"[Orchestrator] Learning path response: {learning_path_response}")
+                
+            if learning_path_response and (learning_path_response.get("show_goto_career_button") or learning_path_response.get("show_role_selection_button")):
+                logger.info(f"[Orchestrator] LearningPathAgent provided a direct action response: {learning_path_response}")
+                return {
+                    "response": learning_path_response.get("message"),
+                    "goto_career_role": learning_path_response.get("goto_career_role"),
+                    "show_goto_career_button": learning_path_response.get("show_goto_career_button"),
+                    "available_roles": learning_path_response.get("available_roles"),
+                    "show_role_selection_button": learning_path_response.get("show_role_selection_button"),
+                    "intent": context.get("intent"),
+                    "context": context
+                }
         
-        # Return orchestrated results
+        # If course_search and clarification or direct result, return immediately
+        if current_intent_value == QueryIntent.COURSE_SEARCH.value:
+            course_agent_response = agent_responses.get("course_search", {})
+            if not course_agent_response:
+                course_agent_response = agent_responses.get("course_agent", {})
+                
+            # Add these checks for course results
+            if course_agent_response:
+                # Check for all possible flag combinations
+                if (course_agent_response.get("needs_clarification") or 
+                    course_agent_response.get("show_course_suggestions") or
+                    (course_agent_response.get("found", False) and course_agent_response.get("courses", []))):
+                    
+                    logger.info("[Orchestrator] CourseSearchAgent provided a direct action response. Returning it.")
+                    
+                    # Return with standardized format
+                    return {
+                        "response": course_agent_response.get("message") or "Based on your query, here are some recommended courses:",
+                        "needs_clarification": course_agent_response.get("needs_clarification", False),
+                        "clarification_options": course_agent_response.get("clarification_options", []),
+                        "courses": course_agent_response.get("courses", []),                    
+                        "show_course_suggestions": course_agent_response.get("show_course_suggestions", True) 
+                                                  if course_agent_response.get("courses", []) else False,
+                        "intent": context.get("intent"),
+                        "context": context
+                    }
+        
+        # Return orchestrated results if no direct action was taken
+        logger.info("[Orchestrator] No direct action response from specialized agents, proceeding to general processing for synthesizer.")
         return {
             "agents_processed": len(agent_responses),
             "processing_time": time.time() - start,

@@ -5,6 +5,7 @@ import Chat from "./pages/Chat";
 import Auth from "./pages/Auth";
 import Preferences from "./pages/Preferences";
 import LearningPathways from "./pages/LearningPathways";
+import Courses from "./pages/Courses";
 import Sidebar from "./components/Sidebar";
 import { authService } from "./services/auth";
 import { preferenceService } from "./services/preferences";
@@ -93,6 +94,16 @@ const App = (): React.ReactElement => {
             <ProtectedRoute>
               <DashboardLayout>
                 <LearningPathways />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/courses"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Courses />
               </DashboardLayout>
             </ProtectedRoute>
           }

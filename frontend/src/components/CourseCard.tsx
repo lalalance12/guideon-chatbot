@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Course } from '../services/courseService';
+import { ACCESS_TOKEN } from '../constants';
 
 interface CourseCardProps {
   course: Course;
@@ -32,6 +33,31 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
 
   console.log('Course data:', course); // Debug log
 
+  const handleTakeCourse = async () => {
+    if (!window.confirm("Are you sure you want to enroll in this course?")) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem(ACCESS_TOKEN);
+      const response = await fetch('/api/take-course/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ course })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert('Course added to your learning path!');
+      } else {
+        alert(data.error || 'Failed to take course.');
+      }
+    } catch (error) {
+      alert('An error occurred while taking the course.');
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-4 border border-gray-200">
       <div className="flex gap-6 items-center">
@@ -55,21 +81,15 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
       )}
       
         <div className="flex justify-end">
-          {/* <button
-            onClick={() => handleCompletionStatus('completed')}
+          <button
             className="px-4 py-2 bg-indigo-400 text-white rounded-md hover:bg-indigo-600 transition-colors"
+            onClick={handleTakeCourse}
           >
             Take this Course
-          </button> */}
-          {/* <button
-            onClick={() => handleCompletionStatus('not_completed')}
-            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-          >
-            I Can't Complete the Course
-          </button> */}
+          </button>
         </div>
     </div>
   );
 };
 
-export default CourseCard; 
+export default CourseCard;

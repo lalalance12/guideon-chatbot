@@ -72,7 +72,7 @@ class ChatResponseSerializer(serializers.Serializer):
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ['id', 'title', 'provider', 'url', 'metadata']
+        fields = ['id', 'title', 'provider', 'url', 'price', 'metadata']
 
 class CourseSearchSerializer(serializers.ModelSerializer):
     class Meta:
@@ -129,6 +129,7 @@ class ContextResponseSerializer(serializers.Serializer):
 class UserLearnedCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserLearnedCourse
+        fields = ['id', 'user', 'course', 'learned_at', 'skill_text','status']
         fields = ['id', 'user', 'course', 'learned_at', 'skill_text']
 
 class UserPreferenceSerializer(serializers.ModelSerializer):

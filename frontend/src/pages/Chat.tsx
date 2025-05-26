@@ -5,9 +5,14 @@ import { useOllamaQuery, checkApiConnection } from "../services/ollamaService";
 import { searchCourses, Course } from "../services/courseService";
 import Message from "../components/Message";
 import CourseCard from "../components/CourseCard";
+import GoToCareerPathwaysButton from '../components/GoToCareerPathwaysButton';
 import { ACCESS_TOKEN } from "../constants";
 
 const STORAGE_KEY = "guideon_chat_history";
+
+interface MessageTypeWithCareer extends MessageType {
+  goto_career_role?: string;
+}
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<MessageType[]>([]);
@@ -146,13 +151,12 @@ const Chat: React.FC = () => {
 
   const handleCourseSearch = async (query: string) => {
     setIsSearchingCourses(true);
-    try {
-      const token = localStorage.getItem(ACCESS_TOKEN);
+    try {      const token = localStorage.getItem(ACCESS_TOKEN);
       if (!token) {
         throw new Error("Authentication required");
       }
 
-      const courses = await searchCourses(query, token);
+      const courses = await searchCourses(query, token, currentChatId);
       
       if (courses.length > 0) {
         const botMessage: MessageType = {
@@ -184,7 +188,8 @@ const Chat: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-    if (inputValue.trim() === "" || isLoading || isSearchingCourses) return;
+    if (inputValue.trim() === "" || isLoading || isSearchingCourses)
+      return;
 
     // Add user message
     const userMessage: MessageType = {
@@ -198,29 +203,22 @@ const Chat: React.FC = () => {
     setInputValue("");
 
     try {
-      // Get response from Ollama using our hook
+      // This is where the response from the backend is processed
       const botResponse = await sendQuery(userPrompt);
+      const responseText = botResponse.response || "I couldn't generate a response.";
+      const courses = botResponse.courses || [];
       
-      // Check if botResponse is an object with courses
-      let responseText;
-      let courses;
-      
-      if (typeof botResponse === 'object' && botResponse !== null) {
-        responseText = botResponse.response || '';
-        courses = botResponse.courses;
-      } else {
-        // If botResponse is a string
-        responseText = botResponse;
-      }
-
-      // Add bot message
+      // Add bot message with ALL the properties from the response
       const botMessage: MessageType = {
         id: Date.now() + 1,
         text: responseText,
         isUser: false,
-        courses: courses
+        courses: courses,
+        // Add these special properties from the response
+        goto_career_role: botResponse.goto_career_role,
+        show_goto_career_button: botResponse.show_goto_career_button
       };
-
+      
       setMessages((prevMessages) => [...prevMessages, botMessage]);
     } catch (error) {
       console.error("Error getting response:", error);
@@ -251,19 +249,29 @@ const Chat: React.FC = () => {
     }
   };
   // Group messages by sender to show avatars only for the first message in a group
+  // Render chat messages and handle special backend signals (clarification, goto_career_role)
   const renderMessages = () => {
-    return messages.map((message, index) => {
+    return (messages as MessageTypeWithCareer[]).map((msg, idx) => {
       // Check if this message is the first in a group from the same sender
       const isFirstInGroup =
-        index === 0 || messages[index - 1].isUser !== message.isUser;
+        idx === 0 || messages[idx - 1].isUser !== msg.isUser;
+
+      // If the message has a special backend signal for goto_career_role AND show_goto_career_button, show the button
+      if (msg.goto_career_role && msg.show_goto_career_button) {
+        return (
+          <div key={`goto-career-btn-${idx}`} className="my-4 flex justify-center">
+            <GoToCareerPathwaysButton role={msg.goto_career_role} />
+          </div>
+        );
+      }
 
       return (
-        <div key={message.id} className="mb-4">
+        <div key={msg.id} className="mb-4">
           <Message
-            text={message.text}
-            type={message.isUser ? "user" : "guideon"}
+            text={msg.text}
+            type={msg.isUser ? "user" : "guideon"}
             showAvatar={isFirstInGroup}
-            courses={message.courses}
+            courses={msg.courses}
           />
         </div>
       );

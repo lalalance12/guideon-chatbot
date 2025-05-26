@@ -127,6 +127,7 @@ class KnowledgeBaseFlow(IntentFlow):
             return {"format": "conversational"}
     
     def should_activate_agents(self) -> List[str]:
+        # Return only the knowledge agent
         return ["knowledge_agent"]
 
 class LearningPathwayFlow(IntentFlow):
@@ -141,36 +142,80 @@ class LearningPathwayFlow(IntentFlow):
                 possible_entities.extend([r for r in extracted_entities["extracted_role"] if r])
             elif extracted_entities["extracted_role"]:
                 possible_entities.append(extracted_entities["extracted_role"])
-        # Optionally, add other entity types if needed
-        # possible_entities += ...
+        # Only consider roles in PSF_AAI_ROLES
+        PSF_AAI_ROLES = [
+            "associate data analyst",
+            "data analyst",
+            "associate data engineer",
+            "business intelligence analyst",
+            "data engineer",
+            "machine learning engineer",
+            "applied data/ai researcher",
+            "senior business intelligence analyst",
+            "data quality specialist",
+            "senior data engineer",
+            "data scientist",
+            "ai engineer",
+            "senior applied data/ai researcher",
+            "business analytics manager",
+            "data governance manager",
+            "data architect",
+            "senior data scientist",
+            "senior ai engineer",
+            "research manager",
+            "business analytics director",
+            "data governance officer",
+            "chief data architect",
+            "chief data scientist",
+            "chief ai engineer",
+            "director of research",
+            "chief business function officer",
+            "chief data officer",
+            "chief information officer",
+            "chief analytics officer",
+            "chief technology officer",
+            "chief scientific officer"
+        ]
+        filtered_entities = [e for e in possible_entities if e and e.lower() in PSF_AAI_ROLES]
         # Remove duplicates
-        possible_entities = list(dict.fromkeys([e for e in possible_entities if e]))
+        filtered_entities = list(dict.fromkeys([e for e in filtered_entities if e]))
 
         if self.current_stage == FlowStage.INITIAL:
-            if len(possible_entities) == 0:
+            if len(filtered_entities) == 0:
                 self.current_stage = FlowStage.CLARIFICATION
-                logger.info(f"[Flow:LearningPathwayFlow] Transition to CLARIFICATION stage (no entity)")
-                return {"flow_action": "clarify_entity"}
-            elif len(possible_entities) == 1:
+                return {
+                    "flow_action": "clarify_entity",
+                    "available_roles": PSF_AAI_ROLES,
+                    "clarification_needed": True
+                }
+            elif len(filtered_entities) == 1:
                 self.current_stage = FlowStage.INFORMATION
-                self.context["current_entity"] = possible_entities[0]
-                logger.info(f"[Flow:LearningPathwayFlow] Transition to INFORMATION stage, entity: {possible_entities[0]}")
-                return {"flow_action": "career_overview", "entity": possible_entities[0]}
+                self.context["current_entity"] = filtered_entities[0]
+                return {
+                    "flow_action": "career_overview",
+                    "entity": filtered_entities[0]
+                }
             else:
                 self.current_stage = FlowStage.CLARIFICATION
-                logger.info(f"[Flow:LearningPathwayFlow] Transition to CLARIFICATION stage (multiple entities)")
-                return {"flow_action": "choose_entity", "entities": possible_entities}
+                return {
+                    "flow_action": "choose_entity",
+                    "entities": filtered_entities,
+                    "available_roles": PSF_AAI_ROLES,
+                    "clarification_needed": True
+                }
         elif self.current_stage == FlowStage.CLARIFICATION:
             # Try to extract entity from the new query
             role = extract_role_from_query(query)
-            if role:
+            if role and role.lower() in PSF_AAI_ROLES:
                 self.current_stage = FlowStage.INFORMATION
                 self.context["current_entity"] = role
-                logger.info(f"[Flow:LearningPathwayFlow] Transition to INFORMATION stage, entity: {role}")
                 return {"flow_action": "career_overview", "entity": role}
             else:
-                logger.info(f"[Flow:LearningPathwayFlow] Action: clarify_entity (still unclear)")
-                return {"flow_action": "clarify_entity"}
+                return {
+                    "flow_action": "clarify_entity",
+                    "available_roles": PSF_AAI_ROLES,
+                    "clarification_needed": True
+                }
         elif self.current_stage == FlowStage.INFORMATION:
             logger.info(f"[Flow:LearningPathwayFlow] Action: suggest_related_entities")
             return {"flow_action": "suggest_related_entities", "current_entity": self.context.get("current_entity")}
@@ -191,11 +236,8 @@ class LearningPathwayFlow(IntentFlow):
         return {"format": "conversational"}
 
     def should_activate_agents(self) -> List[str]:
-        if self.current_stage == FlowStage.CLARIFICATION:
-            return ["knowledge_agent", "learning_path_agent"]
-        elif self.current_stage == FlowStage.INFORMATION:
-            return ["knowledge_agent", "learning_path_agent"]
-        return ["knowledge_agent"]
+        # Return only the learning path agent
+        return ["learning_path_agent"]
 
 class CourseSearchFlow(IntentFlow):
     """Flow for course and learning resource searches"""
@@ -258,12 +300,8 @@ class CourseSearchFlow(IntentFlow):
         return {"format": "conversational"}
     
     def should_activate_agents(self) -> List[str]:
-        if self.current_stage == FlowStage.CLARIFICATION:
-            # Knowledge agent might help suggest topics if the user is very vague,
-            # but for direct clarification, specific course agent might not be needed yet.
-            # Let's assume the user will provide the topic.
-            return ["knowledge_agent"] 
-        return ["knowledge_agent", "course_agent"]
+        # Return only the course agent
+        return ["course_agent"]
 
 class GeneralConversationFlow(IntentFlow):
     """Flow for general chit-chat not related to PSF-AAI"""
@@ -284,7 +322,7 @@ class GeneralConversationFlow(IntentFlow):
         return {"format": "conversational"}
     
     def should_activate_agents(self) -> List[str]:
-        # Use the new general conversation agent for general chit-chat
+        # Return only the general conversation agent
         return ["general_conversation_agent"]
 
 class FlowController:
@@ -317,7 +355,13 @@ class FlowController:
                 flow_instructions = {"flow_action": "general_response"}
             flow_instructions["response_format"] = self.active_flow.get_next_response_format()
             agents = self.active_flow.should_activate_agents()
-            flow_instructions["activate_agents"] = agents if isinstance(agents, list) else ["knowledge_agent"]
+            # Ensure we only activate one agent (the first one in the list)
+            if agents and len(agents) > 0:
+                primary_agent = agents[0]
+                logger.info(f"[FlowController] Using primary agent: {primary_agent}")
+                flow_instructions["activate_agents"] = [primary_agent]
+            else:
+                flow_instructions["activate_agents"] = ["knowledge_agent"]  # Default fallback
             logger.debug(f"[FlowController] Final flow instructions: {flow_instructions}")
             return flow_instructions
         except Exception as e:

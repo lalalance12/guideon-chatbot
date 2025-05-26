@@ -28,7 +28,7 @@ for skill in skill_titles:
     print(f"Response: {resp.text}")
     if resp.status_code != 200:
         continue
-    courses = resp.json().get('courses', [])[:3]
+    courses = resp.json().get('courses', [])[:6]
     course_info = []
     for course in courses:
         print(f"Added course '{course.get('title')}' for skill '{skill}'")

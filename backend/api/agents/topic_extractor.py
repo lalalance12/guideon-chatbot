@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Dict, Any, Optional
 import logging
 import asyncio
+import re
 
 from agno.agent import Agent
 from agno.models.ollama import Ollama
@@ -16,17 +17,18 @@ class TopicExtractor:
     SYSTEM_PROMPT = (
         "You are an AI assistant specialized in topic extraction for a learning platform. "
         "Your goal is to identify the specific subject, skill, or concept a user wants to learn about from their query. "
+        "ONLY RETURN THE EXACT TOPIC - nothing else. NO explanations, NO commentary, NO introduction phrases. "
         "Focus on extracting the core learning topic, omitting conversational fluff or generic phrases like 'I want to learn about'. "
         "If the query is too vague or doesn't specify a clear topic, return an empty string. "
-        "For example, if the query is 'Tell me about data science courses', extract 'data science'. "
-        "If the query is 'What is Python?', extract 'Python'. "
+        "For example, if the query is 'Tell me about data science courses', extract ONLY 'data science'. "
+        "If the query is 'What is Python?', extract ONLY 'Python'. "
         "If the query is 'courses' or 'something to learn', return an empty string."
     )
 
     def __init__(self) -> None:
         """Initialize with LLM for topic extraction."""
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
+            self.llm = Ollama(id="llama3.1:8b-instruct-q2_K",
                               provider="Ollama", 
                               host="http://localhost:11434")
             self.agent = Agent(
@@ -50,8 +52,13 @@ class TopicExtractor:
         Returns:
             The extracted topic (e.g., "python programming") or an empty string if too generic or unextractable.
         """
-        llm_extracted_topic = "" # Store LLM's direct output
+        # First try with direct pattern matching for common "courses for X" patterns
+        direct_topic = self._direct_pattern_extraction(query)
+        if direct_topic:
+            logger.info(f"Direct pattern extraction found topic: '{direct_topic}' from query: '{query}'")
+            return direct_topic
 
+        # Then try with LLM
         if self.agent:
             prompt = self._create_extraction_prompt(query)
             try:
@@ -72,44 +79,65 @@ class TopicExtractor:
                 
                 logger.debug(f"LLM topic extraction candidate: '{llm_extracted_topic}' from query: '{query}'")
 
-                # If LLM explicitly returns empty, it likely means the query was generic as per prompt instructions.
+                # VALIDATION: Check if response looks like explanatory text
+                if self._is_explanatory_text(llm_extracted_topic):
+                    logger.warning(f"LLM returned explanatory text instead of a topic: '{llm_extracted_topic}'")
+                    # Try the direct pattern extraction again as a fallback
+                    direct_topic = self._direct_pattern_extraction(query)
+                    if direct_topic:
+                        return direct_topic
+                    # If that fails too, try the rule-based extraction
+                    return self._rule_based_extraction(query)
+                
+                # Verify the topic is reasonable (not too long, not explanatory)
+                if len(llm_extracted_topic.split()) > 6:
+                    logger.warning(f"LLM returned overly long topic: '{llm_extracted_topic}'")
+                    # Try the direct pattern extraction as a fallback
+                    direct_topic = self._direct_pattern_extraction(query)
+                    if direct_topic:
+                        return direct_topic
+                    return self._rule_based_extraction(query)
+
+                # If LLM explicitly returns empty, it likely means the query was generic.
                 if not llm_extracted_topic:
                     logger.info(f"LLM returned empty string for query '{query}', indicating a generic request. Returning empty for clarification.")
                     return "" # Trust LLM's empty output for generic queries
 
+                return llm_extracted_topic
+
             except Exception as e:
                 logger.exception(f"Error during LLM topic extraction: {e}")
-                # llm_extracted_topic will remain empty, allowing fallback
+                # Fallback to rule-based extraction
+                return self._rule_based_extraction(query)
         
-        # If LLM extraction resulted in a topic, use it after validation
-        if llm_extracted_topic:
-            topic_candidate = llm_extracted_topic
-        else: # Fallback to rule-based if LLM failed or wasn't used
-            topic_candidate = self._rule_based_extraction(query)
-            logger.debug(f"Rule-based topic extraction candidate: '{topic_candidate}'")
+        # If LLM is not available, fall back to rule-based extraction
+        return self._rule_based_extraction(query)
 
-        # Final validation for the chosen candidate (either from LLM or rule-based)
-        cleaned_topic_candidate = topic_candidate.lower().strip()
+    def _is_explanatory_text(self, text: str) -> bool:
+        """Check if the text appears to be explanatory rather than a direct topic."""
+        explanatory_patterns = [
+            "this is", "i've extracted", "the answer", "the topic", 
+            "please let me know", "would like", "i can", "identified", 
+            "from your query", "response", "should be", "here's", "here is",
+            "specific topic", "extracted", "as the answer", "if you'd like"
+        ]
         
-        # More robust check for generic queries, especially if they are very similar to the original query
-        # when the original query itself was generic.
-        generic_phrases = ["course", "courses", "some courses", "any courses", "give me courses", "find courses"]
-        is_generic_phrase = any(phrase == cleaned_topic_candidate for phrase in generic_phrases)
-        
-        # Check if the cleaned topic is one of the generic phrases or too short (e.g., less than 3 chars like "AI", "SQL" are okay)
-        if is_generic_phrase or \
-           cleaned_topic_candidate == "" or \
-           (len(cleaned_topic_candidate) > 0 and len(cleaned_topic_candidate) < 3 and cleaned_topic_candidate not in ['ai', 'r', 'go', 'c#', 'c++']): # Allow specific short topics
-            logger.info(f"Final topic candidate '{topic_candidate}' (cleaned: '{cleaned_topic_candidate}') is generic or too short. Returning empty string for clarification.")
-            return ""
-                
-        logger.info(f"Successfully extracted topic: '{topic_candidate}' from query: '{query}'")
-        return topic_candidate.strip()
+        # Check for common explanatory phrases
+        if any(pattern in text.lower() for pattern in explanatory_patterns):
+            return True
+            
+        # Check if it's too long to be a topic
+        if len(text.split()) > 8:
+            return True
+            
+        # Check for sentence structures with subjects and verbs
+        if re.search(r'\b(I|you|we|they|he|she|it)\b.*\b(is|am|are|was|were|will|can|could|would|should)\b', text, re.IGNORECASE):
+            return True
+            
+        return False
 
     def _create_extraction_prompt(self, query: str) -> str:
         """Create a prompt for topic extraction."""
-        # Keep your existing prompt, it's good.
-        # It correctly instructs the LLM to return "" for generic course requests.
         return f"""# Topic Extraction Task
 
 ## Query:
@@ -117,22 +145,41 @@ class TopicExtractor:
 
 ## Instructions:
 Extract the specific subject or topic the user wants to learn about from this query.
-Return ONLY the topic name, nothing else. No explanations, preambles, or additional text.
-"Courses" or "course" itself is not a specific learning topic, so if the query is just asking for courses in general (e.g., "I want to learn about courses", "give me courses"), return an empty string.
-If the query is too generic or doesn't specify a topic, return an empty string.
+Return ONLY the topic name, NOTHING ELSE. No explanations, no preambles, no analysis.
+Your entire response must be ONLY the extracted topic - a single phrase or word.
 
-For example:
-- For "I want to learn about Python programming", return only "Python programming"
-- For "Find me courses about data analysis", return only "data analysis"
-- For "Show me some resources on machine learning", return only "machine learning"
-- For "courses", return ""
-- For "give me courses", return ""
-Topic:
-"""
+For "Give me courses for data analyst", return ONLY: data analyst
+For "I want to learn Python programming", return ONLY: Python programming
+For "Tell me about artificial intelligence", return ONLY: artificial intelligence
+
+If the query is too generic, return an empty string.
+
+Topic:"""
+
+    def _direct_pattern_extraction(self, query: str) -> str:
+        """Extract topics from common query patterns."""
+        query_lower = query.lower()
+        
+        # For "Give me courses for X" pattern
+        if "courses for " in query_lower:
+            topic = query_lower.split("courses for ", 1)[1].strip().rstrip("?!.,;:")
+            return topic
+        
+        # For "Show me X courses" pattern
+        match = re.search(r"show me (.*?) courses", query_lower)
+        if match:
+            return match.group(1).strip()
+            
+        # For "I want to learn X" pattern
+        if "learn " in query_lower:
+            topic = query_lower.split("learn ", 1)[1].strip().rstrip("?!.,;:")
+            return topic
+        
+        return ""  # No direct pattern matched
 
     def _rule_based_extraction(self, query: str) -> str:
         """
-        Simple rule-based topic extraction when LLM is unavailable or fails.
+        Rule-based topic extraction when LLM is unavailable or fails.
         Uses keyword matching to identify topics.
         """
         query_lower = query.lower()
@@ -147,25 +194,11 @@ Topic:
         for pattern in patterns:
             if pattern in query_lower:
                 # Extract the part after the pattern
-                topic_candidate_lower = query_lower.split(pattern, 1)[1].strip()
+                topic_candidate = query_lower.split(pattern, 1)[1].strip().rstrip("?!.,;:")
                 
-                # Attempt to get original casing from the original query
-                # Find the start index of the topic in the original query
-                try:
-                    original_query_topic_start_index = query_lower.find(topic_candidate_lower, len(pattern))
-                    if original_query_topic_start_index != -1:
-                        # Extract the substring from the original query
-                        topic_original_casing = query[original_query_topic_start_index : original_query_topic_start_index + len(topic_candidate_lower)]
-                        topic_to_return = topic_original_casing.split("please")[0].strip().rstrip(".!?,;")
-                    else: # Fallback if precise original casing can't be found
-                        topic_to_return = topic_candidate_lower.split("please")[0].strip().rstrip(".!?,;")
-                except: # Fallback if any error occurs
-                     topic_to_return = topic_candidate_lower.split("please")[0].strip().rstrip(".!?,;")
-
-
-                if topic_to_return: # Check if topic is not empty after stripping
-                    logger.info(f"Rule-based extraction found topic candidate: '{topic_to_return}'")
-                    return topic_to_return
+                if topic_candidate: # Check if topic is not empty after stripping
+                    logger.info(f"Rule-based extraction found topic candidate: '{topic_candidate}'")
+                    return topic_candidate
         
-        logger.warning(f"No rule-based pattern matched for '{query}'. Using full query as candidate for final validation.")
-        return query # Return the original query for the final validation step
+        logger.warning(f"No rule-based pattern matched for '{query}'.")
+        return ""  # Return empty string if no pattern matched
