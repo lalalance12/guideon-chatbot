@@ -45,13 +45,21 @@ class GuideonChatService:
             self.llm = None
             self.agno_agent = None
             logger.warning("Centralized LLM not available - agents will use fallback mechanisms")
-
-    async def process_message(self, user_query: str, chat_id=None):
+            
+    async def process_message(self, user_query: str, chat_id=None, user_id=None):
         """
         Process a user message through the complete agent pipeline:
         Intent Classification → (Course Search Flow) → Course Search Agent (if needed)
         """
-        context = {'chat_id': chat_id}
+        context = {'chat_id': chat_id, 'user_id': user_id}
+        logger.info(f"Processing message with user_id: {user_id}, chat_id: {chat_id}")
+        
+        # Validate and log user_id type for debugging
+        if user_id is not None:
+            logger.info(f"User ID type: {type(user_id)}, value: {user_id}")
+        else:
+            logger.warning("No user_id provided in process_message call")
+        
         if chat_id:
             try:
                 chat_history = await self._get_chat_history(chat_id, user_query)
@@ -222,14 +230,14 @@ Please try asking your question in a different way, or ask me about specific asp
 
 _service = GuideonChatService()
 
-def query_ollama(user_prompt: str, chat_id=None):
+def query_ollama(user_prompt: str, chat_id=None, user_id=None):
     """
     Process a user message through the GuideonChatService
     
     Returns a dict with response and optionally courses
     """
     try:
-        return asyncio.run(_service.process_message(user_prompt, chat_id=chat_id))
+        return asyncio.run(_service.process_message(user_prompt, chat_id=chat_id, user_id=user_id))
     except Exception as e:
         logging.exception("query_ollama failed")
         return {
