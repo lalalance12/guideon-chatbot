@@ -584,3 +584,53 @@ class CompleteCourseView(APIView):
         except Exception as e:
             logger.error(f"Error completing course: {str(e)}", exc_info=True)
             return Response({"error": f"Failed to complete course: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class SkillCoursesView(APIView):
+    """
+    API endpoint that returns courses grouped by skills.
+    This is used by the CareerPathwayCard component to show course links for skills.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            # Query all courses from the database
+            courses = Course.objects.all()
+            
+            # Group courses by skill
+            skill_courses = {}
+            for course in courses:
+                skill = course.matching_skill
+                if not skill:
+                    continue  # Skip courses without a matching skill
+                    
+                if skill not in skill_courses:
+                    skill_courses[skill] = []
+                    
+                # Add course info to the skill
+                skill_courses[skill].append({
+                    'course_title': course.title,
+                    'course_provider': course.provider,
+                    'course_rating': course.rating if course.rating else 0,
+                    'course_description': course.description,
+                    'price': course.price if course.price else 'Free',
+                    'course_url': course.url
+                })
+            
+            # Convert to the expected format for the frontend
+            result = [
+                {
+                    'skill': skill,
+                    'course_info': courses
+                }
+                for skill, courses in skill_courses.items()
+            ]
+            
+            return Response(result, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error fetching skill courses: {str(e)}", exc_info=True)
+            return Response(
+                {"error": f"Failed to fetch skill courses: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

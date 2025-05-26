@@ -2,9 +2,9 @@
 from django.urls import path
 # Updated view import
 from .views import (
-    CompleteCourseView,  # <-- add this import
+    CompleteCourseView, SkillCoursesView,  # <-- add this import
     CreateUserView, ContextRetrieverView, LoginView, CurrentUserView, SemanticCourseSearchView, TakeCourseView,
-    UserCoursesView,  # <-- add this import
+    UserCoursesView,
 )
 
 urlpatterns = [
@@ -19,4 +19,7 @@ urlpatterns = [
     path('take-course/', TakeCourseView.as_view(), name='take-course'),
     path('user-courses/', UserCoursesView.as_view(), name='user-courses'),
     path('complete-course/', CompleteCourseView.as_view(), name='complete-course'),
+    
+    # Add the new route for skill courses
+    path('skill-courses/', SkillCoursesView.as_view(), name='skill-courses'),
 ]
