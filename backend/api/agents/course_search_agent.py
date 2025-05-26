@@ -245,11 +245,15 @@ class CourseSearchAgent(BaseAgent):
             logger.info(f"No matching skill found for topic '{topic}', will use direct title comparison. Threshold remains: {current_similarity_threshold}")
 
         return skill_match, current_similarity_threshold
-
+        
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
+            # Debug: Log the entire context to see what's being passed
+            logger.info(f"CourseSearchAgent received context with keys: {list(context.keys())}")
+            
             # Get user ID from context if available
             user_id = context.get("user_id")
+            logger.info(f"CourseSearchAgent extracted user_id: {user_id}")
             
             # Initialize user preferences
             user_preferences = {
@@ -257,30 +261,43 @@ class CourseSearchAgent(BaseAgent):
                 "programming_languages": [],
                 "development_areas": []
             }
-            
-            # Retrieve user preferences if user_id is available
+              # Retrieve user preferences if user_id is available
             if user_id:
                 try:
-                    # Use Django ORM instead of direct database connection
+                    # Use Django ORM with async support
                     from api.models import UserPreference
                     from django.db import transaction
+                    from asgiref.sync import sync_to_async
                     
-                    # Query user preferences using the Django ORM
-                    with transaction.atomic():
-                        user_preference = UserPreference.objects.filter(user_id=user_id).first()
+                    # Convert user_id to int if needed
+                    if isinstance(user_id, str) and user_id.isdigit():
+                        user_id = int(user_id)
+                        logger.info(f"Converted user_id from string to int: {user_id}")
+                    
+                    # Create a sync function that can be called with sync_to_async
+                    @sync_to_async
+                    def get_user_preferences(user_id):
+                        with transaction.atomic():
+                            return UserPreference.objects.filter(user_id=user_id).first()
+                    
+                    # Get user preferences asynchronously
+                    user_preference = await get_user_preferences(user_id)
+                    
+                    if user_preference:
+                        user_preferences = {
+                            "course_level": user_preference.course_level,
+                            "programming_languages": user_preference.programming_languages,
+                            "development_areas": user_preference.development_areas
+                        }
+                        logger.info(f"Retrieved user preferences for user {user_id}:")
+                        logger.info(f"  - Course level: {user_preference.course_level}")
+                        logger.info(f"  - Programming languages: {user_preference.programming_languages}")
+                        logger.info(f"  - Development areas: {user_preference.development_areas}")
+                    else:
+                        logger.info(f"No preferences found for user {user_id}, using default values")
                         
-                        if user_preference:
-                            user_preferences = {
-                                "course_level": user_preference.course_level,
-                                "programming_languages": user_preference.programming_languages,
-                                "development_areas": user_preference.development_areas
-                            }
-                            logger.info(f"Retrieved user preferences for user {user_id}: {user_preferences}")
-                        else:
-                            logger.info(f"No preferences found for user {user_id}")
-                            
                 except Exception as e:
-                    logger.error(f"Error retrieving user preferences: {e}")
+                    logger.error(f"Error retrieving user preferences: {e}", exc_info=True)
             else:
                 logger.info("No user_id in context, proceeding without user preferences")
 
@@ -394,74 +411,119 @@ class CourseSearchAgent(BaseAgent):
                     logger.warning(f"Failed to scrape course from URL: {url}")
             
             logger.info(f"Successfully processed {len(all_courses)} courses above threshold")
-            
-            # After scraping all courses but before returning results, filter based on user preferences
+              # After scraping all courses but before returning results, filter based on user preferences
             if all_courses:
-                filtered_courses = []
+                logger.info(f"Starting preference filtering with {len(all_courses)} courses")
+                logger.info(f"User preferences: {user_preferences}")
+                
+                # Instead of filtering out courses, let's score them based on preference matches
+                # This way we prioritize courses that match preferences but still show others if needed
                 for course in all_courses:
-                    should_include = True
+                    preference_score = 0
+                    matches = []
+                    logger.debug(f"Evaluating course: {course.get('title', 'Unknown')}")
                     
                     # Filter by course level if specified
                     if user_preferences["course_level"] and user_preferences["course_level"] != "all":
-                        # This assumes the course info has a "level" field
-                        # You might need to adapt this based on how course levels are stored
-                        if "level" in course and course["level"] != user_preferences["course_level"]:
-                            logger.debug(f"Filtering out course '{course.get('title')}' due to level preference")
-                            should_include = False
+                        if "level" in course and course["level"] == user_preferences["course_level"]:
+                            preference_score += 3  # Highest priority
+                            matches.append(f"level: {course.get('level')}")
+                            logger.debug(f"Course '{course.get('title')}' matches preferred level: {user_preferences['course_level']}")
                     
                     # Filter by programming languages if specified
                     if user_preferences["programming_languages"]:
-                        # Check if any of the preferred languages are mentioned in the course title or description
-                        has_preferred_language = False
+                        matching_langs = []
                         for lang in user_preferences["programming_languages"]:
                             if (lang.lower() in course.get('title', '').lower() or 
                                 lang.lower() in course.get('description', '').lower()):
-                                has_preferred_language = True
-                                break
+                                matching_langs.append(lang)
                         
-                        if not has_preferred_language:
-                            logger.debug(f"Filtering out course '{course.get('title')}' as it doesn't match preferred programming languages")
-                            should_include = False
+                        if matching_langs:
+                            preference_score += 2  # Medium priority
+                            matches.append(f"languages: {', '.join(matching_langs)}")
+                            logger.debug(f"Course '{course.get('title')}' matches preferred languages: {', '.join(matching_langs)}")
                     
                     # Filter by development areas if specified
                     if user_preferences["development_areas"]:
-                        # Check if any of the preferred dev areas are mentioned in the title or description
-                        has_preferred_area = False
+                        matching_areas = []
                         for area in user_preferences["development_areas"]:
                             if (area.lower() in course.get('title', '').lower() or 
                                 area.lower() in course.get('description', '').lower()):
-                                has_preferred_area = True
-                                break
+                                matching_areas.append(area)
                         
-                        if not has_preferred_area:
-                            logger.debug(f"Filtering out course '{course.get('title')}' as it doesn't match preferred development areas")
-                            should_include = False
+                        if matching_areas:
+                            preference_score += 1  # Lower priority
+                            matches.append(f"areas: {', '.join(matching_areas)}")
+                            logger.debug(f"Course '{course.get('title')}' matches preferred development areas: {', '.join(matching_areas)}")
                     
-                    if should_include:
-                        filtered_courses.append(course)
+                    # Store the preference score and match details in the course object
+                    course['preference_score'] = preference_score
+                    course['preference_matches'] = matches
+                    
+                    logger.debug(f"Course '{course.get('title')}' preference score: {preference_score}, matches: {matches}")
                 
-                # Log how many courses were filtered out
-                if len(filtered_courses) < len(all_courses):
-                    logger.info(f"Filtered out {len(all_courses) - len(filtered_courses)} courses based on user preferences")
+                # If we have user preferences, adjust the sorting to consider both similarity and preferences
+                has_preferences = (user_preferences["course_level"] and user_preferences["course_level"] != "all") or \
+                                 user_preferences["programming_languages"] or \
+                                 user_preferences["development_areas"]
                 
-                # Replace all_courses with the filtered list
-                all_courses = filtered_courses
+                if has_preferences and user_id:
+                    # Sort by a combined score of similarity and preference matches
+                    # This ensures courses matching preferences are prioritized but still relevant
+                    logger.info("Applying preference-based sorting")
+                    sorted_courses = sorted(
+                        all_courses, 
+                        key=lambda x: (x.get('preference_score', 0) * 0.5 + x.get('similarity_score', 0)), 
+                        reverse=True
+                    )
+                    
+                    # Log how preferences affected the sorting
+                    logger.info(f"Courses re-ordered based on user preferences")
+                    for i, course in enumerate(sorted_courses[:5], 1):
+                        logger.debug(f"Course {i}: '{course.get('title')}' - similarity: {course.get('similarity_score', 0):.2f}, preference score: {course.get('preference_score', 0)}")
+                else:
+                    # Fall back to sorting just by similarity if no preferences are set
+                    sorted_courses = sorted(all_courses, key=lambda x: x.get('similarity_score', 0.0), reverse=True)
+                    logger.info("No preference filtering applied - using similarity-only sorting")
+            else:
+                # No courses to filter
+                sorted_courses = []
 
-            # Sort courses by similarity score (highest first)
-            sorted_courses = sorted(all_courses, key=lambda x: x.get('similarity_score', 0.0), reverse=True)
+            # Step 1: Get the top courses, prioritizing those matching preferences
+            # First, get courses with preference matches (if any)
+            preference_matched_courses = [c for c in sorted_courses if c.get('preference_score', 0) > 0]
+            regular_courses = [c for c in sorted_courses if c.get('preference_score', 0) == 0]
+            
+            # Ensure we include at least 3 courses, with preference for those matching user preferences
+            if len(preference_matched_courses) >= 3:
+                # If we have enough preference-matched courses, use those first
+                top_courses = preference_matched_courses[:3]
+                logger.info(f"Selected top 3 courses based on preferences and similarity")
+            else:
+                # If not enough preference-matched courses, supplement with highest similarity courses
+                top_courses = preference_matched_courses + regular_courses[:max(3 - len(preference_matched_courses), 0)]
+                logger.info(f"Selected {len(preference_matched_courses)} preference-matched courses and {min(3 - len(preference_matched_courses), len(regular_courses))} additional courses")
 
-            # Step 1: Get the top 3 courses by similarity (regardless of price)
-            top_courses = sorted_courses[:3]
-
-            # Step 2: Count how many paid courses are in the top 3
-            paid_in_top = [c for c in top_courses if c.get('price', '').lower() != 'free']
+            # Step 2: Count how many paid courses are in the top selection
+            paid_in_top = [c for c in top_courses if c.get('price', '').lower() == 'paid']
             num_paid = len(paid_in_top)
 
-            # Step 3: For each paid course in the top 3, add a free course from the rest (not already in top 3)
+            # Step 3: For each paid course, add a free course with preference for preference-matched free courses
             extra_free_courses = []
             if num_paid > 0:
-                free_candidates = [c for c in sorted_courses if c.get('price', '').lower() == 'free' and c not in top_courses]
-                extra_free_courses = free_candidates[:num_paid]
+                free_preference_matched = [c for c in preference_matched_courses 
+                                         if c.get('price', '').lower() == 'free' and c not in top_courses]
+                free_regular = [c for c in regular_courses 
+                              if c.get('price', '').lower() == 'free' and c not in top_courses]
+                
+                # Try to select free courses that match preferences first
+                if len(free_preference_matched) >= num_paid:
+                    extra_free_courses = free_preference_matched[:num_paid]
+                else:
+                    # If not enough preference-matched free courses, supplement with regular free courses
+                    extra_free_courses = free_preference_matched + free_regular[:max(num_paid - len(free_preference_matched), 0)]
+                
+                logger.info(f"Added {len(extra_free_courses)} free courses to complement paid courses")
 
             # Step 4: Combine the results
             final_courses = top_courses + extra_free_courses
@@ -503,8 +565,7 @@ class CourseSearchAgent(BaseAgent):
                 else:
                     result['direct_topic_match'] = True # Changed from direct_query_match
                     result['message'] = f"Found courses by comparing their titles to the topic: '{topic}'."
-                
-                # Update the returned message to mention user preferences were applied
+                  # Update the returned message to mention user preferences were applied
                 if user_id and (user_preferences["course_level"] != "all" or 
                                user_preferences["programming_languages"] or 
                                user_preferences["development_areas"]):
@@ -522,9 +583,19 @@ class CourseSearchAgent(BaseAgent):
                         area_list = ', '.join(user_preferences["development_areas"])
                         pref_parts.append(f"development areas: {area_list}")
                     
-                    if pref_parts:
+                    # Count how many courses actually matched preferences
+                    courses_with_matches = sum(1 for c in final_courses if c.get('preference_score', 0) > 0)
+                    
+                    if pref_parts and courses_with_matches > 0:
                         pref_text = ", ".join(pref_parts)
-                        result['message'] += f" Results filtered by your preferences ({pref_text})."
+                        result['message'] += f" Results prioritized by your preferences ({pref_text}). {courses_with_matches} of {len(final_courses)} courses match your preferences."
+                        logger.info(f"Applied preference prioritization: {pref_text}, matched {courses_with_matches}/{len(final_courses)} courses")
+                    elif pref_parts:
+                        pref_text = ", ".join(pref_parts)
+                        result['message'] += f" Your preferences ({pref_text}) were considered, but no exact matches were found."
+                        logger.info(f"Preferences applied but no matches found: {pref_text}")
+                else:
+                    logger.info("No preference filtering applied to results")
                 
                 return result
 
