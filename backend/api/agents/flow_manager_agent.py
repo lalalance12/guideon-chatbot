@@ -35,7 +35,7 @@ class FlowManagerAgent(BaseAgent):
         # Get flow instructions using the FlowController from intent_flows.py
         flow_instructions = flow_controller.process_query(query, intent, context)
         
-        # Add current flow state to the response
+        # Only add current flow state to the response
         current_flow_state = self._get_flow_state(flow_controller)
         
         return {

@@ -128,8 +128,51 @@ class OrchestratorAgent(BaseAgent):
         
         # Update context with agent responses
         context["agent_responses"] = agent_responses
+
+        current_intent_value = getattr(context.get("intent"), 'value', None)
+
+        # If learning_pathway intent and learning_path_agent has a direct action response
+        if current_intent_value == QueryIntent.LEARNING_PATHWAY.value:
+            # Log the agent responses to check what's available
+            logger.info(f"[Orchestrator] Agent responses for learning pathway: {agent_responses}")
+            
+            # Look for the response using both possible keys
+            learning_path_response = agent_responses.get("learning_path", {})
+            if not learning_path_response:
+                learning_path_response = agent_responses.get("learning_path_agent", {})
+                
+            # Log the found response
+            logger.info(f"[Orchestrator] Learning path response: {learning_path_response}")
+                
+            if learning_path_response and (learning_path_response.get("show_goto_career_button") or learning_path_response.get("show_role_selection_button")):
+                logger.info(f"[Orchestrator] LearningPathAgent provided a direct action response: {learning_path_response}")
+                return {
+                    "response": learning_path_response.get("message"),
+                    "goto_career_role": learning_path_response.get("goto_career_role"),
+                    "show_goto_career_button": learning_path_response.get("show_goto_career_button"),
+                    "available_roles": learning_path_response.get("available_roles"),
+                    "show_role_selection_button": learning_path_response.get("show_role_selection_button"),
+                    "intent": context.get("intent"),
+                    "context": context
+                }
         
-        # Return orchestrated results
+        # If course_search and clarification or direct result, return immediately
+        if current_intent_value == QueryIntent.COURSE_SEARCH.value:
+            course_agent_response = agent_responses.get("course_search", {})
+            if course_agent_response and (course_agent_response.get("needs_clarification") or course_agent_response.get("show_course_suggestions")):
+                 logger.info("[Orchestrator] CourseSearchAgent provided a direct action response. Returning it.")
+                 return {
+                    "response": course_agent_response.get("message"),
+                    "needs_clarification": course_agent_response.get("needs_clarification"),
+                    "clarification_options": course_agent_response.get("clarification_options"),
+                    "courses": course_agent_response.get("courses"),                    
+                    "show_course_suggestions": course_agent_response.get("show_course_suggestions"),
+                    "intent": context.get("intent"), # Pass original intent object
+                    "context": context
+                 }
+        
+        # Return orchestrated results if no direct action was taken
+        logger.info("[Orchestrator] No direct action response from specialized agents, proceeding to general processing for synthesizer.")
         return {
             "agents_processed": len(agent_responses),
             "processing_time": time.time() - start,
