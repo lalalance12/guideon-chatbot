@@ -6,7 +6,13 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import { createContext, useContext, ReactNode, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { authService, User } from "../services/auth";
 import UserPreferencesModal from "./UserPreferencesModal";
@@ -35,13 +41,13 @@ export default function Sidebar({ children }: SidebarProps) {
         const user = await authService.getCurrentUser();
         setCurrentUser(user);
       } catch (error) {
-        console.error('Failed to fetch user:', error);
+        console.error("Failed to fetch user:", error);
       }
     };
 
     fetchUser();
   }, []);
-  
+
   const handleOpenPreferencesModal = () => {
     setIsPreferencesModalOpen(true);
   };
@@ -52,15 +58,15 @@ export default function Sidebar({ children }: SidebarProps) {
 
   const handleLogout = () => {
     authService.logout();
-    navigate('/auth');
+    navigate("/auth");
   };
 
   const handleNavigateToLearningPaths = () => {
-    navigate('/learning-pathways');
+    navigate("/learning-pathways");
   };
 
   const handleNavigateToChat = () => {
-    navigate('/chat');
+    navigate("/chat");
   };
 
   return (
@@ -69,7 +75,6 @@ export default function Sidebar({ children }: SidebarProps) {
         <div className="p-4 pb-2 flex justify-center items-center border-b border-gray-100">
           <h1 className="text-2xl font-bold text-indigo-600">Guideon</h1>
         </div>
-
         <div className="px-4 py-8">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
             Learning Hub
@@ -79,7 +84,9 @@ export default function Sidebar({ children }: SidebarProps) {
               <SidebarItem
                 icon={<MessageSquare size={18} />}
                 text="Chat with Guideon"
-                active={location.pathname === '/chat' || location.pathname === '/'}
+                active={
+                  location.pathname === "/chat" || location.pathname === "/"
+                }
                 onClick={handleNavigateToChat}
               />
               <SidebarItem icon={<Compass size={18} />} text="Explore Topics" />
@@ -88,37 +95,42 @@ export default function Sidebar({ children }: SidebarProps) {
                 text="Learning Paths"
                 alert
                 onClick={handleNavigateToLearningPaths}
-                active={location.pathname === '/learning-pathways'}
+                active={location.pathname === "/learning-pathways"}
               />
             </ul>
           </SidebarContext.Provider>
         </div>
-
         <div className="mt-auto px-4 py-6 border-t border-gray-100">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
             Account
           </h2>
           <ul className="space-y-2">
             <SidebarItem icon={<Settings size={18} />} text="Settings" />
-            <SidebarItem 
-              icon={<LogOut size={18} />} 
-              text="Logout" 
+            <SidebarItem
+              icon={<LogOut size={18} />}
+              text="Logout"
               onClick={handleLogout}
             />
           </ul>
         </div>
-
         <div className="flex p-4 border-t border-gray-100">
           <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.fullName || '')}&background=eef2ff&color=4f46e5&bold=true`}
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+              currentUser?.fullName || ""
+            )}&background=eef2ff&color=4f46e5&bold=true`}
             alt="User Avatar"
             className="w-10 h-10 rounded-full"
           />
           <div className="flex justify-between items-center w-full ml-3">
             <div className="leading-4">
-              <h4 className="font-semibold text-gray-800">{currentUser?.fullName || '-'}</h4>
-              <span className="text-xs text-gray-500">{currentUser?.email || ''}</span>
-            </div>            <button
+              <h4 className="font-semibold text-gray-800">
+                {currentUser?.fullName || "-"}
+              </h4>
+              <span className="text-xs text-gray-500">
+                {currentUser?.email || ""}
+              </span>
+            </div>{" "}
+            <button
               onClick={handleOpenPreferencesModal}
               className="p-1 rounded-full hover:bg-gray-100 transition-smooth"
               aria-label="User menu options"
@@ -126,8 +138,12 @@ export default function Sidebar({ children }: SidebarProps) {
               <MoreVertical size={18} className="text-gray-500" />
             </button>
           </div>
-        </div>      </nav>
-      <UserPreferencesModal isOpen={isPreferencesModalOpen} onClose={handleClosePreferencesModal} />
+        </div>{" "}
+      </nav>
+      <UserPreferencesModal
+        isOpen={isPreferencesModalOpen}
+        onClose={handleClosePreferencesModal}
+      />
     </aside>
   );
 }
