@@ -18,18 +18,25 @@ class IntentClassifierAgent(BaseAgent):
     Provides more sophisticated intent classification than keyword matching.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, llm=None) -> None:
         """Initialize the intent classifier with an LLM."""
+        super().__init__(llm=llm)
+        
         try:
-            self.llm = Ollama(id="llama3.1:8b-instruct-q8_0",
-                              provider="Ollama", 
-                              host="http://localhost:11434")
+            # Use provided LLM if available, otherwise initialize own
+            if not self.llm:
+                self.llm = Ollama(id="llama3.1:8b-instruct-q4_1",
+                                provider="Ollama", 
+                                host="http://localhost:11434")
+                logger.info("Intent classifier initialized with its own LLM")
+            else:
+                logger.info("Intent classifier using shared LLM instance")
+                
             self.agent = Agent(
                 name="IntentClassifier", 
                 model=self.llm,
                 system_message="You are an intent classification assistant that analyzes user queries."
             )
-            logger.info("Intent classifier initialized with LLM")
         except Exception as e:
             logger.error(f"Failed to initialize intent classifier LLM: {e}")
             self.agent = None
@@ -156,14 +163,12 @@ class IntentClassifierAgent(BaseAgent):
             QueryIntent.KNOWLEDGE_BASE_QUERY: (
                 "Questions seeking factual information, definitions, descriptions, or overviews directly from the PSF-AAI knowledge base. "
                 "Includes queries about what a skill or role is, details about proficiency levels, or the structure of the PSF-AAI framework. "
-                "Example: 'What is the PSF-AAI?', 'Describe the Data Engineer role', 'What are enabling skills?'"
+                "All questions and inquiries about the PSF or its components are classified here. "
+                "Example: 'What is the PSF-AAI?', 'Describe the Data Engineer role', 'What are enabling skills?', 'What is the career map for Data Scientist?', 'How does the PSF work?'"
             ),
             QueryIntent.LEARNING_PATHWAY: (
-                "Questions about career progression, upskilling, or learning paths within the PSF-AAI framework. "
-                "Includes queries about how to move from one role to another, what skills or courses are needed for advancement, "
-                "and steps to achieve a specific job title. Example: 'How do I become a Data Scientist?', "
-                "How to be <role>? "
-                "'What is the learning path for Machine Learning?', 'What skills do I need to move to Senior AI Engineer?'"
+                "Declarative statements about career progression, upskilling, or learning paths within the PSF-AAI framework. "
+                "Only sentences that state a career goal or aspiration, e.g., 'I want to become a Data Scientist.', 'My goal is to be a Machine Learning Engineer.', 'I am aiming for a Senior Data Engineer role.'"
             ),
             QueryIntent.COURSE_SEARCH: (
                 "Questions requesting specific courses, training, or educational resources to learn a skill or prepare for a role. "

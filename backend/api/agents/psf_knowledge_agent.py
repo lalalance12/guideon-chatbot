@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 
 class PSFKnowledgeAgent(BaseAgent):
     """Retrieves PSF-AAI knowledge-base information."""
+    
+    def __init__(self, llm=None):
+        """Initialize the PSF knowledge agent with an optional LLM."""
+        super().__init__(llm=llm)
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         intent = context.get("intent")

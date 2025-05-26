@@ -355,6 +355,13 @@ class ChatView(APIView):
                         'chat_id': chat.id,
                         'response': result['response']
                     }
+
+                    # Add these lines to include the career button properties
+                    if 'goto_career_role' in result:
+                        response_data['goto_career_role'] = result['goto_career_role']
+                    if 'show_goto_career_button' in result:
+                        response_data['show_goto_career_button'] = result['show_goto_career_button']
+
                     return Response(response_data, status=status.HTTP_200_OK)
                 
             except Exception as e:

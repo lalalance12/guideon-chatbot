@@ -7,6 +7,10 @@ logger = logging.getLogger(__name__)
 class BaseAgent:
     """Base class for all agents in the system"""
     
+    def __init__(self, llm=None):
+        """Initialize the agent with an optional language model"""
+        self.llm = llm
+    
     @abstractmethod
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -6,6 +6,8 @@ export interface Message {
   text: string;
   isUser: boolean;
   courses?: Course[];
+  goto_career_role?: string;
+  show_goto_career_button?: boolean;
 }
 
 // API response from Ollama

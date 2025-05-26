@@ -225,6 +225,16 @@ class CourseSearchAgent(BaseAgent):
             return avg_similarity
         return 0
 
+class CourseSearchAgent(BaseAgent):
+    """Agent responsible for finding relevant courses based on user query."""
+
+    # Minimum similarity threshold for considering a course relevant
+    SIMILARITY_THRESHOLD = 0.58
+    
+    def __init__(self, llm=None):
+        """Initialize the course search agent with an optional LLM."""
+        super().__init__(llm=llm)
+
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
             current_similarity_threshold = self.SIMILARITY_THRESHOLD # Initialize with default
