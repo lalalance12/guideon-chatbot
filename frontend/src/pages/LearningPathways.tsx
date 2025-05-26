@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import PathwaySelector from '@/components/PathwaySelector';
 import { PathwayType } from '@/types/pathways';
 import SkillPathwayCard from '@/components/SkillPathwayCard';
@@ -7,7 +8,11 @@ import { skillPathways, careerPathways } from '@/data/pathwayData'; // Updated i
 import Header from '@/components/Header'; // Import Header
 
 const LearningPathways: React.FC = () => {
-  const [activePathwayType, setActivePathwayType] = useState<PathwayType>('skill');
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const initialTab = params.get('tab') === 'career' ? 'career' : 'skill';
+  const [activePathwayType, setActivePathwayType] = useState<PathwayType>(initialTab);
+  const careerToExpand = params.get('career');
 
   return (
     <div className="flex-1 flex flex-col bg-guideon-bg min-h-screen">
@@ -35,9 +40,22 @@ const LearningPathways: React.FC = () => {
               <p className="text-gray-600 mb-6">
                 Explore career paths and the skills required at each level
               </p>
-              {careerPathways.map((pathway) => (
-                <CareerPathwayCard key={pathway.id} pathway={pathway} />
-              ))}
+              {careerToExpand
+                ? careerPathways
+                    .filter((pathway) => pathway.title.toLowerCase() === careerToExpand.toLowerCase())
+                    .map((pathway) => (
+                      <CareerPathwayCard
+                        key={pathway.id}
+                        pathway={pathway}
+                        autoExpand={true}
+                      />
+                    ))
+                : careerPathways.map((pathway) => (
+                    <CareerPathwayCard
+                      key={pathway.id}
+                      pathway={pathway}
+                    />
+                  ))}
             </>
           )}
         </div>
