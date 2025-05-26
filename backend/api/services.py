@@ -115,10 +115,12 @@ class GuideonChatService:
                     'show_role_selection_button': True
                 }
 
-            if context.get("show_course_suggestions"):
+            if context.get("show_course_suggestions") or (
+                context.get("courses") and isinstance(context.get("courses"), list) and len(context.get("courses")) > 0
+            ):
                 logger.info("[Service] Direct action from Orchestrator/CourseSearchAgent: show_course_suggestions")
-                response_text = context.get("response") # Message from CourseSearchAgent via Orchestrator
-                courses = context.get("courses")
+                response_text = context.get("response", "Based on your query, here are some recommended courses:")
+                courses = context.get("courses", [])
                 if chat_id:
                     chat = await self._get_or_create_chat(chat_id)
                     await self._save_message(chat, 'user', user_query)

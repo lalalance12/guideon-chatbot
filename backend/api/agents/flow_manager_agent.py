@@ -38,6 +38,12 @@ class FlowManagerAgent(BaseAgent):
         # Only add current flow state to the response
         current_flow_state = self._get_flow_state(flow_controller)
         
+        # Ensure we only have one primary agent in the instructions
+        if "activate_agents" in flow_instructions and len(flow_instructions["activate_agents"]) > 1:
+            primary_agent = flow_instructions["activate_agents"][0]
+            logger.info(f"[FlowManagerAgent] Multiple agents found, selecting primary agent: {primary_agent}")
+            flow_instructions["activate_agents"] = [primary_agent]
+        
         return {
             "flow_instructions": flow_instructions,
             "current_flow": current_flow_state,

@@ -127,6 +127,7 @@ class KnowledgeBaseFlow(IntentFlow):
             return {"format": "conversational"}
     
     def should_activate_agents(self) -> List[str]:
+        # Return only the knowledge agent
         return ["knowledge_agent"]
 
 class LearningPathwayFlow(IntentFlow):
@@ -235,11 +236,8 @@ class LearningPathwayFlow(IntentFlow):
         return {"format": "conversational"}
 
     def should_activate_agents(self) -> List[str]:
-        if self.current_stage == FlowStage.CLARIFICATION:
-            return ["learning_path_agent"]  # Only learning_path_agent for clarification
-        elif self.current_stage == FlowStage.INFORMATION:
-            return ["learning_path_agent"]  # Only learning_path_agent for info
-        return ["learning_path_agent"]  # Default to only learning_path_agent
+        # Return only the learning path agent
+        return ["learning_path_agent"]
 
 class CourseSearchFlow(IntentFlow):
     """Flow for course and learning resource searches"""
@@ -302,12 +300,8 @@ class CourseSearchFlow(IntentFlow):
         return {"format": "conversational"}
     
     def should_activate_agents(self) -> List[str]:
-        if self.current_stage == FlowStage.CLARIFICATION:
-            # Knowledge agent might help suggest topics if the user is very vague,
-            # but for direct clarification, specific course agent might not be needed yet.
-            # Let's assume the user will provide the topic.
-            return ["knowledge_agent"] 
-        return ["knowledge_agent", "course_agent"]
+        # Return only the course agent
+        return ["course_agent"]
 
 class GeneralConversationFlow(IntentFlow):
     """Flow for general chit-chat not related to PSF-AAI"""
@@ -328,7 +322,7 @@ class GeneralConversationFlow(IntentFlow):
         return {"format": "conversational"}
     
     def should_activate_agents(self) -> List[str]:
-        # Use the new general conversation agent for general chit-chat
+        # Return only the general conversation agent
         return ["general_conversation_agent"]
 
 class FlowController:
@@ -361,7 +355,13 @@ class FlowController:
                 flow_instructions = {"flow_action": "general_response"}
             flow_instructions["response_format"] = self.active_flow.get_next_response_format()
             agents = self.active_flow.should_activate_agents()
-            flow_instructions["activate_agents"] = agents if isinstance(agents, list) else ["knowledge_agent"]
+            # Ensure we only activate one agent (the first one in the list)
+            if agents and len(agents) > 0:
+                primary_agent = agents[0]
+                logger.info(f"[FlowController] Using primary agent: {primary_agent}")
+                flow_instructions["activate_agents"] = [primary_agent]
+            else:
+                flow_instructions["activate_agents"] = ["knowledge_agent"]  # Default fallback
             logger.debug(f"[FlowController] Final flow instructions: {flow_instructions}")
             return flow_instructions
         except Exception as e:
