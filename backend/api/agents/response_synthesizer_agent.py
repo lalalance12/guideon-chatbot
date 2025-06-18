@@ -18,58 +18,58 @@ class ResponseSynthesizerAgent(BaseAgent):
         super().__init__(llm=llm)
         
         self.system_prompt = """
-# Guideon: Enhanced PSF-AAI Career Guide with Connectivity Intelligence
+# Guideon: PSF-AAI Career Guide
 
 ## Identity and Purpose
-You are Guideon, an AI assistant specializing in the Philippine Skills Framework for Analytics & AI (PSF-AAI) with advanced connectivity awareness.
-Your purpose is to help professionals navigate career paths in analytics and AI within the Philippine context using interconnected knowledge.
+You are Guideon, an AI assistant specializing in the Philippine Skills Framework for Analytics & AI (PSF-AAI).
+Your purpose is to help professionals navigate career paths in analytics and AI within the Philippine context.
 
-## Core Knowledge Areas with Connectivity Features
-- PSF-AAI framework with cross-referenced roles, skills, and career tracks
-- Technical and functional skills with role mappings and connectivity scores
-- Skill proficiency levels (1-6) with progression pathways and role connections
-- Career transition pathways with detailed progression mapping
-- Enhanced connectivity features including role relationships and skill dependencies
+## Core Knowledge Areas
+- PSF-AAI framework with roles, skills, and career tracks
+- Technical and functional skills with role mappings
+- Skill proficiency levels (1-6) with progression pathways
+- Career transition pathways with progression mapping
+- Role relationships and skill dependencies
 
-## Enhanced Conversation Flow Capabilities
-- **PSF-AAI Knowledge Queries**: Provide structured information with connectivity context and cross-references
-- **General Conversation**: Handle casual chat while naturally weaving in PSF-AAI context when relevant
+## Conversation Capabilities
+- **PSF-AAI Knowledge Queries**: Provide structured information with helpful connections and cross-references
+- **General Conversation**: Handle casual chat while naturally mentioning PSF-AAI context when relevant
 
-## Enhanced Connectivity Features
-- **Cross-Reference Support**: Link related roles, skills, and career progression paths
-- **Connectivity Scoring**: Highlight highly connected content for better recommendations
-- **Intent-Aware Responses**: Adapt responses based on detected query intent (career progression, skill requirements, etc.)
-- **Relationship Mapping**: Show how skills connect to roles and how roles connect to career paths
-- **Progressive Disclosure**: Present information with connectivity context and follow-up options
+## User-Friendly Features
+- **Connected Information**: Show how roles, skills, and career paths relate to each other
+- **Progressive Learning**: Present information with clear next steps and follow-up options
+- **Practical Guidance**: Focus on actionable advice for career development
+- **Local Context**: Use Filipino industry context where relevant
 
 ## Personality Traits
-- Professional but approachable, you speak in a friendly, conversational tone, bubbly like Baymax
-- Concise and structured in responses with enhanced connectivity context
-- Supportive and encouraging of career growth with data-driven insights
-- Focuses on practical, actionable advice with clear progression paths
-- Uses Filipino context where relevant with local industry connections
+- Professional but approachable, friendly and conversational like Baymax
+- Concise and structured in responses
+- Supportive and encouraging of career growth
+- Focuses on practical, actionable advice
+- Helpful without being overwhelming
 
-## Enhanced Response Guidelines
-- Structure responses with markdown headings, bullet points, and connectivity indicators
-- Use clear, simple language while highlighting relationships and connections
-- Provide examples with connectivity context (e.g., "This skill is used in 5 roles including...")
-- Include connectivity statistics when relevant (e.g., "High connectivity score: 4.2/5")
-- Show progression paths and related opportunities
-- Use connectivity-aware suggestions for follow-up questions
+## Response Guidelines
+- Structure responses with markdown headings and bullet points
+- Use clear, simple language
+- Provide practical examples and connections
+- Show relationships between roles, skills, and career paths naturally
+- Include helpful suggestions for follow-up questions
+- NEVER mention technical terms like "connectivity scores", "metadata", or internal system details
 
 ## Restrictions
 - Do not provide information outside the PSF-AAI framework unless specifically related
-- Do not make up PSF-AAI information; rely only on provided context and connectivity data
+- Do not make up PSF-AAI information; rely only on provided context
 - Avoid discussing political topics or non-PSF-AAI government policies
 - Do not recommend specific companies or job openings
+- NEVER expose internal system details, scores, or technical metadata to users
 - If asked about topics entirely outside your domain, politely redirect to PSF-AAI topics
 
-## Enhanced Response Format with Connectivity
-- Start with a direct answer leveraging connectivity context
-- Include relevant PSF-AAI details with cross-references and relationships
-- Highlight connectivity features when available (role connections, progression paths, skill mappings)
-- Provide connectivity-aware suggestions for deeper exploration
-- End with personalized follow-up options based on connectivity patterns
+## Response Format
+- Start with a direct answer
+- Include relevant PSF-AAI details with helpful connections
+- Show how information relates to career development
+- Provide practical next steps
+- End with personalized follow-up suggestions
 """
         try:
             # Try to initialize own LLM first
@@ -77,7 +77,7 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
                 self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", # type: ignore
                                 provider="Ollama",
                                 host="http://localhost:11434")
-                logger.info("Enhanced Response synthesizer initialized with its own LLM")
+                logger.info("Response synthesizer initialized with its own LLM")
             except Exception as llm_error:
                 # If own LLM fails, fall back to provided LLM
                 if llm:
@@ -91,54 +91,49 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
             # Only create agent if we have an LLM
             if self.llm:
                 self.agent = Agent(
-                    name="EnhancedSynthesizer",
+                    name="Synthesizer",
                     model=self.llm, # type: ignore
                     system_message=self.system_prompt,
                 )
             else:
                 self.agent = None
         except Exception as e:
-            logger.error(f"Error in Enhanced Response Synthesizer initialization: {e}")
+            logger.error(f"Error in Response Synthesizer initialization: {e}")
             self.agent = None
 
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         start = time.time()
-        logger.info(f"Enhanced synthesizing response for query: {query[:60]}...")
+        logger.info(f"Synthesizing response for query: {query[:60]}...")
 
         # Check if we have a valid LLM
         if not self.agent:
-            logger.warning("No LLM available for enhanced response synthesis, using fallback")
-            return self._enhanced_fallback_response(query, context)
+            logger.warning("No LLM available for response synthesis, using fallback")
+            return self._create_fallback_response(query, context)
 
-        # Enhanced processing with connectivity awareness
+        # Get processing context
         agent_responses = context.get('agent_responses', {})
         flow_context = context.get("flow", {})
         response_format = flow_context.get("response_format", {"format": "conversational"})
         flow_action = flow_context.get("flow_action", "general_response")
         intent = context.get("intent")
 
-        # **NEW: Check if chat history should be used based on intent classifier decision**
+        # Check if chat history should be used based on intent classifier decision
         should_use_history = context.get("used_context", False)  # From intent classifier
         chat_history = context.get("chat_history", []) if should_use_history else []
         
         logger.info(f"Response synthesis: using_chat_history={should_use_history}, history_length={len(chat_history)}")
 
-        # Enhanced knowledge base response handling
+        # Handle knowledge base response
         kb_response = agent_responses.get("knowledge_agent", {})
         if intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
             if not kb_response or not kb_response.get("found"):
                 return {
                     "response_text": "I couldn't find specific information for your query in the PSF-AAI knowledge base. Could you clarify or ask about a different role, skill, or topic? I can help with career progression paths, skill requirements, or role connections.",
                     "format_used": response_format.get("format"),
-                    "flow_action": flow_action,
-                    "connectivity_suggestions": [
-                        "Ask about specific PSF-AAI roles",
-                        "Explore career progression paths",
-                        "Learn about skill requirements"
-                    ]
+                    "flow_action": flow_action
                 }
 
-        # Enhanced general conversation handling
+        # Handle general conversation
         if intent == QueryIntent.GENERAL_CONVERSATION:
             general_conv = agent_responses.get("general_conversation", {})
             if general_conv and general_conv.get("response"):
@@ -148,50 +143,46 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
                     "flow_action": flow_action
                 }
             return {
-                "response_text": "I'm here for any questions or just to chat! If you want to know about PSF-AAI roles, skills, career paths, or explore the connections between them, just ask!",
+                "response_text": "I'm here for any questions or just to chat! If you want to know about PSF-AAI roles, skills, career paths, or explore how they connect, just ask!",
                 "format_used": response_format.get("format"),
-                "flow_action": flow_action,
-                "psf_hints": True
+                "flow_action": flow_action
             }
 
-        # Enhanced prompt building based on format and connectivity
-        # **MODIFIED: Pass chat_history and should_use_history to prompt builders**
+        # Build prompts based on format
         if response_format.get("format") == "structured":
-            prompt = self._build_enhanced_structured_prompt(query, context, response_format, chat_history, should_use_history)
+            prompt = self._build_structured_prompt(query, context, response_format, chat_history, should_use_history)
         elif response_format.get("format") == "role_profile":
-            prompt = self._build_enhanced_role_profile_prompt(query, context, response_format, chat_history, should_use_history)
+            prompt = self._build_role_profile_prompt(query, context, response_format, chat_history, should_use_history)
         elif response_format.get("format") == "career_map":
-            prompt = self._build_enhanced_career_map_prompt(query, context, response_format, chat_history, should_use_history)
+            prompt = self._build_career_map_prompt(query, context, response_format, chat_history, should_use_history)
         elif response_format.get("format") == "connectivity_view":
             prompt = self._build_connectivity_exploration_prompt(query, context, response_format, chat_history, should_use_history)
         else:
-            prompt = self._build_enhanced_standard_prompt(query, context, chat_history, should_use_history)
+            prompt = self._build_standard_prompt(query, context, chat_history, should_use_history)
 
         try:
-            # Use enhanced agent with connectivity awareness
+            # Generate response
             run_response = await self.agent.arun(prompt)
             text = getattr(run_response, "content", str(run_response))
 
-            # Enhanced response with connectivity metadata
+            # Return clean response without exposing internal details
             return {
                 "response_text": text,
                 "processing_time": time.time() - start,
                 "format_used": response_format.get("format"),
                 "flow_action": flow_action,
-                "connectivity_features_used": self._extract_connectivity_features_used(kb_response),
-                "enhanced_processing": True,
-                "used_chat_history": should_use_history  # **NEW: Track if history was used**
+                "used_chat_history": should_use_history
             }
         except Exception as e:
-            logger.error(f"Error in enhanced response synthesis: {e}")
-            return self._enhanced_fallback_response(query, context)
+            logger.error(f"Error in response synthesis: {e}")
+            return self._create_fallback_response(query, context)
 
-    def _build_enhanced_standard_prompt(self, query: str, context: Dict[str, Any], 
-                                      chat_history: List[Dict[str, Any]] = None, 
-                                      use_history: bool = False) -> str:
-        """Build an enhanced standard prompt with intelligent chat history usage."""
+    def _build_standard_prompt(self, query: str, context: Dict[str, Any], 
+                              chat_history: List[Dict[str, Any]] = None, 
+                              use_history: bool = False) -> str:
+        """Build a standard prompt with intelligent chat history usage."""
         
-        # **MODIFIED: Only format history if we should use it**
+        # Only format history if we should use it
         history_text = ""
         if use_history and chat_history:
             history_text = self._format_chat_history(chat_history)
@@ -202,61 +193,40 @@ Your purpose is to help professionals navigate career paths in analytics and AI 
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_agent", {})
         
-        # Enhanced knowledge extraction with connectivity features
+        # **CLEANED: Extract knowledge without exposing technical details**
         knowledge_parts = []
-        connectivity_info = {}
+        user_friendly_connections = []
         
         if kb_response.get("found", False):
             items = kb_response.get("items", [])
-            connectivity_stats = kb_response.get("metadata", {}).get("connectivity_stats", {})
             
             for item in items:
-                # Enhanced item processing with connectivity
                 title = item.get('title', 'Information')
                 text = item.get('text', '')
-                connectivity_score = item.get('connectivity_score', 0)
                 
-                # Add connectivity context
-                connectivity_context = []
+                # **HIDDEN: Don't show connectivity scores to users**
+                knowledge_parts.append(f"- **{title}**: {text}")
+                
+                # **USER-FRIENDLY: Present connections naturally**
                 if item.get('connected_roles'):
-                    connectivity_context.append(f"Connected to {len(item['connected_roles'])} roles")
+                    roles = item['connected_roles'][:3]  # Show top 3 to avoid overwhelm
+                    if len(roles) > 0:
+                        user_friendly_connections.append(f"This relates to roles like: {', '.join(roles)}")
+                
                 if item.get('career_progression'):
-                    connectivity_context.append(f"Shows progression to {len(item['career_progression'])} next roles")
+                    next_roles = item['career_progression'][:2]  # Show top 2
+                    if len(next_roles) > 0:
+                        user_friendly_connections.append(f"Career progression opportunities: {', '.join(next_roles)}")
+                
                 if item.get('skill_requirements'):
-                    connectivity_context.append(f"Maps to {len(item['skill_requirements'])} skill requirements")
-                
-                knowledge_part = f"- {title}"
-                if connectivity_score > 0:
-                    knowledge_part += f" (Connectivity Score: {connectivity_score})"
-                if connectivity_context:
-                    knowledge_part += f" [{', '.join(connectivity_context)}]"
-                knowledge_part += f": {text}"
-                
-                knowledge_parts.append(knowledge_part)
-            
-            # Extract connectivity statistics
-            if connectivity_stats:
-                connectivity_info = {
-                    "total_items": len(items),
-                    "items_with_connections": connectivity_stats.get("cross_referenced_items", 0),
-                    "high_connectivity_items": connectivity_stats.get("high_connectivity_items", 0),
-                    "career_progression_items": connectivity_stats.get("items_with_career_progression", 0)
-                }
+                    skill_count = len(item['skill_requirements'])
+                    if skill_count > 0:
+                        user_friendly_connections.append(f"Connected to {skill_count} key skills")
 
         knowledge_text = "\n".join(knowledge_parts) if knowledge_parts else "No specific information found."
-        
-        # Enhanced connectivity summary
-        connectivity_summary = ""
-        if connectivity_info:
-            connectivity_summary = f"""
-## Connectivity Analysis:
-- Found {connectivity_info['total_items']} relevant items
-- {connectivity_info['items_with_connections']} items with cross-references
-- {connectivity_info['high_connectivity_items']} highly connected items
-- {connectivity_info['career_progression_items']} items with career progression info
-"""
+        connections_text = "\n- ".join(user_friendly_connections) if user_friendly_connections else ""
 
-        # **MODIFIED: Context instructions based on whether history is being used**
+        # Context instructions based on whether history is being used
         context_instructions = ""
         if use_history and history_text:
             context_instructions = """
@@ -269,7 +239,7 @@ This query appears to reference previous conversation. Use the conversation hist
 This query appears to be standalone and self-contained. Process it independently without needing additional context.
 """
 
-        prompt = f"""# Enhanced Response Generation Task with Connectivity Intelligence
+        prompt = f"""# Response Generation Task
 
 ## User Query:
 "{query}"
@@ -278,45 +248,53 @@ This query appears to be standalone and self-contained. Process it independently
 
 {context_instructions}
 
-## Enhanced Knowledge Base Results:
+## Knowledge Base Results:
 {knowledge_text}
 
-{connectivity_summary}
+## Helpful Connections Found:
+{connections_text}
 
-## Enhanced Instructions:
-You have access to PSF-AAI knowledge with advanced connectivity features. Use this enhanced information to:
+## Instructions:
+You have access to PSF-AAI knowledge. Use this information to:
 
-1. **Provide comprehensive answers** using all available knowledge base data - do not truncate or lose information
-2. **Highlight connections** when available (role relationships, career progressions, skill mappings)
-3. **Include connectivity context** when relevant (e.g., "This skill is used in X roles", "This role can lead to Y positions")
+1. **Provide comprehensive answers** using all available knowledge base data
+2. **Show helpful connections** naturally (how roles relate to each other, career paths, skill relationships)
+3. **Focus on practical guidance** for career development
 4. **Handle vague queries** by asking for clarification while suggesting specific PSF-AAI topics
-5. **Leverage cross-references** to provide richer, more complete answers
+5. **Present information clearly** without overwhelming the user
 
 **Response Style:**
 - Keep responses friendly, conversational, and CONCISE while being comprehensive
-- Use connectivity information to provide more valuable insights
+- Use connection information to provide more valuable insights
 - Structure information clearly with markdown formatting when helpful
-- Focus on actionable, practical guidance
+- Focus on actionable, practical guidance for career development
+- NEVER mention technical details like "connectivity scores" or "metadata"
 
-**Connectivity Enhancement:**
-- When discussing roles, mention related positions and progression paths
+**Connection Enhancement:**
+- When discussing roles, mention related positions and progression paths naturally
 - When explaining skills, reference which roles use them
-- When showing career paths, include skill development requirements
-- Highlight high-connectivity items that offer rich cross-references
+- When showing career paths, include skill development suggestions
+- Present connections as helpful relationships, not technical data
 
-End your response with an enhanced encouragement that leverages connectivity features:
-"Feel free to explore more PSF-AAI connections! Ask about career progression paths, skill requirements for roles, or how different competencies link together!"
+**IMPORTANT: Keep all technical details internal. Users should only see:**
+- Role names and descriptions
+- Natural career connections
+- Practical skill relationships
+- Helpful progression suggestions
 
-## Enhanced Response:
+End your response with encouraging follow-up suggestions:
+"Feel free to explore more PSF-AAI connections! Ask about career progression paths, skill requirements for roles, or how different competencies work together!"
+
+## Response:
 """
         return prompt
 
-    def _build_enhanced_structured_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any],
-                                        chat_history: List[Dict[str, Any]] = None, 
-                                        use_history: bool = False) -> str:
-        """Build an enhanced structured prompt with intelligent chat history usage."""
+    def _build_structured_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any],
+                                chat_history: List[Dict[str, Any]] = None, 
+                                use_history: bool = False) -> str:
+        """Build a structured prompt with intelligent chat history usage."""
         
-        # **MODIFIED: Only include history if needed**
+        # Only include history if needed
         history_text = ""
         if use_history and chat_history:
             history_text = self._format_chat_history(chat_history)
@@ -325,9 +303,9 @@ End your response with an enhanced encouragement that leverages connectivity fea
         kb_response = agent_responses.get("knowledge_agent", {})
         sections = format_info.get("sections", ["Definition", "Description", "Applications", "Connections"])
         
-        # Enhanced knowledge processing with connectivity
+        # **CLEANED: Process knowledge without exposing technical details**
         knowledge_parts = []
-        connectivity_features = []
+        helpful_connections = []
         
         if kb_response.get("found", False):
             items = kb_response.get("items", [])
@@ -336,28 +314,23 @@ End your response with an enhanced encouragement that leverages connectivity fea
                 title = item.get('title', 'Information')
                 text = item.get('text', '')
                 item_type = item.get('metadata', {}).get('type', '')
-                connectivity_score = item.get('connectivity_score', 0)
                 
-                # Enhanced connectivity analysis
+                # **HIDDEN: Don't show connectivity scores**
+                knowledge_parts.append(f"- **{title}** ({item_type}): {text}")
+                
+                # **USER-FRIENDLY: Present connections naturally**
                 if item.get('connected_roles'):
-                    connectivity_features.append(f"Roles using this: {', '.join(item['connected_roles'][:3])}")
+                    helpful_connections.append(f"Related roles: {', '.join(item['connected_roles'][:3])}")
                 if item.get('career_progression'):
-                    connectivity_features.append(f"Career progression: {', '.join(item['career_progression'][:2])}")
+                    helpful_connections.append(f"Career paths: {', '.join(item['career_progression'][:2])}")
                 if item.get('skill_requirements'):
-                    connectivity_features.append(f"Skill mappings: {len(item['skill_requirements'])} requirements")
-                
-                knowledge_part = f"- **{title}** ({item_type})"
-                if connectivity_score > 2:
-                    knowledge_part += f" [High Connectivity: {connectivity_score}]"
-                knowledge_part += f": {text}"
-                
-                knowledge_parts.append(knowledge_part)
+                    helpful_connections.append(f"Key skills involved: {len(item['skill_requirements'])} competencies")
 
         knowledge_text = "\n".join(knowledge_parts) if knowledge_parts else "No specific information found."
-        connectivity_text = "\n- ".join(connectivity_features) if connectivity_features else "No specific connections identified."
+        connections_text = "\n- ".join(helpful_connections) if helpful_connections else "No specific connections identified."
         sections_text = ", ".join(sections)
 
-        # **MODIFIED: Context instructions based on history usage**
+        # Context instructions based on history usage
         context_instructions = ""
         if use_history and history_text:
             context_instructions = """
@@ -370,7 +343,7 @@ This query may reference previous conversation. Use the conversation history to 
 This query appears to be standalone. Process it as a self-contained request.
 """
 
-        prompt = f"""# Enhanced Structured Educational Response with Connectivity
+        prompt = f"""# Structured Educational Response
 
 ## User Query:
 "{query}"
@@ -379,38 +352,38 @@ This query appears to be standalone. Process it as a self-contained request.
 
 {context_instructions}
 
-## Enhanced Knowledge Base Results:
+## Knowledge Base Results:
 {knowledge_text}
 
-## Connectivity Features Identified:
-- {connectivity_text}
+## Helpful Connections:
+- {connections_text}
 
-## Enhanced Instructions:
-Create a structured educational response that leverages connectivity intelligence. Use these sections if applicable: {sections_text}
+## Instructions:
+Create a structured educational response that uses helpful connections. Use these sections if applicable: {sections_text}
 
-**Enhanced Structure Requirements:**
+**Structure Requirements:**
 1. **Comprehensive Coverage**: Use all available knowledge base data without truncation
-2. **Connectivity Integration**: Weave connection information naturally into each section
-3. **Cross-Reference Support**: Link related concepts, roles, and skills throughout
-4. **Practical Application**: Show how connections provide actionable career guidance
+2. **Natural Connections**: Weave relationship information naturally into each section
+3. **Practical Focus**: Show how connections provide actionable career guidance
+4. **Clear Organization**: Use markdown headers and bullet points
 
-**Vague Query Handling**: If the user is vague (using "it", "this", "that"), ask for clarification while suggesting specific PSF-AAI exploration areas with connectivity context.
+**Vague Query Handling**: If the user is vague (using "it", "this", "that"), ask for clarification while suggesting specific PSF-AAI exploration areas.
 
-**Formatting**: Use markdown headers, bullet points, and highlight connectivity relationships clearly.
+**IMPORTANT**: Present information clearly without technical jargon. Focus on practical career guidance.
 
-**Enhanced Conclusion**: Include connectivity-aware follow-up suggestions like:
-"Want to explore the career connections further? Ask about progression paths from specific roles, or discover which skills are most connected across the PSF-AAI framework!"
+**Conclusion**: Include helpful follow-up suggestions like:
+"Want to explore the career connections further? Ask about progression paths from specific roles, or discover which skills work well together in the PSF-AAI framework!"
 
-## Enhanced Structured Response:
+## Structured Response:
 """
         return prompt
 
-    def _build_enhanced_role_profile_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any],
-                                          chat_history: List[Dict[str, Any]] = None, 
-                                          use_history: bool = False) -> str:
-        """Build an enhanced role profile prompt with intelligent chat history usage."""
+    def _build_role_profile_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any],
+                                  chat_history: List[Dict[str, Any]] = None, 
+                                  use_history: bool = False) -> str:
+        """Build a role profile prompt with intelligent chat history usage."""
         
-        # **MODIFIED: Only include history if needed**
+        # Only include history if needed
         history_text = ""
         if use_history and chat_history:
             history_text = self._format_chat_history(chat_history)
@@ -420,9 +393,9 @@ Create a structured educational response that leverages connectivity intelligenc
         flow_context = context.get("flow", {})
         role = flow_context.get("role", "the role")
         
-        # Enhanced role analysis with connectivity
+        # **CLEANED: Process role analysis without technical details**
         role_info = {}
-        connectivity_analysis = {}
+        career_connections = {}
         
         if kb_response.get("found", False):
             items = kb_response.get("items", [])
@@ -435,17 +408,16 @@ Create a structured educational response that leverages connectivity intelligenc
                         'title': item.get('title', role),
                         'description': item.get('text', ''),
                         'grade': item.get('metadata', {}).get('role_grade', 'N/A'),
-                        'domain': item.get('metadata', {}).get('role_domain', 'N/A'),
-                        'connectivity_score': item.get('connectivity_score', 0)
+                        'domain': item.get('metadata', {}).get('role_domain', 'N/A')
                     }
                     
-                    # Enhanced connectivity extraction
+                    # **USER-FRIENDLY: Present career connections naturally**
                     if item.get('career_progression'):
-                        connectivity_analysis['next_roles'] = item['career_progression']
+                        career_connections['next_roles'] = item['career_progression'][:3]
                     if item.get('connected_roles'):
-                        connectivity_analysis['related_roles'] = item['connected_roles']
+                        career_connections['related_roles'] = item['connected_roles'][:3]
                     if item.get('skill_requirements'):
-                        connectivity_analysis['skill_mappings'] = item['skill_requirements']
+                        career_connections['key_skills'] = len(item['skill_requirements'])
 
         knowledge_parts = []
         if kb_response.get("found", False):
@@ -453,18 +425,18 @@ Create a structured educational response that leverages connectivity intelligenc
                 knowledge_parts.append(f"- {item.get('title', 'Information')}: {item.get('text', '')}")
         knowledge_text = "\n".join(knowledge_parts) if knowledge_parts else f"No specific information found about {role}."
 
-        # Enhanced connectivity summary
-        connectivity_summary = ""
-        if connectivity_analysis:
-            connectivity_summary = "## Enhanced Connectivity Analysis:\n"
-            if connectivity_analysis.get('next_roles'):
-                connectivity_summary += f"- **Career Progression**: {', '.join(connectivity_analysis['next_roles'][:3])}\n"
-            if connectivity_analysis.get('related_roles'):
-                connectivity_summary += f"- **Related Positions**: {', '.join(connectivity_analysis['related_roles'][:3])}\n"
-            if connectivity_analysis.get('skill_mappings'):
-                connectivity_summary += f"- **Skill Requirements**: {len(connectivity_analysis['skill_mappings'])} mapped competencies\n"
+        # **USER-FRIENDLY: Present career connections naturally**
+        connections_summary = ""
+        if career_connections:
+            connections_summary = "## Career Connections:\n"
+            if career_connections.get('next_roles'):
+                connections_summary += f"- **Career Growth**: {', '.join(career_connections['next_roles'])}\n"
+            if career_connections.get('related_roles'):
+                connections_summary += f"- **Related Positions**: {', '.join(career_connections['related_roles'])}\n"
+            if career_connections.get('key_skills'):
+                connections_summary += f"- **Key Skills**: {career_connections['key_skills']} important competencies\n"
 
-        # **MODIFIED: Context instructions based on history usage**
+        # Context instructions based on history usage
         context_instructions = ""
         if use_history and history_text:
             context_instructions = """
@@ -477,7 +449,7 @@ This query may reference previous conversation about roles or career paths.
 This query appears to be about a specific role. Process it as a standalone role inquiry.
 """
 
-        prompt = f"""# Enhanced Role Profile Generation with Career Connectivity
+        prompt = f"""# Role Profile Generation
 
 ## User Query:
 "{query}"
@@ -489,41 +461,43 @@ This query appears to be about a specific role. Process it as a standalone role 
 ## Role Being Analyzed:
 {role_info.get('title', role)} (Grade: {role_info.get('grade', 'N/A')}, Domain: {role_info.get('domain', 'N/A')})
 
-## Enhanced Knowledge Base Results:
+## Knowledge Base Results:
 {knowledge_text}
 
-{connectivity_summary}
+{connections_summary}
 
-## Enhanced Instructions:
-Create a comprehensive role profile that leverages connectivity intelligence with these enhanced sections:
+## Instructions:
+Create a comprehensive role profile with these sections:
 
 1. **Role Overview** - Description with grade and domain context
-2. **Key Responsibilities** - Tasks and duties with connectivity to other roles
-3. **Required Competencies** - Skills with role mapping and connectivity scores
-4. **Career Connectivity** - Progression paths, related roles, and advancement options
+2. **Key Responsibilities** - Tasks and duties with connections to other roles
+3. **Required Competencies** - Skills with practical applications
+4. **Career Connections** - Progression paths, related roles, and advancement options
 5. **Skill Development Path** - Learning progression with role alignment
 
-**Connectivity Enhancement Requirements:**
+**Requirements:**
 - Highlight career progression opportunities with specific next roles
-- Show relationships to other positions in the framework
-- Include skill connectivity scores when available
+- Show relationships to other positions in the framework naturally
 - Provide actionable career development guidance
+- Focus on practical, helpful information
 
 **Vague Query Handling**: If user is vague, ask for clarification while suggesting specific role exploration options.
 
-**Enhanced Conclusion**: Include connectivity-aware encouragement like:
+**IMPORTANT**: Present all information in user-friendly terms without technical jargon.
+
+**Conclusion**: Include helpful encouragement like:
 "Interested in the career connections for this role? Ask about specific skill requirements, progression pathways, or explore related positions in the PSF-AAI framework!"
 
-## Enhanced Role Profile:
+## Role Profile:
 """
         return prompt
 
-    def _build_enhanced_career_map_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any],
-                                        chat_history: List[Dict[str, Any]] = None, 
-                                        use_history: bool = False) -> str:
-        """Build an enhanced career map prompt with intelligent chat history usage."""
+    def _build_career_map_prompt(self, query: str, context: Dict[str, Any], format_info: Dict[str, Any],
+                                chat_history: List[Dict[str, Any]] = None, 
+                                use_history: bool = False) -> str:
+        """Build a career map prompt with intelligent chat history usage."""
         
-        # **MODIFIED: Only include history if needed**
+        # Only include history if needed
         history_text = ""
         if use_history and chat_history:
             history_text = self._format_chat_history(chat_history)
@@ -531,15 +505,13 @@ Create a comprehensive role profile that leverages connectivity intelligence wit
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_agent", {})
         
-        # Enhanced career map analysis
+        # **CLEANED: Process career map without technical details**
         career_map_items = []
-        domains_info = {}
-        grades_info = {}
+        framework_info = {}
         progression_paths = []
         
         if kb_response.get("found", False):
             items = kb_response.get("items", [])
-            connectivity_stats = kb_response.get("metadata", {}).get("connectivity_stats", {})
             
             for item in items:
                 item_type = item.get("metadata", {}).get("type", "")
@@ -549,11 +521,11 @@ Create a comprehensive role profile that leverages connectivity intelligence wit
                 if "career_map" in item_type:
                     career_map_items.append(f"- **{title}**: {text}")
                     
-                    # Extract domain and grade information
+                    # **USER-FRIENDLY: Extract framework information**
                     if "domain" in item_type:
                         domain_name = item.get('metadata', {}).get('domain_name', '')
                         if domain_name:
-                            domains_info[domain_name] = {
+                            framework_info[f"Domain: {domain_name}"] = {
                                 'roles_count': item.get('metadata', {}).get('roles_count', 0),
                                 'description': text[:200] + "..." if len(text) > 200 else text
                             }
@@ -561,7 +533,7 @@ Create a comprehensive role profile that leverages connectivity intelligence wit
                     elif "grade" in item_type:
                         grade_name = item.get('metadata', {}).get('grade_name', '')
                         if grade_name:
-                            grades_info[grade_name] = {
+                            framework_info[f"Level: {grade_name}"] = {
                                 'positions_count': item.get('metadata', {}).get('positions_count', 0),
                                 'description': text[:200] + "..." if len(text) > 200 else text
                             }
@@ -575,18 +547,17 @@ Create a comprehensive role profile that leverages connectivity intelligence wit
 
         career_map_text = "\n".join(career_map_items) if career_map_items else "No specific career map information found."
         
-        # Enhanced connectivity summary
-        connectivity_summary = ""
-        if domains_info or grades_info or progression_paths:
-            connectivity_summary = "## Enhanced Career Framework Analysis:\n"
-            if domains_info:
-                connectivity_summary += f"- **Domains Identified**: {len(domains_info)} specialization tracks\n"
-            if grades_info:
-                connectivity_summary += f"- **Job Grades Found**: {len(grades_info)} progression levels\n"
+        # **USER-FRIENDLY: Present framework summary**
+        framework_summary = ""
+        if framework_info or progression_paths:
+            framework_summary = "## Framework Overview:\n"
+            if framework_info:
+                framework_summary += f"- **Specializations**: {len([k for k in framework_info.keys() if 'Domain:' in k])} career tracks\n"
+                framework_summary += f"- **Career Levels**: {len([k for k in framework_info.keys() if 'Level:' in k])} progression stages\n"
             if progression_paths:
-                connectivity_summary += f"- **Progression Paths**: {len(progression_paths)} specific advancement routes\n"
+                framework_summary += f"- **Career Paths**: {len(progression_paths)} specific advancement routes\n"
 
-        # **MODIFIED: Context instructions based on history usage**
+        # Context instructions based on history usage
         context_instructions = ""
         if use_history and history_text:
             context_instructions = """
@@ -599,7 +570,7 @@ This query may reference previous conversation about career paths or framework n
 This query appears to be about career mapping. Process it as a standalone career exploration request.
 """
 
-        prompt = f"""# Enhanced Career Map Visualization with Connectivity Intelligence
+        prompt = f"""# Career Map Visualization
 
 ## User Query:
 "{query}"
@@ -608,37 +579,39 @@ This query appears to be about career mapping. Process it as a standalone career
 
 {context_instructions}
 
-## Enhanced Career Map Information:
+## Career Map Information:
 {career_map_text}
 
-{connectivity_summary}
+{framework_summary}
 
-## Enhanced Instructions:
-Create a comprehensive career map visualization that leverages connectivity intelligence with these enhanced sections:
+## Instructions:
+Create a comprehensive career map visualization with these sections:
 
-1. **Framework Overview** - Explain the PSF-AAI career structure with connectivity context
-2. **Domain Specializations** - Vertical tracks with role counts and interconnections
-3. **Job Grade Progressions** - Horizontal advancement levels with position mappings
-4. **Connectivity Pathways** - Show specific progression routes and cross-domain transitions
+1. **Framework Overview** - Explain the PSF-AAI career structure
+2. **Domain Specializations** - Different career tracks and their focuses
+3. **Career Level Progressions** - How to advance through different stages
+4. **Progression Pathways** - Specific routes for career advancement
 5. **Navigation Guide** - How to use the framework for career planning
 
-**Connectivity Enhancement Requirements:**
-- Use domain and grade information to show framework structure
-- Highlight specific progression pathways with role connections
-- Include connectivity statistics to show framework richness
-- Provide practical navigation guidance for career planning
+**Requirements:**
+- Use domain and grade information to show framework structure clearly
+- Highlight specific progression pathways with practical guidance
+- Provide actionable navigation guidance for career planning
+- Focus on helping users understand their career options
 
 **Visual Structure**: Use markdown formatting, bullet points, and clear hierarchies to show:
-- Domain → Roles → Grade progressions
-- Cross-domain transition opportunities
-- High-connectivity career paths
+- Career Tracks → Roles → Advancement Levels
+- Cross-track transition opportunities
+- Clear career progression paths
 
 **Vague Query Handling**: If user is vague, ask for clarification while suggesting specific career exploration areas.
 
-**Enhanced Conclusion**: Include connectivity-aware encouragement like:
-"Ready to explore specific career paths on this map? Ask about progression from particular roles, skill requirements for advancement, or cross-domain transition opportunities!"
+**IMPORTANT**: Present all information in clear, practical terms without technical details.
 
-## Enhanced Career Map Response:
+**Conclusion**: Include helpful encouragement like:
+"Ready to explore specific career paths on this map? Ask about progression from particular roles, skill requirements for advancement, or opportunities to transition between different tracks!"
+
+## Career Map Response:
 """
         return prompt
 
@@ -647,7 +620,7 @@ Create a comprehensive career map visualization that leverages connectivity inte
                                              use_history: bool = False) -> str:
         """Build a prompt specifically for connectivity exploration responses."""
         
-        # **MODIFIED: Only include history if needed**
+        # Only include history if needed
         history_text = ""
         if use_history and chat_history:
             history_text = self._format_chat_history(chat_history)
@@ -655,46 +628,42 @@ Create a comprehensive career map visualization that leverages connectivity inte
         agent_responses = context.get("agent_responses", {})
         kb_response = agent_responses.get("knowledge_agent", {})
         
-        # Advanced connectivity analysis
-        connection_types = {
+        # **CLEANED: Process connections without technical details**
+        connection_insights = {
             'role_connections': [],
             'skill_mappings': [],
             'career_progressions': [],
-            'cross_references': []
+            'practical_connections': []
         }
-        
-        high_connectivity_items = []
         
         if kb_response.get("found", False):
             items = kb_response.get("items", [])
             
             for item in items:
-                connectivity_score = item.get('connectivity_score', 0)
                 title = item.get('title', '')
                 
-                if connectivity_score > 3:
-                    high_connectivity_items.append(f"{title} (Score: {connectivity_score})")
-                
+                # **USER-FRIENDLY: Extract practical connections**
                 if item.get('connected_roles'):
-                    connection_types['role_connections'].extend(item['connected_roles'])
+                    unique_roles = list(set(item['connected_roles'][:5]))  # Top 5
+                    connection_insights['role_connections'].extend(unique_roles)
+                    connection_insights['practical_connections'].append(f"{title} connects to roles like: {', '.join(unique_roles[:3])}")
+                
                 if item.get('skill_requirements'):
-                    connection_types['skill_mappings'].extend([req.get('role', '') for req in item['skill_requirements']])
+                    skill_count = len(item['skill_requirements'])
+                    connection_insights['practical_connections'].append(f"{title} involves {skill_count} key skills")
+                
                 if item.get('career_progression'):
-                    connection_types['career_progressions'].extend(item['career_progression'])
+                    next_roles = item['career_progression'][:3]
+                    connection_insights['practical_connections'].append(f"From {title}, you can advance to: {', '.join(next_roles)}")
 
-        # Build connectivity insights
-        connectivity_insights = []
-        if connection_types['role_connections']:
-            unique_roles = list(set(connection_types['role_connections']))
-            connectivity_insights.append(f"**Role Network**: Connected to {len(unique_roles)} distinct roles")
+        # Build user-friendly insights
+        helpful_insights = []
+        if connection_insights['role_connections']:
+            unique_roles = list(set(connection_insights['role_connections']))
+            helpful_insights.append(f"**Connected Roles**: Found connections to {len(unique_roles)} different positions")
         
-        if connection_types['skill_mappings']:
-            unique_mappings = list(set(connection_types['skill_mappings']))
-            connectivity_insights.append(f"**Skill Mappings**: {len(unique_mappings)} role-skill connections")
-        
-        if connection_types['career_progressions']:
-            unique_progressions = list(set(connection_types['career_progressions']))
-            connectivity_insights.append(f"**Career Paths**: {len(unique_progressions)} progression opportunities")
+        if connection_insights['practical_connections']:
+            helpful_insights.extend(connection_insights['practical_connections'][:5])  # Top 5 to avoid overwhelm
 
         knowledge_parts = []
         if kb_response.get("found", False):
@@ -702,10 +671,9 @@ Create a comprehensive career map visualization that leverages connectivity inte
                 knowledge_parts.append(f"- {item.get('title', 'Information')}: {item.get('text', '')}")
         knowledge_text = "\n".join(knowledge_parts) if knowledge_parts else "No specific connectivity information found."
 
-        connectivity_summary = "\n- ".join(connectivity_insights) if connectivity_insights else "No connectivity patterns identified."
-        high_connectivity_text = "\n- ".join(high_connectivity_items) if high_connectivity_items else "No highly connected items found."
+        insights_summary = "\n- ".join(helpful_insights) if helpful_insights else "No connection patterns identified."
 
-        # **MODIFIED: Context instructions based on history usage**
+        # Context instructions based on history usage
         context_instructions = ""
         if use_history and history_text:
             context_instructions = """
@@ -718,7 +686,7 @@ This query may reference previous conversation about connections or relationship
 This query appears to be about exploring connections. Process it as a standalone connectivity exploration request.
 """
 
-        prompt = f"""# Advanced Connectivity Exploration Response
+        prompt = f"""# Connection Exploration Response
 
 ## User Query:
 "{query}"
@@ -730,36 +698,35 @@ This query appears to be about exploring connections. Process it as a standalone
 ## Knowledge Base Results:
 {knowledge_text}
 
-## Connectivity Intelligence Analysis:
-- {connectivity_summary}
+## Helpful Connections Found:
+- {insights_summary}
 
-## High-Connectivity Items:
-- {high_connectivity_text}
-
-## Advanced Instructions:
-Create an interactive connectivity exploration response with these sections:
+## Instructions:
+Create an interactive connection exploration response with these sections:
 
 1. **Connection Overview** - What connections were discovered
 2. **Relationship Mapping** - How different elements connect (roles ↔ skills ↔ careers)
 3. **Pathway Discovery** - Specific progression and development routes
-4. **Cross-Reference Insights** - Unexpected or valuable connections found
+4. **Practical Insights** - Valuable connections for career planning
 5. **Exploration Opportunities** - What the user can discover next
 
-**Connectivity Features to Highlight:**
-- Show relationship strength (connectivity scores)
-- Map bidirectional connections (skill → roles, roles → progression)
-- Identify high-value connection points for career planning
-- Suggest exploration paths based on connection patterns
+**Features to Highlight:**
+- Show practical relationships between roles, skills, and career paths
+- Map clear progression routes
+- Identify valuable connection points for career planning
+- Suggest exploration paths based on discovered connections
 
 **Interactive Elements**:
 - Provide specific follow-up questions the user can ask
-- Suggest "what if" scenarios for career exploration
+- Suggest practical scenarios for career exploration
 - Offer deep-dive options for interesting connections
 
-**Enhanced Conclusion**: End with connectivity-focused encouragement like:
-"The PSF-AAI framework is rich with connections! Want to dive deeper? Ask about specific role transitions, explore skill dependencies, or discover unexpected career pathways through the connectivity network!"
+**IMPORTANT**: Present all connection information in user-friendly, practical terms. Focus on how connections help with career planning.
 
-## Advanced Connectivity Response:
+**Conclusion**: End with helpful encouragement like:
+"The PSF-AAI framework is rich with helpful connections! Want to dive deeper? Ask about specific role transitions, explore skill development paths, or discover career opportunities through these professional networks!"
+
+## Connection Response:
 """
         return prompt
 
@@ -779,55 +746,20 @@ Create an interactive connectivity exploration response with these sections:
         
         return history_text
 
-    def _extract_connectivity_features_used(self, kb_response: Dict[str, Any]) -> Dict[str, Any]:
-        """Extract which connectivity features were used in the response."""
-        if not kb_response or not kb_response.get("found"):
-            return {}
-        
-        features = {
-            "connectivity_aware": True,
-            "cross_references": False,
-            "career_progressions": False,
-            "skill_mappings": False,
-            "high_connectivity_items": 0
-        }
-        
-        items = kb_response.get("items", [])
-        connectivity_stats = kb_response.get("metadata", {}).get("connectivity_stats", {})
-        
-        for item in items:
-            if item.get('connected_roles') or item.get('career_progression') or item.get('skill_requirements'):
-                features["cross_references"] = True
-            if item.get('career_progression'):
-                features["career_progressions"] = True
-            if item.get('skill_requirements'):
-                features["skill_mappings"] = True
-            if item.get('connectivity_score', 0) > 3:
-                features["high_connectivity_items"] += 1
-        
-        return features
-
-    def _enhanced_fallback_response(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate an enhanced fallback response with connectivity awareness."""
+    def _create_fallback_response(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate a fallback response."""
         intent = context.get("intent")
         response_text = "I'm having a little trouble connecting right now, but I'm still here to help with PSF-AAI!"
 
         if intent == QueryIntent.KNOWLEDGE_BASE_QUERY:
             response_text = "I can usually provide comprehensive information about the PSF-AAI framework with career connections and skill mappings. What specific role, skill, or career path interests you?"
         elif intent == QueryIntent.GENERAL_CONVERSATION:
-            response_text = "I'm here to help explore the PSF-AAI framework with all its career connections and skill relationships, but I'm also happy to chat! How can I assist you today?"
+            response_text = "I'm here to help explore the PSF-AAI framework and its career connections, but I'm also happy to chat! How can I assist you today?"
         else:
-            response_text = "I'm here to help explore the PSF-AAI framework with all its career connections and skill relationships. How can I assist your professional development journey today?"
+            response_text = "I'm here to help explore the PSF-AAI framework and its career connections. How can I assist your professional development journey today?"
 
         return {
             "response_text": response_text + " Please try asking again in a moment.",
-            "format_used": "enhanced_fallback",
-            "flow_action": "enhanced_fallback_response",
-            "connectivity_features_available": True,
-            "psf_hints": [
-                "Ask about career progression paths",
-                "Explore skill-role connections", 
-                "Discover domain specializations",
-                "Learn about grade advancement requirements"
-            ]
+            "format_used": "fallback",
+            "flow_action": "fallback_response"
         }

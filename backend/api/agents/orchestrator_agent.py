@@ -48,6 +48,9 @@ class OrchestratorAgent(BaseAgent):
         flow_instructions = flow_result.get("flow_instructions", {})
         logger.info(f"[Orchestrator] Flow instructions: {flow_instructions}")
         
+        # **NEW: Create enhanced context for agents with flow information**
+        enhanced_context = self._create_enhanced_context(context, flow_result, flow_instructions)
+        
         # Update context with flow information
         context.update({
             "flow": flow_instructions,
@@ -103,20 +106,9 @@ class OrchestratorAgent(BaseAgent):
                 else:
                     logger.warning(f"[Orchestrator] No user_id found in context to pass to {agent_name}")
                 agent = agent_map[agent_name]
-                tasks.append(self._execute_agent(agent, query, context, agent_name))
-            else:
-                logger.warning(f"[Orchestrator] Unknown agent: {agent_name}")
-
-        # If no specialized agents are needed, still collect basic information
-        if not tasks:
-            logger.info("No specialized agents needed for this query")
-            # You might want to add a default agent or placeholder here
-            context["agent_responses"] = {}
-            return {
-                "agents_processed": 0,
-                "processing_time": time.time() - start,
-                "context": context
-            }
+                # **PASS ENHANCED CONTEXT TO AGENTS**
+                tasks.append(self._execute_agent(agent, query, enhanced_context, agent_name))
+                logger.info(f"[Orchestrator] Scheduled {agent_name} with enhanced flow context")
 
         # Execute the selected agent
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -155,35 +147,24 @@ class OrchestratorAgent(BaseAgent):
             logger.info(f"[Orchestrator] Learning path response: {learning_path_response}")
                 
             if learning_path_response and (learning_path_response.get("show_goto_career_button") or learning_path_response.get("show_role_selection_button")):
-                logger.info(f"[Orchestrator] LearningPathAgent provided a direct action response: {learning_path_response}")
                 return {
-                    "response": learning_path_response.get("message"),
+                    "response": learning_path_response.get("response"),
                     "goto_career_role": learning_path_response.get("goto_career_role"),
-                    "show_goto_career_button": learning_path_response.get("show_goto_career_button"),
+                    "show_goto_career_button": learning_path_response.get("show_goto_career_button", False),
                     "available_roles": learning_path_response.get("available_roles"),
-                    "show_role_selection_button": learning_path_response.get("show_role_selection_button"),
-                    "intent": context.get("intent"),
-                    "context": context
+                    "show_role_selection_button": learning_path_response.get("show_role_selection_button", False),
+                    "context": context,
+                    "agents_processed": len(agent_responses),
+                    "processing_time": time.time() - start
                 }
-        
-        # If course_search and clarification or direct result, return immediately
+
+        # If course_search intent and course_agent has courses or clarification
         if current_intent_value == QueryIntent.COURSE_SEARCH.value:
-            course_agent_response = agent_responses.get("course_search", {})
-            if not course_agent_response:
-                course_agent_response = agent_responses.get("course_agent", {})
-                
-            # Add these checks for course results
-            if course_agent_response:
-                # Check for all possible flag combinations
-                if (course_agent_response.get("needs_clarification") or 
-                    course_agent_response.get("show_course_suggestions") or
-                    (course_agent_response.get("found", False) and course_agent_response.get("courses", []))):
-                    
-                    logger.info("[Orchestrator] CourseSearchAgent provided a direct action response. Returning it.")
-                    
-                    # Return with standardized format
+            course_agent_response = agent_responses.get("course_agent", {})
+            logger.info(f"[Orchestrator] Course agent response: {course_agent_response}")
+            if course_agent_response and (course_agent_response.get("courses") or course_agent_response.get("needs_clarification")):
                     return {
-                        "response": course_agent_response.get("message") or "Based on your query, here are some recommended courses:",
+                        "response": course_agent_response.get("response", "Based on your query, here are some recommended courses:"),
                         "needs_clarification": course_agent_response.get("needs_clarification", False),
                         "clarification_options": course_agent_response.get("clarification_options", []),
                         "courses": course_agent_response.get("courses", []),                    
@@ -199,13 +180,62 @@ class OrchestratorAgent(BaseAgent):
             "processing_time": time.time() - start,
             "context": context
         }
-    
+
+    def _create_enhanced_context(self, original_context: Dict[str, Any], 
+                               flow_result: Dict[str, Any], 
+                               flow_instructions: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        **NEW METHOD: Create enhanced context with flow information for agents**
+        This preserves all original context while adding flow-specific data
+        """
+        enhanced_context = original_context.copy()  # Start with original context
+        
+        # Add flow-specific information
+        enhanced_context.update({
+            # Flow state information
+            "flow_context": flow_instructions,
+            "current_flow_state": flow_result.get("current_flow", {}),
+            "flow_stage": flow_instructions.get("flow_stage"),
+            "flow_type": flow_instructions.get("flow_type"),
+            
+            # Response formatting hints
+            "response_format": flow_instructions.get("response_format", {"format": "conversational"}),
+            "flow_action": flow_instructions.get("flow_action", "general_response"),
+            
+            # Connectivity context (if available)
+            "connectivity_context": flow_result.get("current_flow", {}).get("connectivity_context", {}),
+            
+            # Flow metadata
+            "flow_enhanced": True,
+            "new_flow": flow_instructions.get("new_flow", False),
+            "continued_flow": flow_instructions.get("continued_flow", False)
+        })
+        
+        # Preserve specific flow context (role, topic, etc.)
+        flow_context = flow_result.get("current_flow", {}).get("context", {})
+        if flow_context:
+            enhanced_context["flow_preserved_context"] = flow_context
+            
+            # Extract commonly used context items to top level for easy access
+            if "current_entity" in flow_context:
+                enhanced_context["focus_role"] = flow_context["current_entity"]
+            if "search_topic" in flow_context:
+                enhanced_context["focus_topic"] = flow_context["search_topic"]
+            if "detected_role" in flow_context:
+                enhanced_context["detected_role"] = flow_context["detected_role"]
+        
+        logger.debug(f"[Orchestrator] Enhanced context created with flow data: {list(enhanced_context.keys())}")
+        return enhanced_context
+
     async def _execute_agent(self, agent: BaseAgent, query: str, 
                             context: Dict[str, Any], key: str) -> Dict[str, Any]:
-        """Execute a single agent and wrap its response with metadata."""
-        start = time.time()
-        
+        """
+        **MODIFIED: Execute agent with enhanced context and flow metadata**
+        """
         try:
+            logger.info(f"[Orchestrator] Executing {key} with enhanced flow context")
+            
+            # Let the agent process with full enhanced context
             # Log the context keys being passed to the agent
             logger.info(f"[Orchestrator] Executing {agent.__class__.__name__} with context keys: {list(context.keys())}")
             if 'user_id' in context:
@@ -213,23 +243,48 @@ class OrchestratorAgent(BaseAgent):
             
             result = await agent.process(query, context)
             
-            # Ensure result is a dictionary
-            if not isinstance(result, dict):
-                logger.warning(f"Agent {agent.__class__.__name__} returned non-dict: {result}")
-                result = {"raw_result": str(result)}
-                
-            # Add metadata
-            result["agent_name"] = key
-            result["agent_class"] = agent.__class__.__name__
-            result["processing_time"] = time.time() - start
+            if result is None:
+                logger.warning(f"Agent {key} returned None")
+                return {"agent_name": key, "error": "No result returned"}
             
+            # Ensure agent_name is set for identification
+            if not result.get("agent_name"):
+                result["agent_name"] = key
+                
+            # **NEW: Add flow metadata to agent results**
+            result = self._add_flow_metadata_to_result(result, context)
+                
+            logger.info(f"[Orchestrator] Agent {key} completed successfully with flow enhancement")
             return result
             
         except Exception as e:
-            logger.exception(f"Error executing agent {agent.__class__.__name__}: {e}")
+            logger.error(f"Error executing agent {key}: {e}", exc_info=True)
             return {
                 "agent_name": key,
-                "agent_class": agent.__class__.__name__,
                 "error": str(e),
-                "processing_time": time.time() - start
+                "flow_enhanced": True
             }
+
+    def _add_flow_metadata_to_result(self, result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        **NEW METHOD: Add flow metadata to agent results for better tracking**
+        """
+        if "metadata" not in result:
+            result["metadata"] = {}
+            
+        # Add flow information to metadata
+        result["metadata"].update({
+            "flow_stage": context.get("flow_stage"),
+            "flow_action": context.get("flow_action"),
+            "flow_type": context.get("flow_type"),
+            "response_format": context.get("response_format", {}).get("format"),
+            "flow_enhanced": True
+        })
+        
+        # Add focus context if available
+        if context.get("focus_role"):
+            result["metadata"]["focus_role"] = context["focus_role"]
+        if context.get("focus_topic"):
+            result["metadata"]["focus_topic"] = context["focus_topic"]
+            
+        return result

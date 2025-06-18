@@ -466,3 +466,35 @@ class PSFKnowledgeAgent(BaseAgent):
             ],
             "more_info": "Visit psf-aai.vercel.app or contact the Analytics & AI Association of the Philippines (AAP) for comprehensive career guidance"
         }
+
+    def _apply_flow_enhancements(self, search_params: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """**NEW: Apply flow-specific enhancements to search parameters**"""
+    
+        flow_context, flow_action, response_format, flow_state = self.get_flow_context(context)
+        focus_role, focus_topic = self.get_focus_elements(context)
+    
+        # Apply flow-specific search enhancements
+        if flow_action == "career_overview_with_connections" and focus_role:
+            search_params["role_focus"] = focus_role
+            search_params["include_progression_paths"] = True
+            search_params["sections"] = ["job_roles", "career_map", "functional_skills"]
+        
+        elif flow_action == "explore_skill_connections" and focus_topic:
+            search_params["skill_focus"] = focus_topic
+            search_params["emphasize_connectivity"] = True
+            search_params["sections"] = ["functional_skills", "enabling_skills", "job_roles"]
+        
+        elif flow_action == "comprehensive_connectivity_view":
+            search_params["connectivity_mode"] = True
+            search_params["include_all_relationships"] = True
+        
+        # Enhance search based on response format
+        format_type = response_format.get("format", "conversational")
+        if format_type == "role_profile":
+            search_params["prioritize_role_info"] = True
+        elif format_type == "career_map":
+            search_params["prioritize_career_progression"] = True
+        elif format_type == "connectivity_view":
+            search_params["prioritize_connections"] = True
+    
+        return search_params

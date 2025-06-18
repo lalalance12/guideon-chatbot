@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
+import { ACCESS_TOKEN } from '../constants';
 
 interface CourseData {
   skill: string;
@@ -30,7 +31,7 @@ const CareerPathwayCard: React.FC<CareerPathwayCardProps> = ({
   highlightRole 
 }) => {
   const [expanded, setExpanded] = useState(!!autoExpand);
-  const [skillCourses, setSkillCourses] = useState<Record<string, string>>({});
+  const [skillCourses, setSkillCourses] = useState<Record<string, CourseData['course_info'][0]>>({});
   
   // Check if this pathway should be highlighted based on career ID
   const shouldHighlight = highlightRole && pathway.id === highlightRole;
@@ -55,11 +56,11 @@ const CareerPathwayCard: React.FC<CareerPathwayCardProps> = ({
         
         const data: CourseData[] = await response.json();
         
-        // Create a map of skill names to their first course URL
-        const skillMap: Record<string, string> = {};
+        // Create a map of skill names to their first course data
+        const skillMap: Record<string, CourseData['course_info'][0]> = {};
         data.forEach(item => {
           if (item.course_info && item.course_info.length > 0) {
-            skillMap[item.skill.toLowerCase()] = item.course_info[0].course_url;
+            skillMap[item.skill.toLowerCase()] = item.course_info[0];
           }
         });
         
@@ -69,11 +70,22 @@ const CareerPathwayCard: React.FC<CareerPathwayCardProps> = ({
         
         // Fallback to hardcoded data if API fails
         setSkillCourses({
-          "python programming": "https://www.coursera.org/specializations/python",
-          "data analysis": "https://www.coursera.org/learn/data-analysis-with-python",
-          "machine learning": "https://www.coursera.org/learn/machine-learning",
-          "data science": "https://www.edx.org/professional-certificate/ibm-data-science",
-          "applications development": "https://www.classcentral.com/course/androidpart2-3076"
+          "python programming": {
+            course_title: "Python for Everybody Specialization",
+            course_provider: "Coursera",
+            course_rating: 4.8,
+            course_description: "Learn to program and analyze data with Python",
+            price: "Free",
+            course_url: "https://www.coursera.org/specializations/python"
+          },
+          "data analysis": {
+            course_title: "Data Analysis with Python",
+            course_provider: "Coursera",
+            course_rating: 4.7,
+            course_description: "Learn data analysis with Python and pandas",
+            price: "Free",
+            course_url: "https://www.coursera.org/learn/data-analysis-with-python"
+          }
         });
       }
     };
@@ -81,9 +93,47 @@ const CareerPathwayCard: React.FC<CareerPathwayCardProps> = ({
     fetchSkillCourses();
   }, []);
 
-  // Function to check if a skill has a matching course
-  const getSkillCourseUrl = (skillName: string): string | null => {
+  // Function to get course data for a skill
+  const getSkillCourse = (skillName: string): CourseData['course_info'][0] | null => {
     return skillCourses[skillName.toLowerCase()] || null;
+  };
+
+  // Handle taking a course
+  const handleTakeCourse = async (courseData: CourseData['course_info'][0]) => {
+    if (!window.confirm("Are you sure you want to enroll in this course?")) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem(ACCESS_TOKEN);
+      
+      // Format course data to match the expected structure
+      const course = {
+        title: courseData.course_title,
+        provider: courseData.course_provider,
+        rating: courseData.course_rating,
+        description: courseData.course_description,
+        price: courseData.price,
+        url: courseData.course_url
+      };
+
+      const response = await fetch('/api/take-course/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ course })
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        alert('Course added to your learning path!');
+      } else {
+        alert(data.error || 'Failed to take course.');
+      }
+    } catch (error) {
+      alert('An error occurred while taking the course.');
+    }
   };
 
   return (
@@ -166,29 +216,50 @@ const CareerPathwayCard: React.FC<CareerPathwayCardProps> = ({
                   <h5 className="text-sm font-medium text-gray-700 mb-2">Required Skills:</h5>
                   <div className="space-y-2">
                     {level.requiredSkills.slice(0, 10).map((skill) => {
-                      const courseUrl = getSkillCourseUrl(skill.name);
+                      const courseData = getSkillCourse(skill.name);
                       return (
-                        <div key={skill.id} className="bg-white p-2 rounded-md">
-                          <div className="flex justify-between">
-                            {courseUrl ? (
-                              <Tooltip content={`View courses for ${skill.name}`}>
-                                <a 
-                                  href={courseUrl} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-sm font-medium text-guideon-purple hover:text-guideon-purple/80 flex items-center"
-                                >
-                                  {skill.name} <ExternalLink size={12} className="ml-1" />
-                                </a>
-                              </Tooltip>
-                            ) : (
-                              <span className="text-sm font-medium">{skill.name}</span>
-                            )}
-                            <Badge variant="outline" className="text-xs border-none bg-guideon-light/50 text-gray-600">
-                              {skill.level}
-                            </Badge>
+                        <div key={skill.id} className="bg-white p-3 rounded-md">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex justify-between items-center mb-1">
+                                {courseData ? (
+                                  <Tooltip content={`View course: ${courseData.course_title}`}>
+                                    <a 
+                                      href={courseData.course_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm font-medium text-guideon-purple hover:text-guideon-purple/80 flex items-center"
+                                    >
+                                      {skill.name} <ExternalLink size={12} className="ml-1" />
+                                    </a>
+                                  </Tooltip>
+                                ) : (
+                                  <span className="text-sm font-medium">{skill.name}</span>
+                                )}
+                                <Badge variant="outline" className="text-xs border-none bg-guideon-light/50 text-gray-600">
+                                  {skill.level}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-gray-500 mb-2">{skill.description}</p>
+                              {courseData && (
+                                <div className="bg-gray-50 p-2 rounded text-xs">
+                                  <p className="font-medium text-gray-700">{courseData.course_title}</p>
+                                  <p className="text-gray-500">by {courseData.course_provider} • Rating: {courseData.course_rating}/5</p>
+                                  <p className="text-gray-600 mt-1">{courseData.course_description.slice(0, 100)}...</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">{skill.description}</p>
+                          {courseData && (
+                            <div className="flex justify-end mt-2">
+                              <button
+                                className="px-3 py-1 bg-indigo-400 text-white rounded-md hover:bg-indigo-600 transition-colors text-xs"
+                                onClick={() => handleTakeCourse(courseData)}
+                              >
+                                Take this Course
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}

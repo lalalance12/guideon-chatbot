@@ -3,12 +3,17 @@ import time
 import random
 from typing import List, Dict, Any, Optional
 from urllib.parse import quote_plus
+from bs4 import BeautifulSoup
+from fake_useragent import UserAgent
+import os
+import requests
+import json
+import asyncio  # **ADD THIS IMPORT**
+import re
 import os
 import json
 import numpy as np
 import requests
-from bs4 import BeautifulSoup
-from fake_useragent import UserAgent
 from .topic_extractor import TopicExtractor
 from .base_agent import BaseAgent
 
@@ -53,8 +58,22 @@ class CourseSearchAgent(BaseAgent):
         topic = await topic_extractor.extract_topic(query)
         return topic
 
-    def match_query_to_skills_and_get_underpinning_knowledge(self, query: str):
+    def match_query_to_skills_and_get_underpinning_knowledge(self, query):
         """Find the skill that has a skill_title that matches the query(case-insensitive) and return its underpinning knowledge"""
+        # Add validation to prevent the error
+        if query is None:
+            logger.warning("Received None as query in match_query_to_skills_and_get_underpinning_knowledge")
+            return None
+            
+        if not isinstance(query, str):
+            logger.warning(f"Expected string for query but got {type(query)} in match_query_to_skills_and_get_underpinning_knowledge")
+            try:
+                # Try to convert to string if possible
+                query = str(query)
+            except:
+                return None
+        
+        # Now safe to proceed
         query_lower = query.lower() # Convert query to lowercase
         for item in self.SKILL_EMBEDDINGS:
             metadata = item.get("metadata", {})
@@ -101,6 +120,11 @@ class CourseSearchAgent(BaseAgent):
 
     def search_class_central(self, query: str) -> List[str]:
         """Search Class Central and return a list of course URLs."""
+        # Add validation
+        if not isinstance(query, str):
+            logger.warning(f"Expected string for query but got {type(query)}")
+            query = str(query) if query is not None else ""
+            
         base_url = "https://www.classcentral.com"
         search_url = f"{base_url}/search?q={quote_plus(query)}"
         try:
@@ -245,7 +269,72 @@ class CourseSearchAgent(BaseAgent):
             logger.info(f"No matching skill found for topic '{topic}', will use direct title comparison. Threshold remains: {current_similarity_threshold}")
 
         return skill_match, current_similarity_threshold
+
+    def _extract_flow_enhanced_topic(self, query: str, context: Dict[str, Any]) -> str:
+        """**NEW: Extract topic with flow context awareness**"""
         
+        flow_context, flow_action, response_format, flow_state = self.get_flow_context(context)
+        focus_role, focus_topic = self.get_focus_elements(context)
+        
+        # Check for flow-provided topic first
+        if focus_topic:
+            logger.info(f"[CourseSearchAgent] Using focus topic from flow: {focus_topic}")
+            return focus_topic
+            
+        # Check for flow context topic
+        flow_preserved_context = self.get_flow_preserved_context(context)
+        if flow_preserved_context.get("search_topic"):
+            return flow_preserved_context["search_topic"]
+        
+        # Check for extracted topic from context (orchestrator)
+        extracted_topic_from_context = context.get("extracted_topic")
+        if extracted_topic_from_context and extracted_topic_from_context != query:
+            logger.info(f"[CourseSearchAgent] Using extracted topic from orchestrator: {extracted_topic_from_context}")
+            return extracted_topic_from_context
+        
+        # **FIXED: Use the existing async method and handle it properly**
+        logger.info(f"[CourseSearchAgent] Extracting topic from query: {query}")
+        # Return a coroutine that will be awaited in the process method
+        return asyncio.create_task(self.get_topic_from_query(query))
+    
+    async def _create_flow_enhanced_response(self, courses: List[Dict], context: Dict[str, Any], topic: str) -> Dict[str, Any]:
+        """**NEW: Create enhanced response with flow context**"""
+        
+        flow_context, flow_action, response_format, flow_state = self.get_flow_context(context)
+        focus_role, focus_topic = self.get_focus_elements(context)
+        
+        # Base response
+        result = {
+            'found': True,
+            'count': len(courses),
+            'courses': courses,
+            'topic_searched': topic
+        }
+        
+        # Add flow-enhanced messaging
+        if focus_role:
+            result['message'] = f"Found courses for '{topic}' that align with your interest in the {focus_role} role."
+            result['career_context'] = focus_role
+        elif flow_action == "course_search_with_context":
+            result['message'] = f"Found courses for '{topic}' with PSF-AAI career pathway context."
+            result['pathway_context'] = True
+        else:
+            result['message'] = f"Found relevant courses for '{topic}'."
+        
+        # Add connectivity suggestions if in enhanced flow
+        if flow_context.get("include_skill_connections"):
+            result['skill_connections_available'] = True
+            result['suggestions'] = [
+                f"Want to see how '{topic}' connects to PSF-AAI career roles?",
+                "Explore skill requirements for specific positions",
+                "Discover career progression paths using this skill"
+            ]
+        
+        # Add flow metadata
+        result = self.add_flow_metadata(result, context)
+        
+        return result
+
     async def process(self, query: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
             # Debug: Log the entire context to see what's being passed
@@ -301,47 +390,41 @@ class CourseSearchAgent(BaseAgent):
             else:
                 logger.info("No user_id in context, proceeding without user preferences")
 
-            current_similarity_threshold = self.SIMILARITY_THRESHOLD # Initialize with default
-
-            # Check if we're receiving an extracted topic from the orchestrator
-            extracted_topic_from_context = context.get("extracted_topic") # Renamed for clarity
-            topic = "" # Initialize topic
+            logger.info(f"[CourseSearchAgent] Processing with flow context: {query[:60]}")
             
-            if extracted_topic_from_context and extracted_topic_from_context != query:
-                logger.info(f"Using extracted topic from orchestrator: '{extracted_topic_from_context}' (original query: '{query}')")
-                topic = extracted_topic_from_context
+            # **NEW: Extract flow context**
+            flow_context, flow_action, response_format, flow_state = self.get_flow_context(context)
+            
+            # **ENHANCED: Extract topic with flow awareness - FIXED ASYNC HANDLING**
+            topic_result = self._extract_flow_enhanced_topic(query, context)
+            
+            # Handle the async topic extraction properly
+            if asyncio.iscoroutine(topic_result) or isinstance(topic_result, asyncio.Task):
+                topic = await topic_result
             else:
-                # Fall back to extracting the topic ourselves
-                logger.info(f"No pre-extracted topic in context or it matches query, extracting from query: '{query}'")
-                topic_extractor = TopicExtractor()
-                topic = await topic_extractor.extract_topic(query)
-        
-            # VALIDATION: If topic extraction returned explanatory text or is too long, extract directly
-            if topic and (len(topic.split()) > 8 or any(phrase in topic.lower() for phrase in [
-                "this is", "extracted", "specific topic", "answer", "let me know", "attempt", 
-                "would like", "i've", "i have", "please"
-            ])):
-                logger.warning(f"Topic extraction appears to have returned explanatory text: '{topic}'")
-                # Attempt direct extraction from query pattern
-                query_lower = query.lower()
-                if "courses for " in query_lower:
-                    direct_topic = query_lower.split("courses for ", 1)[1].strip().rstrip("?!.,;:")
-                    logger.info(f"Direct extraction found topic: '{direct_topic}'")
-                    topic = direct_topic
-                elif "about " in query_lower:
-                    direct_topic = query_lower.split("about ", 1)[1].strip().rstrip("?!.,;:")
-                    logger.info(f"Direct extraction found topic: '{direct_topic}'")
-                    topic = direct_topic
-        
+                topic = topic_result
+            
+            # Add safety check to ensure topic is a string
+            if topic is not None and not isinstance(topic, str):
+                logger.warning(f"Topic is not a string, converting from {type(topic)} to string")
+                topic = str(topic)
+
+            if not topic:
+                return self._create_clarification_response(context)
+            
+            # **ENHANCED: Determine search strategy based on flow**
+            skill_match, threshold = self.get_skill_match_and_adjusted_threshold(topic)
+            
+            # Apply flow-specific search enhancements
+            if flow_action == "course_search_with_context":
+                threshold = max(0.1, threshold - 0.05)  # More lenient for flow-driven searches
+                
             logger.info(f"Effective topic for course search: '{topic}' (from query: '{query}')")
 
-            if not topic:  # Check if the topic is empty (signaling a generic/unclear request)
+            # Check if the topic is empty (signaling a generic/unclear request)
+            if not topic:
                 logger.info(f"No specific topic extracted for query '{query}'. Clarification needed.")
-                return {
-                    'found': False,
-                    'reason': 'clarification_needed',
-                    'message': "It looks like you're asking for courses, but I need a bit more information. What specific topic are you interested in learning about?"
-                }
+                return self._create_clarification_response(context)
             
             # Log the processing of the query with the extracted topic
             logger.info(f"Processing query: '{query}' with specific topic: '{topic}'")
@@ -358,7 +441,7 @@ class CourseSearchAgent(BaseAgent):
             
             # Now search for relevant courses
             logger.info(f"Searching Class Central for courses about '{topic}'...")
-            urls = self.search_class_central(topic) # This function should use the 'topic'
+            urls = self.search_class_central(topic)
             if not urls:
                 logger.warning("No course URLs found from Class Central")
                 return {
@@ -550,71 +633,84 @@ class CourseSearchAgent(BaseAgent):
             
             if final_courses:
                 logger.info(f"Returning top {len(final_courses)} courses")
-                for i_course, course in enumerate(final_courses, 1): # Renamed loop variable
+                for i_course, course in enumerate(final_courses, 1):
                     logger.debug(f"Top {i_course} course: {course.get('title')} (score: {course.get('similarity_score'):.4f})")
                 
-                result = {
-                    'found': True,
-                    'count': len(final_courses),
-                    'courses': final_courses,
-                }
-                
-                if has_skill_match:
-                    result['matched_skill_title'] = skill_match.get('skill_title') if skill_match else "N/A"
-                    result['message'] = f"Found courses related to the skill: '{result['matched_skill_title']}'."
-                else:
-                    result['direct_topic_match'] = True # Changed from direct_query_match
-                    result['message'] = f"Found courses by comparing their titles to the topic: '{topic}'."
-                  # Update the returned message to mention user preferences were applied
-                if user_id and (user_preferences["course_level"] != "all" or 
-                               user_preferences["programming_languages"] or 
-                               user_preferences["development_areas"]):
-                    result['filtered_by_preferences'] = True
-                    pref_parts = []
-                    
-                    if user_preferences["course_level"] and user_preferences["course_level"] != "all":
-                        pref_parts.append(f"course level: {user_preferences['course_level']}")
-                        
-                    if user_preferences["programming_languages"]:
-                        lang_list = ', '.join(user_preferences["programming_languages"])
-                        pref_parts.append(f"programming languages: {lang_list}")
-                        
-                    if user_preferences["development_areas"]:
-                        area_list = ', '.join(user_preferences["development_areas"])
-                        pref_parts.append(f"development areas: {area_list}")
-                    
-                    # Count how many courses actually matched preferences
-                    courses_with_matches = sum(1 for c in final_courses if c.get('preference_score', 0) > 0)
-                    
-                    if pref_parts and courses_with_matches > 0:
-                        pref_text = ", ".join(pref_parts)
-                        result['message'] += f" Results prioritized by your preferences ({pref_text}). {courses_with_matches} of {len(final_courses)} courses match your preferences."
-                        logger.info(f"Applied preference prioritization: {pref_text}, matched {courses_with_matches}/{len(final_courses)} courses")
-                    elif pref_parts:
-                        pref_text = ", ".join(pref_parts)
-                        result['message'] += f" Your preferences ({pref_text}) were considered, but no exact matches were found."
-                        logger.info(f"Preferences applied but no matches found: {pref_text}")
-                else:
-                    logger.info("No preference filtering applied to results")
-                
-                return result
+                # **ENHANCED: Use flow-enhanced response creation**
+                return await self._create_flow_enhanced_response(final_courses, context, topic)
 
             logger.warning(f"No courses met the relevance threshold of {current_similarity_threshold} for topic '{topic}'")
             # Provide a more informative message if no courses meet the threshold
             reason_message = f"I found some courses related to '{topic}', but none seemed relevant enough after detailed review."
-            if not urls: # This case is handled earlier, but as a safeguard
-                reason_message = f"I couldn't find any courses related to '{topic}'."
 
-            return {
+            result = {
                 'found': False,
-                'reason': 'no_matching_courses_above_threshold', # More specific reason
+                'reason': 'no_matching_courses_above_threshold',
                 'message': reason_message
             }
+            
+            return self.add_flow_metadata(result, context)
 
         except Exception as e:
             logger.error(f"Error in course search agent: {e}", exc_info=True)
-            return {
+            result = {
                 'found': False,
                 'reason': 'exception',
                 'message': f'An error occurred while trying to find courses: {str(e)}'
             }
+            return self.add_flow_metadata(result, context)
+
+    def _create_clarification_response(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """**NEW: Create clarification response with flow context**"""
+        
+        flow_context, flow_action, _, _ = self.get_flow_context(context)
+        focus_role, _ = self.get_focus_elements(context)
+        
+        message = "What specific topic would you like to learn about?"
+        
+        # Add context-aware suggestions
+        suggestions = []
+        if focus_role:
+            message = f"What specific skills would you like to develop for the {focus_role} role?"
+            suggestions = [
+                f"Technical skills for {focus_role}",
+                f"Programming languages for {focus_role}",
+                f"Tools and technologies for {focus_role}"
+            ]
+        elif flow_action == "clarify_course_topic_with_suggestions":
+            suggestions = [
+                "Data Analysis", "Machine Learning", "Python Programming",
+                "Data Visualization", "SQL", "Statistics", "AI/Deep Learning"
+            ]
+        
+        result = {
+            'found': False,
+            'reason': 'clarification_needed',
+            'message': message,
+            'needs_clarification': True
+        }
+        
+        if suggestions:
+            result['clarification_options'] = suggestions
+        
+        return self.add_flow_metadata(result, context)
+
+    def _create_no_results_response(self, topic: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """**NEW: Create no results response with flow context**"""
+        result = {
+            'found': False,
+            'reason': 'no_courses',
+            'message': f"I couldn't find any courses related to '{topic}' on Class Central."
+        }
+        return self.add_flow_metadata(result, context)
+
+    def _create_error_response(self, error_message: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """**NEW: Create error response with flow context**"""
+        result = {
+            'found': False,
+            'reason': 'exception',
+            'message': f'An error occurred while trying to find courses: {error_message}'
+        }
+        return self.add_flow_metadata(result, context)
+
+    # ... rest of the existing methods remain unchanged ...
