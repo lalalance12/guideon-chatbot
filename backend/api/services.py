@@ -1,446 +1,294 @@
-import logging
-import asyncio
 from django.conf import settings
 from agno.agent import Agent
-from agno.memory import AgentMemory
-from agno.memory.db.postgres import PgMemoryDb
-from agno.embedder.ollama import OllamaEmbedder
-from sqlalchemy import create_engine, text
+from agno.models.ollama import Ollama
 from .agents.intent_classifier_agent import IntentClassifierAgent
 from .agents.orchestrator_agent import OrchestratorAgent
 from .agents.response_synthesizer_agent import ResponseSynthesizerAgent
-from .models import Chat
+from .agents.course_search_agent import CourseSearchAgent
+from .models import Chat, Message
+from .utils.embeddings import generate_embedding
+from .utils.chat_history_manager import ChatHistoryManager
+from .agents.flow_manager_agent import FlowManagerAgent
+import logging
+import asyncio
+import uuid
 
 logger = logging.getLogger(__name__)
 
 class GuideonChatService:
     def __init__(self):
-        self.intent_agent = IntentClassifierAgent()
-        self.orchestrator = OrchestratorAgent()
-        self.synthesizer = ResponseSynthesizerAgent()
-        self.memory = None
-        self.agent_db = None
+        # Initialize a centralized LLM first
+        self.llm = None
         self.agno_agent = None
-        self._init_memory()
-        self._init_agent()
+        self._init_llm()
+        
+        # Initialize agents with the centralized LLM
+        self.intent_agent = IntentClassifierAgent(llm=self.llm)
+        self.orchestrator = OrchestratorAgent(llm=self.llm)
+        self.synthesizer = ResponseSynthesizerAgent(llm=self.llm)
+        self.course_search_agent = CourseSearchAgent(llm=self.llm)
+        # FlowManager doesn't need LLM for its core functionality
+        self.flow_manager = FlowManagerAgent()
 
-    def _init_memory(self):
-        """Initialize the memory system with proper error handling for AGNO v1.4.5"""
+    def _init_llm(self):
+        """Initialize a centralized LLM for all agents to use"""
         try:
-            embedder = OllamaEmbedder()
-            db_settings = settings.DATABASES['default']
-            dsn = f"postgresql://{db_settings['USER']}:{db_settings['PASSWORD']}@{db_settings['HOST']}:{db_settings['PORT']}/{db_settings['NAME']}"
-            db_engine = create_engine(dsn)
-            self.agent_db = PgMemoryDb(
-                table_name="guideon_chat_memory",
-                db_engine=db_engine
-            )
-            try:
-                if hasattr(self.agent_db, 'initialize'):
-                    try:
-                        self.agent_db.initialize()
-                        logger.info("Memory tables initialized")
-                    except Exception as e:
-                        logger.info(f"Memory tables already exist: {e}")
-                # Use SQLAlchemy's connection for raw SQL, not db_engine.execute()
-                try:
-                    with db_engine.connect() as conn:
-                        result = conn.execute(text(f"SELECT COUNT(*) FROM {self.agent_db.table_name}")).fetchone()
-                        logger.info(f"Memory database connected successfully. Current record count: {result[0] if result else 0}")
-                except Exception as db_e:
-                    logger.warning(f"Database connection test failed: {db_e}")
-            except Exception as table_e:
-                logger.warning(f"Error during table initialization check: {table_e}")
-            try:
-                mem_args = {'db': self.agent_db}
-                import inspect
-                if 'embedder' in inspect.signature(AgentMemory.__init__).parameters:
-                    mem_args['embedder'] = embedder
-                self.memory = AgentMemory(**mem_args)
-                logger.info("AGNO memory system initialized successfully")
-                if hasattr(self.memory, 'get_messages'):
-                    try:
-                        _ = self.memory.get_messages()
-                        logger.info("Memory.get_messages() working correctly")
-                    except Exception as e:
-                        logger.warning(f"Memory.get_messages() test failed: {e}")
-                return True
-            except Exception as mem_e:
-                logger.error(f"Failed to initialize AgentMemory: {mem_e}", exc_info=True)
-                self.memory = None
-                self.agent_db = None
-                return False
-        except Exception as e:
-            logger.error(f"Failed to initialize AGNO memory: {e}", exc_info=True)
-            self.memory = None
-            self.agent_db = None
-            return False
-
-    def is_memory_ready(self):
-        """Utility to check if memory is initialized and ready."""
-        return self.memory is not None
-
-    def _init_agent(self):
-        try:
-            from agno.models.ollama import Ollama
-            # AGNO v1.4.5 does not support 'temperature' in Agent or Ollama
-            llama_model = Ollama(id="llama3.1:8b-instruct-q8_0", provider="Ollama", host="http://localhost:11434")
+            self.llm = Ollama(id="llama3.1:8b-instruct-q4_1", provider="Ollama", host="http://localhost:11434")
             self.agno_agent = Agent(
                 name="ServicesAGNOAgent",
-                model=llama_model,
-                memory=self.memory
+                model=self.llm,
             )
-            logger.info("AGNO agent initialized successfully with Llama 3.2")
+            logger.info("Centralized LLM initialized successfully with Llama 3.1")
         except Exception as e:
-            logger.error(f"Failed to initialize Llama 3.2 model: {e}", exc_info=True)
-            try:
-                self.agno_agent = Agent(
-                    name="ServicesAGNOAgent",
-                    model=None,
-                    memory=self.memory
-                )
-                logger.info("AGNO agent initialized without model")
-            except Exception as e2:
-                logger.error(f"Failed to initialize AGNO agent: {e2}", exc_info=True)
-                self.agno_agent = None
-
-    async def process_message(self, user_query: str, chat_id=None) -> str:
+            logger.error(f"Failed to initialize Llama model: {e}", exc_info=True)
+            self.llm = None
+            self.agno_agent = None
+            logger.warning("Centralized LLM not available - agents will use fallback mechanisms")
+            
+    async def process_message(self, user_query: str, chat_id=None, user_id=None):
         """
         Process a user message through the complete agent pipeline:
-        Intent Classification → Orchestration → Response Synthesis
-        
-        Args:
-            user_query: The user's message text
-            chat_id: Optional ID to retrieve chat history
-            
-        Returns:
-            Guideon's response text
+        Intent Classification → (Course Search Flow) → Course Search Agent (if needed)
         """
-        # Initialize context
-        context = {'chat_id': chat_id}
+        context = {'chat_id': chat_id, 'user_id': user_id}
+        logger.info(f"[Service] Processing message: {user_query[:60]}...")
         
-        # Get chat history if available
+        # Validate and log user_id type for debugging
+        if user_id is not None:
+            logger.info(f"User ID type: {type(user_id)}, value: {user_id}")
+        else:
+            logger.warning("No user_id provided in process_message call")
+        
+        # Get or create chat
+        chat = None
         if chat_id:
             try:
-                chat = await self._get_chat_history(chat_id)
-                if chat:
-                    context['chat_history'] = chat
+                chat = await self._get_or_create_chat(chat_id)
+                # Save user message
+                await self._save_message(chat, 'user', user_query)
+                
+                # Get chat history for context
+                chat_history = await self._get_chat_history(chat_id, user_query)
+                context['chat_history'] = chat_history
+                logger.info(f"Retrieved chat history for chat ID {chat_id}: {len(chat_history)} messages")
             except Exception as e:
-                logger.error(f"Error retrieving chat history: {e}")
-        
+                logger.error(f"Error retrieving chat history: {e}", exc_info=True)
+                context['chat_history'] = []
+
         try:
-            # Step 1: Determine user intent using the LLM-based classifier
+            # Step 1: Determine user intent using the IntentClassifierAgent
             intent_result = await self.intent_agent.process(user_query, context)
-            
-            # Update context with intent classification results
-            context['intent'] = intent_result['intent']
-            context['intent_confidence'] = intent_result['confidence']
-            context['extracted_entities'] = intent_result.get('extracted_entities', {})
-            
-            logger.info(f"Classified intent: {context['intent']} (confidence: {context['intent_confidence']})")
-            
-            # Step 2: Orchestrate specialized agents based on intent
+            context.update(intent_result)
+            intent_name = getattr(intent_result.get('intent'), 'value', None)
+            if not intent_name and isinstance(intent_result.get('intent'), str):
+                intent_name = intent_result.get('intent')
+            confidence = intent_result.get('confidence', 0.0)
+            logger.info(f"[Service] Intent classification result: {intent_name}")
+
+            # Always use orchestrator for all intents (including course_search)
+            logger.info(f"Processing with orchestrator using intent: {intent_name}")
             orchestrator_result = await self.orchestrator.process(user_query, context)
+            # Update context with results from the orchestrator.
+            # If orchestrator decided on a direct response (e.g., from LearningPathAgent),
+            # those flags and data will be in orchestrator_result.
+            # Otherwise, orchestrator_result contains the payload for the synthesizer.
+            context.update(orchestrator_result)
+
+            # Check for direct action flags now present in 'context' (merged from orchestrator_result)
+            # Log what we received from the orchestrator to debug
+            logger.info(f"[Service] Orchestrator result keys: {list(orchestrator_result.keys())}")
+
+            # Handle direct action responses
+            if self._is_direct_action_response(orchestrator_result):
+                logger.info(f"[Service] Direct action detected: {self._get_direct_action_type(orchestrator_result)}")
+                return await self._handle_direct_action_response(orchestrator_result, chat, user_query)
+
+            # If no direct action flags were handled, proceed to synthesizer.
+            # 'context' now contains the full payload from orchestrator intended for the synthesizer.
+            logger.info(f"[Service] No direct action from specialized agents via orchestrator. Proceeding to synthesizer. Intent: {intent_name}")
+            synthesizer_result = await self.synthesizer.process(user_query, context) # Pass the updated context
+            response_text = synthesizer_result.get('response') or synthesizer_result.get('response_text') or 'I apologize, but I could not generate a proper response.'
             
-            # Make sure we have the updated context with flow information
-            if isinstance(orchestrator_result, dict) and 'context' in orchestrator_result:
-                context = orchestrator_result['context']
-            else:
-                # Just update context with whatever we got
-                context.update(orchestrator_result)
+            # **SAFETY CHECK: Ensure response_text is not None or empty**
+            if not response_text or response_text.strip() == '':
+                logger.warning("[Service] Empty response text from synthesizer, using fallback")
+                response_text = self._get_fallback_response_text(intent_result.get('intent'))
             
-            # Step 3: Synthesize the final response
-            response_result = await self.synthesizer.process(user_query, context)
+            # Save assistant response if we have a chat
+            if chat_id and chat:
+                await self._save_message(chat, 'assistant', response_text)
             
-            # Extract the actual response text
-            if isinstance(response_result, dict) and 'response_text' in response_result:
-                response_text = response_result['response_text']
-            else:
-                # Fallback to using the entire result as the response
-                response_text = str(response_result)
+            # Return final response
+            return {
+                'response': response_text,
+                'chat_id': str(chat.id) if chat else None,
+                'intent': intent_name
+            }
             
-            # Optional: Store conversation in memory if available
-            if chat_id and self.is_memory_ready():
-                asyncio.create_task(self._run_memory_maintenance(chat_id))
-                asyncio.create_task(self._add_to_memory([
-                    {"role": "user", "content": user_query, "metadata": {"session_id": chat_id}},
-                    {"role": "assistant", "content": response_text, "metadata": {"session_id": chat_id}}
-                ]))
-            
-            return response_text
-        
-        except Exception as e:  
+        except Exception as e:
             logger.error(f"Error processing message: {e}", exc_info=True)
-            return self._fallback_response(user_query)
-
-    async def _get_chat_history(self, chat_id):
-        """Retrieve chat history for context building"""
-        try:
-            # Try to get from memory first if available
-            if self.is_memory_ready():
-                memory_messages = await self._get_from_memory(
-                    limit=10,
-                    metadata_filter={"session_id": chat_id}
-                )
-                if memory_messages:
-                    return [{
-                        "text": msg.get("content", ""),
-                        "is_user": msg.get("role") == "user",
-                        "timestamp": msg.get("metadata", {}).get("timestamp", "")
-                    } for msg in memory_messages]
-            
-            # Fall back to database if needed
-            from django.db.models import Prefetch
-            from .models import Chat, Message
-            
-            try:
-                # Use Prefetch to efficiently load related messages
-                chat = await Chat.objects.filter(id=chat_id).prefetch_related(
-                    Prefetch('messages', queryset=Message.objects.order_by('created_at'))
-                ).afirst()
-                
-                if chat:
-                    return [{
-                        "text": msg.text,
-                        "is_user": msg.is_user,
-                        "timestamp": msg.created_at.isoformat()
-                    } for msg in chat.messages.all()]
-                return []
-            except Exception as db_error:
-                logger.error(f"Database error getting chat history: {db_error}")
-                return []
-                
-        except Exception as e:
-            logger.error(f"Error retrieving chat history: {e}")
-            return []
-        
-    async def _run_memory_maintenance(self, session_id):
-        """Run memory maintenance tasks in the background with AGNO v1.4.5 compatibility"""
-        if not self.is_memory_ready():
-            logger.warning("Memory maintenance skipped - memory system not available")
-            return
-            
-        try:
-            all_messages = await self._get_from_memory(
-                limit=1000, 
-                metadata_filter={"session_id": session_id}
-            )
-            
-            if len(all_messages) > 100:
-                logger.info(f"Pruning memory for session {session_id}, found {len(all_messages)} messages")
-                logger.info(f"Memory maintenance would prune {len(all_messages) - 100} messages")
-            
-            logger.debug(f"Memory maintenance completed for session {session_id}")
-        except Exception as e:
-            logger.error(f"Error in memory maintenance: {e}", exc_info=True)
-
-    async def _add_to_memory(self, messages, log_prefix=""):
-        """
-        Safe wrapper for memory operations with AGNO v1.4.5 compatibility
-        
-        Args:
-            messages: List of message objects to add to memory
-            log_prefix: Prefix for log messages
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        if not self.is_memory_ready():
-            logger.warning(f"{log_prefix}: Memory system is not initialized; skipping memory operation.")
-            return False
-            
-        try:
-            if not isinstance(messages, list):
-                logger.warning(f"{log_prefix}: Messages must be a list, got {type(messages)}")
-                if isinstance(messages, dict):
-                    messages = [messages]
-                else:
-                    return False
-            
-            validated_messages = []
-            for msg in messages:
-                if not isinstance(msg, dict):
-                    logger.warning(f"{log_prefix}: Skipping non-dict message: {msg}")
-                    continue
-                    
-                if 'role' not in msg or 'content' not in msg:
-                    logger.warning(f"{log_prefix}: Message missing role or content: {msg}")
-                    continue
-                
-                if 'metadata' not in msg:
-                    metadata = {k: v for k, v in msg.items() if k not in ['role', 'content']}
-                    if metadata:
-                        msg['metadata'] = metadata
-                
-                validated_messages.append(msg)
-                
-            if not validated_messages:
-                logger.warning(f"{log_prefix}: No valid messages to add")
-                return False
-                
-            success = False
-            
-            if hasattr(self.memory, 'add_messages'):
+            fallback_response = self._fallback_response(user_query)
+            if chat_id and chat:
                 try:
-                    self.memory.add_messages(messages=validated_messages)
-                    success = True
-                except Exception as e:
-                    logger.warning(f"{log_prefix}: Error using add_messages: {e}")
-            
-            if not success and hasattr(self.memory, 'messages') and isinstance(self.memory.messages, list):
-                try:
-                    self.memory.messages.extend(validated_messages)
-                    success = True
-                except Exception as e:
-                    logger.warning(f"{log_prefix}: Error extending memory.messages: {e}")
-            
-            if not success and hasattr(self.memory, 'add_message'):
-                errors = 0
-                for msg in validated_messages:
-                    try:
-                        self.memory.add_message(msg)
-                    except Exception as e:
-                        errors += 1
-                        logger.warning(f"{log_prefix}: Error adding individual message: {e}")
-                
-                if errors < len(validated_messages):
-                    success = True
-            
-            if success:
-                logger.debug(f"{log_prefix}: Added {len(validated_messages)} messages to memory")
-                return True
-            else:
-                logger.warning(f"{log_prefix}: Failed to add messages through any available method")
-                return False
-                
-        except Exception as e:
-            logger.error(f"Error adding messages to memory ({log_prefix}): {e}", exc_info=True)
-            return False
+                    await self._save_message(chat, 'assistant', fallback_response['response'])
+                except Exception as save_error:
+                    logger.error(f"Error saving fallback message: {save_error}")
+            return fallback_response
 
-    async def _get_from_memory(self, limit=20, metadata_filter=None):
-        """
-        Safe wrapper for memory retrieval with AGNO v1.4.5 compatibility
-        
-        Args:
-            limit: Maximum number of messages to retrieve (may not be used in v1.4.5)
-            metadata_filter: Dictionary of metadata key-value pairs to filter by
-            
-        Returns:
-            List of messages, or empty list if no memory or error
-        """
-        if not self.is_memory_ready():
-            logger.warning("Memory system is not initialized; skipping memory retrieval.")
-            return []
-        try:
-            if hasattr(self.memory, 'get_messages'):
-                try:
-                    all_messages = self.memory.get_messages()
-                except AttributeError as e:
-                    # AGNO expects message objects with model_dump, but found dicts
-                    logger.warning(f"model_dump missing on message objects, returning raw messages: {e}")
-                    if hasattr(self.memory, 'messages'):
-                        all_messages = self.memory.messages
-                    else:
-                        all_messages = []
-                if metadata_filter:
-                    filtered_messages = []
-                    for msg in all_messages:
-                        msg_metadata = msg.get('metadata', {})
-                        if not msg_metadata and isinstance(msg, dict):
-                            msg_metadata = {k: v for k, v in msg.items() if k not in ['role', 'content']}
-                        matches = True
-                        for key, value in metadata_filter.items():
-                            if key not in msg_metadata or msg_metadata[key] != value:
-                                matches = False
-                                break
-                        if matches:
-                            filtered_messages.append(msg)
-                    return filtered_messages[:limit] if filtered_messages else []
-                else:
-                    return all_messages[:limit] if all_messages else []
-            elif hasattr(self.memory, 'messages'):
-                all_messages = self.memory.messages
-                if metadata_filter:
-                    messages = []
-                    for msg in all_messages:
-                        msg_metadata = msg.get('metadata', {})
-                        if not msg_metadata and 'role' in msg and 'content' in msg:
-                            msg_metadata = {k: v for k, v in msg.items() if k not in ['role', 'content']}
-                        matches = True
-                        for key, value in metadata_filter.items():
-                            if key not in msg_metadata or msg_metadata[key] != value:
-                                matches = False
-                                break
-                        if matches:
-                            messages.append(msg)
-                else:
-                    messages = all_messages
-                return messages[:limit] if messages else []
-            elif hasattr(self.memory, 'get_user_memories') and metadata_filter and 'session_id' in metadata_filter:
-                try:
-                    session_id = metadata_filter.get('session_id')
-                    user_id = session_id.replace('chat_', '') if session_id.startswith('chat_') else session_id
-                    user_memories = self.memory.get_user_memories(user_id=user_id)
-                    formatted_memories = []
-                    for memory in user_memories:
-                        if isinstance(memory, dict):
-                            if 'content' in memory and 'role' not in memory:
-                                formatted_memory = {
-                                    'role': 'system',
-                                    'content': memory.get('content', ''),
-                                    'metadata': {
-                                        'session_id': session_id,
-                                        'type': 'memory',
-                                        'timestamp': memory.get('timestamp', str(asyncio.get_event_loop().time()))
-                                    }
-                                }
-                                formatted_memories.append(formatted_memory)
-                            else:
-                                formatted_memories.append(memory)
-                    return formatted_memories[:limit] if formatted_memories else []
-                except Exception as e:
-                    logger.warning(f"Error getting user memories: {e}")
-                    return []
-            logger.warning("No compatible memory retrieval method found")
-            return []
-        except Exception as e:
-            logger.error(f"Error retrieving messages from memory: {e}", exc_info=True)
-            return []
-
-    def _extract_entities(self, text):
-        entities = []
-        if "level" in text.lower():
-            import re
-            level_matches = re.findall(r'level\s*(\d+)', text.lower())
-            if level_matches:
-                entities.append(f"level_{level_matches[0]}")
-        key_terms = [
-            "data", "analytics", "AI", "artificial intelligence", "machine learning",
-            "career", "path", "role", "skill", "competency", "framework",
-            "junior", "senior", "lead", "manager", "director",
-            "analyst", "scientist", "engineer", "developer"
+    def _is_direct_action_response(self, orchestrator_result: dict) -> bool:
+        """Check if orchestrator result is a direct action response"""
+        # Check for direct action indicators
+        direct_action_keys = [
+            'show_goto_career_button',
+            'show_role_selection_button', 
+            'show_course_suggestions',
+            'courses',
+            'needs_clarification',
+            'goto_career_role',
+            'available_roles'
         ]
-        for term in key_terms:
-            if term.lower() in text.lower():
-                entities.append(term.lower())
-        return entities
+        
+        return any(key in orchestrator_result for key in direct_action_keys)
+
+    def _get_direct_action_type(self, orchestrator_result: dict) -> str:
+        """Get the type of direct action"""
+        if orchestrator_result.get('show_goto_career_button'):
+            return 'show_goto_career_button'
+        elif orchestrator_result.get('show_role_selection_button'):
+            return 'show_role_selection_button'
+        elif orchestrator_result.get('show_course_suggestions') or orchestrator_result.get('courses'):
+            return 'show_course_suggestions'
+        elif orchestrator_result.get('needs_clarification'):
+            return 'needs_clarification'
+        else:
+            return 'unknown_direct_action'
+
+    async def _handle_direct_action_response(self, orchestrator_result: dict, chat, user_query: str) -> dict:
+        """Handle direct action responses properly"""
+        # Extract response text with fallback
+        response_text = orchestrator_result.get('response', '')
+        
+        # **SAFETY CHECK: Ensure we have response text for direct actions**
+        if not response_text or response_text.strip() == '':
+            if orchestrator_result.get('show_goto_career_button'):
+                role = orchestrator_result.get('goto_career_role', 'the role')
+                response_text = f"Here's the detailed information for the {role} role. Click below to explore career pathways and requirements."
+            elif orchestrator_result.get('show_role_selection_button'):
+                response_text = "Please select which career role you'd like to explore in detail."
+            elif orchestrator_result.get('courses'):
+                response_text = "I found some relevant courses for you. Here are the recommendations:"
+            elif orchestrator_result.get('needs_clarification'):
+                response_text = orchestrator_result.get('message', "Could you please provide more details?")
+            else:
+                response_text = "I found some options for you. Please see the suggestions below."
+        
+        # Save assistant response if we have a chat
+        if chat:
+            await self._save_message(chat, 'assistant', response_text)
+        
+        # Return the complete direct action response
+        result = {
+            'response': response_text,
+            'chat_id': str(chat.id) if chat else None,
+            'intent': orchestrator_result.get('intent')
+        }
+        
+        # Add all direct action fields
+        direct_action_fields = [
+            'show_goto_career_button', 'goto_career_role',
+            'show_role_selection_button', 'available_roles',
+            'show_course_suggestions', 'courses',
+            'needs_clarification', 'clarification_options'
+        ]
+        
+        for field in direct_action_fields:
+            if field in orchestrator_result:
+                result[field] = orchestrator_result[field]
+        
+        logger.info(f"[Service] Direct action response prepared: {self._get_direct_action_type(orchestrator_result)}")
+        return result
+
+    def _get_fallback_response_text(self, intent) -> str:
+        """Generate fallback response text based on intent"""
+        intent_str = str(intent).lower() if intent else ''
+        
+        if 'learning_pathway' in intent_str:
+            return "I can help you explore career pathways in the PSF-AAI framework. Which role interests you?"
+        elif 'course_search' in intent_str:
+            return "I can help you find relevant courses. What topic would you like to learn about?"
+        elif 'knowledge_base' in intent_str:
+            return "I can provide information about PSF-AAI roles, skills, and career paths. What would you like to know?"
+        elif 'general_conversation' in intent_str:
+            return "I'm here to help with both PSF-AAI career guidance and general conversation. How can I assist you?"
+        else:
+            return "I'm here to help with PSF-AAI career guidance. What would you like to know about analytics and AI careers?"
+
+    # Helper methods
+    async def _get_or_create_chat(self, chat_id):
+        """Get or create a chat object by its ID"""
+        from django.db import transaction
+        from asgiref.sync import sync_to_async
+        
+        @sync_to_async
+        def get_or_create():
+            with transaction.atomic():
+                try:
+                    return Chat.objects.get(id=chat_id)
+                except Chat.DoesNotExist:
+                    # Create a new chat with the given ID if possible
+                    return Chat.objects.create(id=chat_id)
+        
+        return await get_or_create()
+
+    async def _save_message(self, chat, role, content):
+        """Save a message to the chat"""
+        from asgiref.sync import sync_to_async
+        
+        # **SAFETY CHECK: Ensure content is not None or empty**
+        if not content or (isinstance(content, str) and content.strip() == ''):
+            logger.warning(f"[Service] Attempting to save empty message content for role: {role}")
+            content = "[System message - no content]"  # Fallback content
+        
+        @sync_to_async
+        def save():
+            message = Message(chat=chat, role=role, content=str(content))  # Ensure it's a string
+            message.save()
+            return message
+        
+        return await save()
+
+    async def _get_chat_history(self, chat_id, user_query=None):
+        """Retrieve chat history for context building from database"""
+        try:
+            # Use simple history
+            return await ChatHistoryManager.get_simple_history(chat_id)
+        except Exception as e:
+            logger.error(f"Error getting chat history: {e}")
+            return []
 
     def _fallback_response(self, query):
-        return f"""I apologize, but I encountered an issue while processing your question about "{query}".
+        """Generate fallback response when processing fails."""
+        return {
+            'response': f"""I apologize, but I encountered an issue while processing your question about "{query}".
 
 I'm Guideon, specialized in the Philippine Skills Framework for Analytics & AI (PSF-AAI), and I can help with:
 - Information about analytics and AI career roles
 - Details about skills and competencies in the PSF-AAI framework
 - Career progression pathways and learning recommendations
 
-Please try asking your question in a different way, or ask me about specific aspects of the PSF-AAI framework."""
+Please try asking your question in a different way, or ask me about specific aspects of the PSF-AAI framework.""",
+            'error': True,
+            'chat_id': str(uuid.uuid4())
+        }
 
-def query_ollama(user_prompt: str, chat_id=None) -> str:
-    service = GuideonChatService()
+_service = GuideonChatService()
+
+def query_ollama(user_prompt: str, chat_id=None, user_id=None):
+    """Main entry point for the chat service."""
     try:
-        response = asyncio.run(service.process_message(user_prompt, chat_id=chat_id))
-        return response
+        return asyncio.run(_service.process_message(user_prompt, chat_id=chat_id, user_id=user_id))
     except Exception as e:
-        logging.error(f"Failed to process query via query_ollama: {e}", exc_info=True)
-        return "Sorry, I encountered an error while processing your query."
-
+        logging.exception("query_ollama failed")
+        return {
+            'response': f"Sorry, I encountered an error while processing your query: {str(e)}"
+        }

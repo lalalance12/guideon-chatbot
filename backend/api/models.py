@@ -18,6 +18,7 @@ class Message(models.Model):
     role = models.CharField(max_length=50)  # 'user', 'assistant', 'system'
     timestamp = models.DateTimeField(auto_now_add=True)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
+    embedding = VectorField(dimensions=1024, null=True)
     
     class Meta:
         ordering = ['timestamp']
@@ -31,6 +32,8 @@ class Course(models.Model):
     url = models.URLField()
     description = models.TextField(null=True, blank=True)
     rating = models.FloatField(null=True, blank=True)
+    price = models.CharField(max_length=50, null=True, blank=True)
+    matching_skill = models.TextField(null=True, blank=True)
     metadata = models.JSONField(default=dict)      
     learners = models.ManyToManyField(User, through='UserLearnedCourse')
     
@@ -38,7 +41,7 @@ class Course(models.Model):
         return f"{self.title} by {self.provider}"
 
 class CourseSearch(models.Model):
-    query = models.TextField()
+    query = models.TextField(null=True, blank=True)
     searched_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='course_searches')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='searches')
@@ -74,12 +77,13 @@ class KnowledgeSource(models.Model):
 class KnowledgeChunk(models.Model):
     text = models.TextField()
     metadata = models.JSONField(default=dict)
-    embedding = VectorField(dimensions=1024)
+    embedding = VectorField(dimensions=1024) # Ensure this matches your embedding model's dimensions
     source = models.ForeignKey(KnowledgeSource, on_delete=models.CASCADE, related_name='chunks')
+    category = models.CharField(max_length=100, db_index=True, null=True, blank=True) # Added category field
     pathways = models.ManyToManyField(LearningPathway, through='PathwayKnowledge')
     
     def __str__(self):
-        return f"Chunk {self.id} from {self.source.name}"
+        return f"Chunk {self.id} ({self.category}) from {self.source.name}"
 
 class PathwayCourse(models.Model):
     pathway = models.ForeignKey(LearningPathway, on_delete=models.CASCADE)
@@ -107,9 +111,29 @@ class UserLearnedCourse(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='learned_courses') 
     learned_at = models.DateTimeField(auto_now_add=True)
     skill_text = models.TextField(null=True, blank=True)  # Text description of skills gained
+    status = models.CharField(max_length=50, default='in_progress', choices=[
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed')
+    ])
     
     class Meta:
         unique_together = ('user', 'course')
     
     def __str__(self):
         return f"{self.user.username} learned {self.course.title}"
+    
+class UserPreference(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
+    course_level = models.CharField(max_length=20, choices=[
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+        ('all', 'All Levels')
+    ], default='all')
+    programming_languages = models.JSONField(default=list, help_text="List of preferred programming languages")
+    development_areas = models.JSONField(default=list, help_text="List of preferred development areas (web, mobile, desktop)")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Preferences for {self.user.username}"

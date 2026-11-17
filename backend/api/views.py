@@ -1,22 +1,22 @@
-# filepath: c:\Users\Asus\Desktop\guideon-chatbot\backend\api\views.py
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError as DjangoValidationError
 import logging
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
-# Updated serializer imports
 from .serializers import (UserSerializer, ChatRequestSerializer, ChatResponseSerializer, ChatSerializer, MessageSerializer, PathwayQuerySerializer, ContextResponseSerializer, 
     CourseSerializer, CourseSearchSerializer, LearningPathwaySerializer,
-    KnowledgeSourceSerializer, KnowledgeChunkSerializer)
+    KnowledgeSourceSerializer, KnowledgeChunkSerializer, UserPreferenceSerializer)
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate
 import asyncio
 from .agents.course_search_agent import CourseSearchAgent
 logger = logging.getLogger(__name__)
 from .services import query_ollama
-from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk
+from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk, UserPreference, UserLearnedCourse
 from api.utils.intent_classifier import QueryIntent, classify_intent
 
 # Create logger
@@ -34,7 +34,7 @@ class CreateUserView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            logger.info(f"Registration attempt with data: {request.data}")
+            logger.info("Registration attempt")
             
             # Extract and validate required fields
             email = request.data.get('email')
@@ -83,6 +83,8 @@ class CreateUserView(generics.CreateAPIView):
             }
             
             return Response(response_data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Error during registration: {str(e)}", exc_info=True)
             return Response(
@@ -139,55 +141,100 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-# class CourseSearchView(APIView):
-#     """
-#     API endpoint for searching courses using the new CourseSearchAgent
-#     """
-#     permission_classes = [AllowAny]
-
-#     def get(self, request):
-#         query = request.query_params.get('q', '')
-#         if not query:
-#             return Response(
-#                 {"error": "Please provide a search query using the 'q' parameter"},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-        
-#         try:
-#             # Create a context dict with education_advice intent
-#             context = {
-#                 'intent': QueryIntent.EDUCATION_ADVICE,
-#                 'confidence': 0.8
-#             }
-            
-#             # Use our new CourseSearchAgent
-#             agent = CourseSearchAgent()
-#             result = asyncio.run(agent.process(query, context))
-            
-#             if not result.get('found', False):
-#                 return Response(
-#                     {"error": result.get('message', 'No courses found')},
-#                     status=status.HTTP_404_NOT_FOUND
-#                 )
-            
-#             # Return the courses found
-#             return Response(
-#                 {"courses": result.get('courses', [])},
-#                 status=status.HTTP_200_OK
-#             )
-            
-#         except Exception as e:
-#             logger.error(f"Error in course search: {str(e)}")
-#             return Response(
-#                 {"error": f"Failed to search for courses: {str(e)}"},
-#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
-#             )
-
 class SemanticCourseSearchView(APIView):
     """
     API endpoint for semantic course search using only a query and context.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        query = request.query_params.get('q', '')
+        if not query:
+            return Response(
+                {"error": "Please provide a search query using the 'q' parameter"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        chat_id = request.query_params.get('chat_id')
+        chat = None
+        if chat_id:
+            if not request.user.is_authenticated:
+                return Response({"error": "Chat not found"}, status=status.HTTP_404_NOT_FOUND)
+            try:
+                chat = Chat.objects.get(id=chat_id, user=request.user)
+            except (Chat.DoesNotExist, DjangoValidationError):
+                return Response({"error": "Chat not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            # Create a context dict with course search intent
+            context = {
+                'intent': QueryIntent.COURSE_SEARCH,
+                'confidence': 0.8
+            }
+            
+            # Use our CourseSearchAgent
+            agent = CourseSearchAgent()
+            import asyncio
+            result = asyncio.run(agent.process(query, context))
+            
+            if not result.get('found', False):
+                return Response(
+                    {"error": result.get('message', 'No courses found')},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Save matched courses to the database
+            courses_data = []
+            user = request.user
+            
+            for course_info in result.get('courses', []):
+                # Check if course with the same URL already exists
+                course, created = Course.objects.get_or_create(
+                    url=course_info['url'],
+                    defaults={
+                        'title': course_info['title'],
+                        'provider': course_info['provider'],
+                        'description': course_info.get('description', ''),
+                        'rating': course_info.get('rating', 0.0),
+                        'metadata': {
+                            'price': course_info.get('price', ''),
+                            'similarity_score': course_info.get('similarity_score', 0.0),
+                            'matched_skill': course_info.get('matched_skill', {})
+                        }
+                    }
+                )
+                
+                # Record this search
+                if user.is_authenticated:
+                    CourseSearch.objects.create(
+                        query=query,
+                        user=user,
+                        course=course,
+                        chat=chat
+                    )
+                
+                # Add to response data
+                courses_data.append({
+                    'title': course.title,
+                    'provider': course.provider,
+                    'rating': course.rating if course.rating is not None else 0.0,
+                    'price': course_info.get('price', ''),
+                    'description': course.description,
+                    'url': course.url
+                })
+            
+            # Return the courses found
+            return Response(
+                {"courses": courses_data},
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f"Error in course search: {str(e)}", exc_info=True)
+            return Response(
+                {"error": f"Failed to search for courses: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def post(self, request):
         query = request.data.get('query')
@@ -211,6 +258,60 @@ class SemanticCourseSearchView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+class UserCourseTakeView(APIView):
+    """
+    API endpoint for users to add courses they want to take
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        course_id = request.data.get('course_id')
+        if not course_id:
+            return Response(
+                {"error": "course_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            course = Course.objects.get(id=course_id)
+            
+            # Create or update user-course relationship
+            user_course, created = UserLearnedCourse.objects.get_or_create(
+                user=request.user,
+                course=course,
+                defaults={
+                    'status': 'in_progress'
+                }
+            )
+            
+            if not created:
+                # If the relationship already existed, we just return it without changes
+                pass
+                
+            return Response({
+                'success': True,
+                'message': 'Course added to your learning path',
+                'user_course': {
+                    'id': user_course.id,
+                    'course_id': course.id,
+                    'course_title': course.title,
+                    'status': user_course.status,
+                    'learned_at': user_course.learned_at
+                }
+            }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+            
+        except Course.DoesNotExist:
+            return Response(
+                {"error": "Course not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error taking course: {str(e)}", exc_info=True)
+            return Response(
+                {"error": f"Failed to take course: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 class ChatView(APIView):
     """
     API endpoint for chat interactions with Ollama model
@@ -227,84 +328,52 @@ class ChatView(APIView):
             # Get or create chat session
             chat = None
             if chat_id:
-                try:
-                    chat = Chat.objects.get(id=chat_id)
-                    logger.info(f"Found existing chat with ID: {chat_id}")
-                except Chat.DoesNotExist:
-                    logger.warning(f"Chat ID {chat_id} not found, creating new chat")
-                    chat = Chat.objects.create(user=request.user if request.user.is_authenticated else None)
+                chat = get_object_or_404(Chat, id=chat_id, user=request.user)
+                logger.info(f"Found existing chat with ID: {chat_id}")
             else:
                 logger.info("No chat_id provided, creating new chat")
                 chat = Chat.objects.create(user=request.user if request.user.is_authenticated else None)
                 
             logger.info(f"Using chat with ID: {chat.id}")
             
-            # Save user message
-            user_message = Message.objects.create(
-                chat=chat,
-                role='user',
-                content=prompt
-            )
-
             try:
-                # Classify the intent of the user's message
-                intent_result = classify_intent(prompt)
-                intent = intent_result["intent"]
-                confidence = intent_result["confidence"]
-                extracted_entities = intent_result.get("extracted_entities", {})
-
-                # Handle course search intent
-                if intent == QueryIntent.COURSE_SEARCH:
-                    # Create context for course search
-                    context = {
-                        'intent': intent,
-                        'confidence': confidence,
-                        **extracted_entities
+                # Extract user_id with improved error handling
+                user_id = None
+                if request.user and request.user.is_authenticated:
+                    user_id = request.user.id
+                    logger.info(f"Request has authenticated user with ID: {user_id}")
+                else:
+                    logger.info("Request has no authenticated user")
+                
+                # Process the message using our centralized service
+                # Note: Messages are now saved inside the service
+                logger.info(f"Calling query_ollama with user_id={user_id}, chat_id={str(chat.id)}")
+                result = query_ollama(prompt, chat_id=str(chat.id), user_id=user_id)
+                
+                # Check if we got course results
+                if 'courses' in result:
+                    # Return response with courses
+                    response_data = {
+                        'chat_id': chat.id,
+                        'response': result['response'],
+                        'courses': result['courses']
                     }
-                    
-                    # Use CourseSearchAgent to find relevant courses
-                    agent = CourseSearchAgent()
-                    course_result = asyncio.run(agent.process(prompt, context))
-                    
-                    if course_result.get('found', False):
-                        courses = course_result.get('courses', [])
-                        logger.info(f"Found {len(courses)} courses")
-                        
-                        # Generate a response message
-                        response_text = "Based on your query, here are some recommended courses that might help you:"
-                        
-                        # Save the assistant's message
-                        assistant_message = Message.objects.create(
-                            chat=chat,
-                            role='assistant',
-                            content=response_text
-                        )
-                        
-                        # Return the response with courses
-                        response_data = {
-                            'chat_id': chat.id,
-                            'response': response_text,
-                            'courses': courses
-                        }
-                        logger.info(f"Returning response with {len(courses)} courses")
-                        return Response(response_data, status=status.HTTP_200_OK)
-                
-                # For other intents, use the regular chat flow
-                response = query_ollama(prompt)
-                
-                # Save the assistant's message
-                assistant_message = Message.objects.create(
-                    chat=chat,
-                    role='assistant',
-                    content=response
-                )
-                
-                # Return the response
-                response_data = {
-                    'chat_id': chat.id,
-                    'response': response
-                }
-                return Response(response_data, status=status.HTTP_200_OK)
+                    logger.info(f"Returning response with courses")
+                    return Response(response_data, status=status.HTTP_200_OK)
+                else:
+                    # Return standard text response
+                    response_data = {
+                        'chat_id': chat.id,
+                        'response': result['response']
+                    }
+
+                    # Add these lines to include the career button properties
+                    if 'goto_career_role' in result:
+                        response_data['goto_career_role'] = result['goto_career_role']
+                    if 'show_goto_career_button' in result:
+                        response_data['show_goto_career_button'] = result['show_goto_career_button']
+
+                    return Response(response_data, status=status.HTTP_200_OK)
                 
             except Exception as e:
                 logger.error(f"Error processing chat request: {str(e)}", exc_info=True)
@@ -319,13 +388,13 @@ class ChatHistoryView(APIView):
     """
     API endpoint for retrieving chat history
     """
-    permission_classes = [AllowAny]  # Can be changed to IsAuthenticated if needed
+    permission_classes = [IsAuthenticated]
     
     def get(self, request, chat_id=None):
         logger.info(f"Chat history request - Chat ID: {chat_id}")
         if chat_id:
             try:
-                chat = Chat.objects.get(id=chat_id)
+                chat = Chat.objects.get(id=chat_id, user=request.user)
                 serializer = ChatSerializer(chat)
                 logger.info(f"Retrieved chat with ID: {chat_id}, message count: {chat.messages.count()}")
                 return Response(serializer.data)
@@ -334,9 +403,7 @@ class ChatHistoryView(APIView):
                 return Response({"error": "Chat not found"}, status=status.HTTP_404_NOT_FOUND)
         else:
             # Return list of chats for the user
-            chats = Chat.objects.all()
-            if request.user.is_authenticated:
-                chats = chats.filter(user=request.user)
+            chats = Chat.objects.filter(user=request.user)
             serializer = ChatSerializer(chats, many=True)
             logger.info(f"Retrieved {chats.count()} chats")
             return Response(serializer.data)
@@ -356,7 +423,7 @@ class ContextRetrieverView(APIView):
             limit = serializer.validated_data.get('limit', 5) # Get limit from serializer
 
             # Perform vector search to find relevant context
-            # search_similar_content should return a list of dicts or an error dict
+            # search_similar_content returns an envelope with items or an error dict
             context_results = search_similar_content(query, limit=limit)
 
             # Check if the search function returned an error
@@ -366,6 +433,9 @@ class ContextRetrieverView(APIView):
                     {"error": f"Failed to retrieve context: {context_results['error']}"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
+
+            if isinstance(context_results, dict):
+                context_results = context_results.get("items", [])
 
             # Prepare the response data using the new serializer
             response_data = {
@@ -414,3 +484,241 @@ class KnowledgeChunkView(generics.ListCreateAPIView):
     queryset = KnowledgeChunk.objects.all()
     serializer_class = KnowledgeChunkSerializer
     permission_classes = [AllowAny]
+
+class TakeCourseView(APIView):
+    """
+    API endpoint for users to take a course and store course details.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Extract course details from request
+        course_data = request.data.get('course')
+        if not course_data:
+            return Response({"error": "Course data is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        url = course_data.get('url')
+        if not url:
+            return Response({"error": "Course URL is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if course exists, else create
+        course, created = Course.objects.get_or_create(
+            url=url,
+            defaults={
+                'title': course_data.get('title', ''),
+                'provider': course_data.get('provider', ''),
+                'description': course_data.get('description', ''),
+                'rating': course_data.get('rating', None),
+                'price': course_data.get('price', ''),
+                'matching_skill': course_data.get('matching_skill', ''),
+                'metadata': course_data.get('metadata', {})
+            }
+        )
+
+        # Create CourseSearch entry
+        CourseSearch.objects.create(
+            query=course_data.get('query', ''),
+            user=request.user,
+            course=course,
+            chat_id=course_data.get('chat_id', None)
+        )
+
+        # Create or update UserLearnedCourse
+        user_course, _ = UserLearnedCourse.objects.get_or_create(
+            user=request.user,
+            course=course,
+            defaults={
+                'status': 'in_progress',
+                'skill_text': course_data.get('matching_skill', '')
+            }
+        )
+
+        return Response({
+            'success': True,
+            'course_id': course.id,
+            'user_course_id': user_course.id,
+            'course_title': course.title
+        }, status=status.HTTP_201_CREATED)
+
+class UserCoursesView(APIView):
+    """
+    API endpoint to get all courses the current user has enrolled in, with course details and status.
+    Supports filtering by status (?status=ongoing|completed).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status')
+        user_courses = UserLearnedCourse.objects.filter(user=request.user)
+        if status_filter:
+            user_courses = user_courses.filter(status=status_filter)
+        # Prefetch related course details
+        user_courses = user_courses.select_related('course')
+        data = [
+            {
+                'id': uc.id,
+                'status': uc.status,
+                'learned_at': uc.learned_at,
+                'skill_text': uc.skill_text,
+                'course': {
+                    'id': uc.course.id,
+                    'title': uc.course.title,
+                    'provider': uc.course.provider,
+                    'url': uc.course.url,
+                    'description': uc.course.description,
+                    'rating': uc.course.rating,
+                    'price': uc.course.price,
+                    'matching_skill': uc.course.matching_skill,
+                    'metadata': uc.course.metadata,
+                }
+            }
+            for uc in user_courses
+        ]
+        return Response(data, status=status.HTTP_200_OK)
+
+class CompleteCourseView(APIView):
+    """
+    API endpoint to mark a user's course as completed.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_course_id = request.data.get('user_course_id')
+        if not user_course_id:
+            return Response({"error": "user_course_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user_course = UserLearnedCourse.objects.get(id=user_course_id, user=request.user)
+            user_course.status = 'completed'
+            user_course.save()
+            return Response({"success": True, "message": "Course marked as completed."}, status=status.HTTP_200_OK)
+        except UserLearnedCourse.DoesNotExist:
+            return Response({"error": "User course not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error completing course: {str(e)}", exc_info=True)
+            return Response({"error": f"Failed to complete course: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UserPreferenceView(APIView):
+    """
+    API endpoint for getting and updating user preferences
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Get the current user's preferences"""
+        try:
+            # Get or create preferences for the user
+            preferences, created = UserPreference.objects.get_or_create(user=request.user)
+            serializer = UserPreferenceSerializer(preferences)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error retrieving user preferences: {str(e)}", exc_info=True)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def post(self, request):
+        """Create or update user preferences"""
+        try:
+            # Get or create preferences
+            preferences, created = UserPreference.objects.get_or_create(user=request.user)
+            
+            # Update with request data
+            serializer = UserPreferenceSerializer(preferences, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error updating user preferences: {str(e)}", exc_info=True)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class FirstLoginCheckView(APIView):
+    """
+    API endpoint to check if a user has set their preferences after first login
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Check if the user has completed their preferences setup"""
+        try:
+            user_id = request.user.id
+            logger.info(f"Checking first login status for user: {user_id}")
+            
+            # Check if preferences exist for this user
+            preferences = UserPreference.objects.filter(user=request.user).first()
+            has_preferences = preferences is not None
+            
+            # Check if the preferences have actual values set
+            if has_preferences:
+                # Consider preferences as "set" only if user has selected something
+                programming_languages = preferences.programming_languages or []
+                development_areas = preferences.development_areas or []
+                has_actual_preferences = (
+                    (preferences.course_level and preferences.course_level != "all") or
+                    len(programming_languages) > 0 or
+                    len(development_areas) > 0
+                )
+                has_preferences = has_actual_preferences
+                
+            logger.info(f"User {user_id} has preferences: {has_preferences}")
+            return Response({"has_preferences": has_preferences})
+        except Exception as e:
+            logger.error(f"Error checking first login status: {str(e)}", exc_info=True)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class SkillCoursesView(APIView):
+    """
+    API endpoint that returns courses grouped by skills.
+    This is used by the CareerPathwayCard component to show course links for skills.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            # Query all courses from the database
+            courses = Course.objects.all()
+            
+            # Group courses by skill
+            skill_courses = {}
+            for course in courses:
+                skill = course.matching_skill
+                if not skill:
+                    continue  # Skip courses without a matching skill
+                    
+                if skill not in skill_courses:
+                    skill_courses[skill] = []
+                    
+                # Add course info to the skill
+                skill_courses[skill].append({
+                    'course_title': course.title,
+                    'course_provider': course.provider,
+                    'course_rating': course.rating if course.rating else 0,
+                    'course_description': course.description,
+                    'price': course.price if course.price else 'Free',
+                    'course_url': course.url
+                })
+            
+            # Convert to the expected format for the frontend
+            result = [
+                {
+                    'skill': skill,
+                    'course_info': courses
+                }
+                for skill, courses in skill_courses.items()
+            ]
+            
+            return Response(result, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error fetching skill courses: {str(e)}", exc_info=True)
+            return Response(
+                {"error": f"Failed to fetch skill courses: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

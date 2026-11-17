@@ -11,10 +11,10 @@ export interface Course {
   url: string;
 }
 
-export const searchCourses = async (query: string, token: string): Promise<Course[]> => {
+export const searchCourses = async (query: string, token: string, chatId?: string | null): Promise<Course[]> => {
   try {
     const response = await axios.get(`${API_URL}/api/course-search/`, {
-      params: { q: query },
+      params: { q: query, chat_id: chatId },
       headers: {
         Authorization: `Bearer ${token}`,
       },

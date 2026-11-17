@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk, PathwayCourse, PathwayKnowledge, UserLearnedCourse
+from .models import Chat, Message, Course, CourseSearch, LearningPathway, KnowledgeSource, KnowledgeChunk, PathwayCourse, PathwayKnowledge, UserLearnedCourse, UserPreference
 
 class UserSerializer(serializers.ModelSerializer):
     fullName = serializers.CharField(source='first_name', required=True)
@@ -13,7 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'password', 'fullName']
         extra_kwargs = {
-            'username': {'required': False}  
+            'username': {'read_only': True, 'required': False}  # Make username read-only
         }
 
     def create(self, validated_data):
@@ -37,18 +37,6 @@ class PathwayQuerySerializer(serializers.Serializer):
     limit = serializers.IntegerField(required=False, default=5, min_value=1, max_value=50, help_text="Maximum number of relevant context items to return")
 
 
-# Renamed and modified for returning context
-class ContextResponseSerializer(serializers.Serializer):
-    query = serializers.CharField()
-    # Removed 'pathway' field
-    context = serializers.ListField(
-        child=serializers.DictField(),
-        help_text="List of relevant context items found via vector search"
-    )
-    # Optionally add a count or other metadata about the response
-    count = serializers.IntegerField(help_text="Number of context items returned")
-
-
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
@@ -67,12 +55,12 @@ class ChatRequestSerializer(serializers.Serializer):
 
 class ChatResponseSerializer(serializers.Serializer):
     response = serializers.CharField()
-    chat_id = serializers.IntegerField()
+    chat_id = serializers.UUIDField()
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ['id', 'title', 'provider', 'url', 'metadata']
+        fields = ['id', 'title', 'provider', 'url', 'price', 'metadata']
 
 class CourseSearchSerializer(serializers.ModelSerializer):
     class Meta:
@@ -90,11 +78,60 @@ class KnowledgeSourceSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'source_type', 'metadata']
 
 class KnowledgeChunkSerializer(serializers.ModelSerializer):
+    source_name = serializers.CharField(source='source.name', read_only=True)
+    psf_section = serializers.CharField(source='metadata.psf_section', read_only=True)
+    
     class Meta:
         model = KnowledgeChunk
-        fields = ['id', 'text', 'metadata', 'embedding', 'source']
+        fields = ['id', 'text', 'metadata', 'category', 'source', 'source_name', 'psf_section']
+        # Exclude embedding field as it's typically not needed in API responses
+
+class KnowledgeChunkDetailSerializer(serializers.ModelSerializer):
+    source_name = serializers.CharField(source='source.name', read_only=True)
+    source_type = serializers.CharField(source='source.source_type', read_only=True)
+    
+    class Meta:
+        model = KnowledgeChunk
+        fields = ['id', 'text', 'metadata', 'category', 'source', 'source_name', 'source_type']
+        # Exclude embedding field as it's typically not needed in API responses
+
+class KnowledgeChunkSearchResultSerializer(serializers.Serializer):
+    """Serializer for knowledge chunk search results, including distance metric"""
+    id = serializers.IntegerField(required=False)
+    text = serializers.CharField()
+    metadata = serializers.JSONField()
+    distance = serializers.FloatField(required=False)
+    source_name = serializers.CharField(required=False)
+    psf_section = serializers.CharField(required=False)
+    skill_type = serializers.CharField(required=False)
+    chunk_type = serializers.CharField(required=False)
+
+# Update the ContextResponseSerializer to use the new search result serializer
+class ContextResponseSerializer(serializers.Serializer):
+    query = serializers.CharField()
+    context = KnowledgeChunkSearchResultSerializer(many=True, help_text="List of relevant context items found via vector search")
+    count = serializers.IntegerField(help_text="Number of context items returned")
+    section_filter = serializers.CharField(required=False, help_text="Section filter applied if any")
+
 
 class UserLearnedCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserLearnedCourse
+        fields = ['id', 'user', 'course', 'learned_at', 'skill_text','status']
         fields = ['id', 'user', 'course', 'learned_at', 'skill_text']
+
+class UserPreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserPreference
+        fields = ['id', 'user', 'course_level', 'programming_languages', 'development_areas', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at']
+    
+    def validate_programming_languages(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Programming languages must be a list")
+        return value
+    
+    def validate_development_areas(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Development areas must be a list")
+        return value
