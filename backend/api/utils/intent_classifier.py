@@ -1,5 +1,6 @@
 from enum import Enum
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -125,9 +126,9 @@ def extract_role_from_query(query_text):
     
     query_lower = query_text.lower()
     
-    # Check for exact matches first (most reliable)
-    for role in core_roles:
-        if role in query_lower:
+    # Prefer the most specific recognized role and match whole words.
+    for role in sorted(core_roles, key=len, reverse=True):
+        if re.search(r"\b" + re.escape(role) + r"\b", query_lower):
             return role
             
     return None

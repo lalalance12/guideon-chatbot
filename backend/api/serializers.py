@@ -37,18 +37,6 @@ class PathwayQuerySerializer(serializers.Serializer):
     limit = serializers.IntegerField(required=False, default=5, min_value=1, max_value=50, help_text="Maximum number of relevant context items to return")
 
 
-# Renamed and modified for returning context
-class ContextResponseSerializer(serializers.Serializer):
-    query = serializers.CharField()
-    # Removed 'pathway' field
-    context = serializers.ListField(
-        child=serializers.DictField(),
-        help_text="List of relevant context items found via vector search"
-    )
-    # Optionally add a count or other metadata about the response
-    count = serializers.IntegerField(help_text="Number of context items returned")
-
-
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
@@ -109,10 +97,10 @@ class KnowledgeChunkDetailSerializer(serializers.ModelSerializer):
 
 class KnowledgeChunkSearchResultSerializer(serializers.Serializer):
     """Serializer for knowledge chunk search results, including distance metric"""
-    id = serializers.UUIDField()
+    id = serializers.IntegerField(required=False)
     text = serializers.CharField()
     metadata = serializers.JSONField()
-    distance = serializers.FloatField()
+    distance = serializers.FloatField(required=False)
     source_name = serializers.CharField(required=False)
     psf_section = serializers.CharField(required=False)
     skill_type = serializers.CharField(required=False)

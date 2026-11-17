@@ -1,9 +1,11 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError as DjangoValidationError
 import logging
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import (UserSerializer, ChatRequestSerializer, ChatResponseSerializer, ChatSerializer, MessageSerializer, PathwayQuerySerializer, ContextResponseSerializer, 
     CourseSerializer, CourseSearchSerializer, LearningPathwaySerializer,
@@ -32,7 +34,7 @@ class CreateUserView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            logger.info(f"Registration attempt with data: {request.data}")
+            logger.info("Registration attempt")
             
             # Extract and validate required fields
             email = request.data.get('email')
@@ -81,6 +83,8 @@ class CreateUserView(generics.CreateAPIView):
             }
             
             return Response(response_data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Error during registration: {str(e)}", exc_info=True)
             return Response(
@@ -151,10 +155,20 @@ class SemanticCourseSearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        chat_id = request.query_params.get('chat_id')
+        chat = None
+        if chat_id:
+            if not request.user.is_authenticated:
+                return Response({"error": "Chat not found"}, status=status.HTTP_404_NOT_FOUND)
+            try:
+                chat = Chat.objects.get(id=chat_id, user=request.user)
+            except (Chat.DoesNotExist, DjangoValidationError):
+                return Response({"error": "Chat not found"}, status=status.HTTP_404_NOT_FOUND)
+
         try:
-            # Create a context dict with education_advice intent
+            # Create a context dict with course search intent
             context = {
-                'intent': QueryIntent.EDUCATION_ADVICE,
+                'intent': QueryIntent.COURSE_SEARCH,
                 'confidence': 0.8
             }
             
@@ -172,14 +186,6 @@ class SemanticCourseSearchView(APIView):
             # Save matched courses to the database
             courses_data = []
             user = request.user
-            chat_id = request.query_params.get('chat_id', None)
-            chat = None
-            
-            if chat_id:
-                try:
-                    chat = Chat.objects.get(id=chat_id)
-                except Chat.DoesNotExist:
-                    pass
             
             for course_info in result.get('courses', []):
                 # Check if course with the same URL already exists
@@ -199,12 +205,13 @@ class SemanticCourseSearchView(APIView):
                 )
                 
                 # Record this search
-                CourseSearch.objects.create(
-                    query=query,
-                    user=user,
-                    course=course,
-                    chat=chat
-                )
+                if user.is_authenticated:
+                    CourseSearch.objects.create(
+                        query=query,
+                        user=user,
+                        course=course,
+                        chat=chat
+                    )
                 
                 # Add to response data
                 courses_data.append({
@@ -321,12 +328,8 @@ class ChatView(APIView):
             # Get or create chat session
             chat = None
             if chat_id:
-                try:
-                    chat = Chat.objects.get(id=chat_id)
-                    logger.info(f"Found existing chat with ID: {chat_id}")
-                except Chat.DoesNotExist:
-                    logger.warning(f"Chat ID {chat_id} not found, creating new chat")
-                    chat = Chat.objects.create(user=request.user if request.user.is_authenticated else None)
+                chat = get_object_or_404(Chat, id=chat_id, user=request.user)
+                logger.info(f"Found existing chat with ID: {chat_id}")
             else:
                 logger.info("No chat_id provided, creating new chat")
                 chat = Chat.objects.create(user=request.user if request.user.is_authenticated else None)
@@ -385,13 +388,13 @@ class ChatHistoryView(APIView):
     """
     API endpoint for retrieving chat history
     """
-    permission_classes = [AllowAny]  # Can be changed to IsAuthenticated if needed
+    permission_classes = [IsAuthenticated]
     
     def get(self, request, chat_id=None):
         logger.info(f"Chat history request - Chat ID: {chat_id}")
         if chat_id:
             try:
-                chat = Chat.objects.get(id=chat_id)
+                chat = Chat.objects.get(id=chat_id, user=request.user)
                 serializer = ChatSerializer(chat)
                 logger.info(f"Retrieved chat with ID: {chat_id}, message count: {chat.messages.count()}")
                 return Response(serializer.data)
@@ -400,9 +403,7 @@ class ChatHistoryView(APIView):
                 return Response({"error": "Chat not found"}, status=status.HTTP_404_NOT_FOUND)
         else:
             # Return list of chats for the user
-            chats = Chat.objects.all()
-            if request.user.is_authenticated:
-                chats = chats.filter(user=request.user)
+            chats = Chat.objects.filter(user=request.user)
             serializer = ChatSerializer(chats, many=True)
             logger.info(f"Retrieved {chats.count()} chats")
             return Response(serializer.data)
@@ -422,7 +423,7 @@ class ContextRetrieverView(APIView):
             limit = serializer.validated_data.get('limit', 5) # Get limit from serializer
 
             # Perform vector search to find relevant context
-            # search_similar_content should return a list of dicts or an error dict
+            # search_similar_content returns an envelope with items or an error dict
             context_results = search_similar_content(query, limit=limit)
 
             # Check if the search function returned an error
@@ -432,6 +433,9 @@ class ContextRetrieverView(APIView):
                     {"error": f"Failed to retrieve context: {context_results['error']}"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
+
+            if isinstance(context_results, dict):
+                context_results = context_results.get("items", [])
 
             # Prepare the response data using the new serializer
             response_data = {

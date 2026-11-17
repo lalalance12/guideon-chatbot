@@ -449,12 +449,7 @@ class LearningPathwayFlow(IntentFlow):
     
     def _is_valid_psf_role(self, role: str) -> bool:
         """Check if role is valid in PSF-AAI"""
-        PSF_AAI_ROLES = [
-            "associate data analyst", "data analyst", "associate data engineer",
-            "business intelligence analyst", "data engineer", "machine learning engineer",
-            # ... (complete list as above)
-        ]
-        return role.lower() in PSF_AAI_ROLES
+        return bool(self._filter_psf_entities([role]))
     
     def get_next_response_format(self) -> Dict[str, Any]:
         """Enhanced formatting with connectivity features"""
@@ -488,6 +483,9 @@ class CourseSearchFlow(IntentFlow):
         logger.info(f"[Flow:CourseSearchFlow] Stage: {self.current_stage} | Query: {query}")
         extracted_entities = conversation_context.get("extracted_entities", {})
         extracted_skill = extracted_entities.get("skill") or extracted_entities.get("topic")
+
+        if extracted_skill:
+            return self._process_initial_course_stage(query, extracted_skill)
 
         if self.current_stage == FlowStage.INITIAL:
             return self._process_initial_course_stage(query, extracted_skill)

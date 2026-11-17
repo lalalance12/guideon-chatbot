@@ -24,12 +24,14 @@ export interface AuthResponse {
 export const authService = {
     async login(credentials: LoginCredentials): Promise<AuthResponse> {
         const { data } = await api.post<AuthResponse>('/api/auth/login/', credentials);
+        localStorage.removeItem('guideon_chat_history');
         localStorage.setItem(ACCESS_TOKEN, data.token);
         return data;
     },
 
     async register(userData: RegisterData): Promise<AuthResponse> {
         const { data } = await api.post<AuthResponse>('/api/auth/register/', userData);
+        localStorage.removeItem('guideon_chat_history');
         localStorage.setItem(ACCESS_TOKEN, data.token);
         return data;
     },
@@ -40,6 +42,7 @@ export const authService = {
     },
 
     logout() {
+        localStorage.removeItem('guideon_chat_history');
         localStorage.removeItem(ACCESS_TOKEN);
     },
 

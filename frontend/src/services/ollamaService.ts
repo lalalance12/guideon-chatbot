@@ -12,7 +12,7 @@ export const checkApiConnection = async (): Promise<boolean> => {
   try {
     console.log(`Checking API connection to: ${API_URL}`);
     // Try a simple request to verify the backend is reachable
-    await axios.get(`${API_URL}/api/chats/`);
+    await api.get('/api/chats/');
     console.log('API connection successful');
     return true;
   } catch (error) {

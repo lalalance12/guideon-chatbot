@@ -227,7 +227,7 @@ Classify this standalone query."""
             )
             
             if flow_check.get("should_continue_flow", False):
-                classification["intent"] = flow_check.get("continue_with_intent", classification["intent"])
+                classification["intent"] = flow_check.get("recommended_intent", classification["intent"])
                 classification["flow_continued"] = True
                 logger.info("Flow manager updated intent for flow continuity")
                 

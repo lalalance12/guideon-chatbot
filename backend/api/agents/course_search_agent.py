@@ -178,7 +178,7 @@ class CourseSearchAgent(BaseAgent):
                     elif 'icon-dollar-solid' in price_icon['class']:
                         price = "Paid"  # Paid
                 else:
-                    price = -1
+                    price = ""
 
                 # Alternative approach - Just check if the string representation contains certain patterns
                 if rating_span:
@@ -272,6 +272,11 @@ class CourseSearchAgent(BaseAgent):
 
     def _extract_flow_enhanced_topic(self, query: str, context: Dict[str, Any]) -> str:
         """**NEW: Extract topic with flow context awareness**"""
+
+        extracted_entities = context.get("extracted_entities", {})
+        extracted_topic = extracted_entities.get("skill") or extracted_entities.get("topic")
+        if extracted_topic:
+            return extracted_topic
         
         flow_context, flow_action, response_format, flow_state = self.get_flow_context(context)
         focus_role, focus_topic = self.get_focus_elements(context)

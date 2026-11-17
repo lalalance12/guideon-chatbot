@@ -256,15 +256,6 @@ const Chat: React.FC = () => {
       const isFirstInGroup =
         idx === 0 || messages[idx - 1].isUser !== msg.isUser;
 
-      // If the message has a special backend signal for goto_career_role AND show_goto_career_button, show the button
-      if (msg.goto_career_role && msg.show_goto_career_button) {
-        return (
-          <div key={`goto-career-btn-${idx}`} className="my-4 flex justify-center">
-            <GoToCareerPathwaysButton role={msg.goto_career_role} />
-          </div>
-        );
-      }
-
       return (
         <div key={msg.id} className="mb-4">
           <Message
@@ -273,6 +264,11 @@ const Chat: React.FC = () => {
             showAvatar={isFirstInGroup}
             courses={msg.courses}
           />
+          {msg.goto_career_role && msg.show_goto_career_button && (
+            <div className="my-4 flex justify-center">
+              <GoToCareerPathwaysButton role={msg.goto_career_role} />
+            </div>
+          )}
         </div>
       );
     });
